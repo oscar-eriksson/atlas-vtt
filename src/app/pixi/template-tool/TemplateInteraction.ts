@@ -4,9 +4,11 @@ import type { GridSystem } from '../../grid/GridSystem';
 import { formatDistance, resolveMeasurementSettings, type MeasurementSettings } from '../../grid/measurementFormat';
 import type { ViewAtlasStore } from '../../storeFactory';
 import { templateFromDrag } from '../../templates/templateDrag';
+import { templateContainsPoint } from '../../templates/templateGeometry';
 import { resolveOriginSnap, snapTemplateOrigin } from '../../templates/templateOrigin';
+import { beginHistoryTransaction, endHistoryTransaction } from '../../stores/history';
 import type { TemplateTool } from '../../tools/TemplateTool';
-import type { AreaTemplateInput, TemplateOriginSnap, TemplateShape } from '../../types/areaTemplateTypes';
+import type { AreaTemplate, AreaTemplateInput, TemplateOriginSnap, TemplateShape } from '../../types/areaTemplateTypes';
 import { cssColorToHexNumber, getObsidianAccentColor } from '../utils/colorUtils';
 import { createMeasureLabelText, drawMeasureLabel, measureLabelFontSize } from '../utils/measureDrawing';
 import { destroyTree } from '../utils/destroyTree';
@@ -14,6 +16,8 @@ import { showTemplate } from './templateGraphics';
 
 const SHAPE_NAMES: Record<TemplateShape, string> = { line: 'line', cone: 'cone', cube: 'cube', sphere: 'sphere', emanation: 'emanation' };
 const HOVER_MARKER_RADIUS = 5;
+/** How close, in screen pixels, a press must be to a template's origin dot to grab it. */
+const ORIGIN_GRAB_RADIUS = 12;
 
 interface Point { x: number; y: number }
 
@@ -21,6 +25,8 @@ interface Point { x: number; y: number }
  * Places area templates: hovering shows the snapped origin, pressing sets it
  * and dragging sets the direction and length, releasing stores the template.
  * Holding Shift when pressing uses the other snap (corner or cell centre).
+ * Pressing a template's origin dot, or the body of the selected template, moves
+ * it instead; the move keeps the template's own snap and is one undo step.
  */
 export class TemplateInteraction {
   /** Measurement settings of the current map, for the size label. */
@@ -30,8 +36,9 @@ export class TemplateInteraction {
   private readonly hoverMarker = new Graphics();
   private readonly pill = new Graphics();
   private readonly label: Text = createMeasureLabelText();
-  private drag: { origin: Point; snap: TemplateOriginSnap } | null = null;
+  private drag: { origin: Point; snap: TemplateOriginSnap; pressedAt: Point } | null = null;
   private draft: AreaTemplateInput | null = null;
+  private moving: { id: string; offset: Point; snap: TemplateOriginSnap } | null = null;
   private outlineKey: string | undefined;
   private enabled = false;
   private readonly unsubscribeTool: () => void;
@@ -69,22 +76,54 @@ export class TemplateInteraction {
     if (!enabled) this.clear();
   }
 
-  private snapAt(event: FederatedPointerEvent): { origin: Point; snap: TemplateOriginSnap } {
+  private snapAt(event: FederatedPointerEvent): { origin: Point; snap: TemplateOriginSnap; pressedAt: Point } {
     const settings = this.tool.getSettings();
     const snap = resolveOriginSnap(settings.shape, settings.footprint, settings.snap, event.shiftKey);
     const world = this.viewport.toWorld(event.global);
-    return { origin: snapTemplateOrigin(this.gridSystem.getOptions(), world, snap), snap };
+    return { origin: snapTemplateOrigin(this.gridSystem.getOptions(), world, snap), snap, pressedAt: world };
   }
 
   private handleDown(event: FederatedPointerEvent): void {
     // The right button is left to the viewport, which pans with it.
     if (event.button !== 0) return;
     event.stopPropagation();
-    this.drag = this.snapAt(event);
     this.hoverMarker.visible = false;
+    const grabbed = this.grabbedTemplate(this.viewport.toWorld(event.global));
+    if (grabbed) this.startMove(grabbed, this.viewport.toWorld(event.global));
+    else this.drag = this.snapAt(event);
+  }
+
+  /** The template a press at `point` takes hold of: one whose origin dot is there, or the selected one's body. */
+  private grabbedTemplate(point: Point): AreaTemplate | undefined {
+    const { objects, selectedIds } = this.store.getState();
+    const scale = this.viewport.scale.x;
+    const cellSize = this.gridSystem.getOptions().size;
+    return Object.values(objects.templates).reverse().find(template =>
+      Math.hypot(point.x - template.x, point.y - template.y) * scale <= ORIGIN_GRAB_RADIUS
+      || (selectedIds.includes(template.id) && templateContainsPoint(template, cellSize, point)));
+  }
+
+  private startMove(template: AreaTemplate, point: Point): void {
+    beginHistoryTransaction(this.store);
+    this.store.getState().setSelection([template.id]);
+    this.moving = { id: template.id, offset: { x: point.x - template.x, y: point.y - template.y }, snap: template.snap };
+  }
+
+  /** Moves the template with the pointer, its origin snapping the way it was placed. */
+  private moveTo(point: Point): void {
+    if (!this.moving) return;
+    const { id, offset, snap } = this.moving;
+    const origin = snapTemplateOrigin(this.gridSystem.getOptions(), { x: point.x - offset.x, y: point.y - offset.y }, snap);
+    const current = this.store.getState().objects.templates[id];
+    if (current && (current.x !== origin.x || current.y !== origin.y)) this.store.getState().updateTemplate(id, origin);
   }
 
   private handleMove(event: FederatedPointerEvent): void {
+    if (this.moving) {
+      event.stopPropagation();
+      this.moveTo(this.viewport.toWorld(event.global));
+      return;
+    }
     if (!this.drag) {
       this.showHoverMarker(this.snapAt(event).origin);
       return;
@@ -96,7 +135,16 @@ export class TemplateInteraction {
 
   private handleUp(): void {
     if (this.draft) this.store.getState().addTemplate(this.draft);
+    else if (this.drag) this.selectAt(this.drag.pressedAt);
     this.clear();
+  }
+
+  /** A click without a drag picks the template under it, the newest first, or clears the selection. */
+  private selectAt(point: Point): void {
+    const cellSize = this.gridSystem.getOptions().size;
+    const templates = Object.values(this.store.getState().objects.templates);
+    const hit = templates.reverse().find(template => templateContainsPoint(template, cellSize, point));
+    this.store.getState().setSelection(hit ? [hit.id] : []);
   }
 
   private showHoverMarker(origin: Point): void {
@@ -121,6 +169,8 @@ export class TemplateInteraction {
   }
 
   private clear(): void {
+    if (this.moving) endHistoryTransaction(this.store);
+    this.moving = null;
     this.drag = null;
     this.draft = null;
     this.outlineKey = undefined;

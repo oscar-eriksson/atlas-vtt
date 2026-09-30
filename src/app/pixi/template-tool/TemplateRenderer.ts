@@ -39,6 +39,7 @@ export class TemplateRenderer {
     const stop = [
       store.subscribe((state) => state.objects.templates, () => this.sync()),
       store.subscribe((state) => state.grid, () => this.sync(true)),
+      store.subscribe((state) => state.selectedIds, () => this.sync(true)),
       store.subscribe((state) => state.isGMView, () => this.updateVisibility()),
     ];
     this.unsubscribe = () => stop.forEach(unsubscribe => unsubscribe());
@@ -64,9 +65,10 @@ export class TemplateRenderer {
     this.gmContainer.visible = isGMView && !isPlayerView;
   }
 
-  /** Brings the drawn templates in line with the store: only the changed ones are touched. */
-  private sync(redrawAll = false): void {
-    const templates = this.store.getState().objects.templates;
+  /** Brings the drawn templates in line with the store. Unchanged ones are only re-applied when asked, and even then only redrawn if their look changed. */
+  private sync(applyAll = false): void {
+    const { templates } = this.store.getState().objects;
+    const selected = new Set(this.store.getState().selectedIds);
     const cellSize = this.gridSystem.getOptions().size;
 
     for (const [id, view] of this.views) {
@@ -77,14 +79,14 @@ export class TemplateRenderer {
 
     for (const template of Object.values(templates)) {
       const view = this.views.get(template.id);
-      if (view?.template === template && !redrawAll) continue;
-      this.apply(template, view, cellSize);
+      if (view?.template === template && !applyAll) continue;
+      this.apply(template, view, cellSize, selected.has(template.id));
     }
   }
 
-  private apply(template: AreaTemplate, existing: TemplateView | undefined, cellSize: number): void {
+  private apply(template: AreaTemplate, existing: TemplateView | undefined, cellSize: number, selected: boolean): void {
     const graphics = existing?.graphics ?? new Graphics();
-    const shapeKey = showTemplate(graphics, template, cellSize, existing?.shapeKey);
+    const shapeKey = showTemplate(graphics, template, cellSize, existing?.shapeKey, selected);
 
     const container = template.visibleToPlayers ? this.playerContainer : this.gmContainer;
     if (graphics.parent !== container) container.addChild(graphics);

@@ -35,6 +35,7 @@ export function templateFromDrag(
     angle: Math.atan2(dy, dx),
     ...(settings.shape === 'line' && { width: settings.lineWidth }),
     ...(isEmanation && { footprint: settings.footprint }),
+    ...(settings.color && { color: settings.color }),
     visibleToPlayers: settings.visibleToPlayers,
   };
 }
