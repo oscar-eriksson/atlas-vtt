@@ -1,6 +1,6 @@
 import type { Graphics } from 'pixi.js';
 import type { AreaTemplate } from '../../types/areaTemplateTypes';
-import { isDirectionalShape, localTemplateOutline } from '../../templates/templateGeometry';
+import { creatureSide, isDirectionalShape, localTemplateOutline } from '../../templates/templateGeometry';
 import { cssColorToHexNumber, getObsidianAccentColor } from '../utils/colorUtils';
 import { drawTemplateOutline } from './templateDrawing';
 
@@ -19,7 +19,7 @@ export function showTemplate(graphics: Graphics, template: AreaTemplate, cellSiz
   if (key !== previousKey) {
     graphics.clear();
     const color = cssColorToHexNumber(template.color ?? getObsidianAccentColor());
-    drawTemplateOutline(graphics, localTemplateOutline(template, cellSize), color, selected);
+    drawTemplateOutline(graphics, localTemplateOutline(template, cellSize), color, selected, creatureSide(template.shape, template.footprint, cellSize));
   }
   graphics.position.set(template.x, template.y);
   graphics.rotation = isDirectionalShape(template.shape) ? template.angle : 0;
