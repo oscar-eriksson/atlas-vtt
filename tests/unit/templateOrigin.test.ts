@@ -21,6 +21,20 @@ describe('snapTemplateOrigin on a square grid', () => {
   });
 });
 
+describe('snapTemplateOrigin to any point', () => {
+  // Cell (1, 0) spans x 80..150, y 20..90 with this offset.
+  it('snaps to a corner, an edge middle or a cell centre, whichever is nearest', () => {
+    expect(snapTemplateOrigin(square, { x: 85, y: 30 }, 'any')).toEqual({ x: 80, y: 20 });
+    expect(snapTemplateOrigin(square, { x: 112, y: 28 }, 'any')).toEqual({ x: 115, y: 20 });
+    expect(snapTemplateOrigin(square, { x: 82, y: 58 }, 'any')).toEqual({ x: 80, y: 55 });
+    expect(snapTemplateOrigin(square, { x: 120, y: 50 }, 'any')).toEqual({ x: 115, y: 55 });
+  });
+
+  it('reaches every half cell left of and above the grid origin', () => {
+    expect(snapTemplateOrigin(square, { x: -24, y: 4 }, 'any')).toEqual({ x: -25, y: 20 });
+  });
+});
+
 describe('snapTemplateOrigin on a hex grid', () => {
   const grid = { type: 'hex-vertical' as const, size: 70, offsetX: 0, offsetY: 0 };
   const layout = createHexLayout('hex-vertical', 70, 0, 0);
@@ -38,6 +52,34 @@ describe('snapTemplateOrigin on a hex grid', () => {
       const candidates = [-1, 0, 1].flatMap(dq => [-1, 0, 1].flatMap(dr =>
         hexVertices(layout, axialToPixel(layout, { q: home.q + dq, r: home.r + dr }))));
       const best = Math.min(...candidates.map(v => Math.hypot(v.x - point.x, v.y - point.y)));
+      expect(Math.hypot(snapped.x - point.x, snapped.y - point.y)).toBeCloseTo(best, 6);
+    }
+  });
+});
+
+describe('snapTemplateOrigin to any point on a hex grid', () => {
+  const grid = { type: 'hex-vertical' as const, size: 70, offsetX: 0, offsetY: 0 };
+  const layout = createHexLayout('hex-vertical', 70, 0, 0);
+
+  it('snaps to the middle of a hex edge when that is nearest', () => {
+    const centre = axialToPixel(layout, { q: 2, r: 1 });
+    const [first, second] = hexVertices(layout, centre);
+    const middle = { x: (first!.x + second!.x) / 2, y: (first!.y + second!.y) / 2 };
+    const snapped = snapTemplateOrigin(grid, { x: middle.x + 2, y: middle.y - 1 }, 'any');
+    expect(snapped.x).toBeCloseTo(middle.x, 6);
+    expect(snapped.y).toBeCloseTo(middle.y, 6);
+  });
+
+  it('is never farther than any centre, corner or edge middle of the nearby hexes', () => {
+    for (const point of [{ x: 100, y: 130 }, { x: 33, y: 71 }, { x: 250, y: 12 }, { x: 180, y: 260 }]) {
+      const snapped = snapTemplateOrigin(grid, point, 'any');
+      const home = pixelToAxial(layout, point);
+      const all = [-1, 0, 1].flatMap(dq => [-1, 0, 1].flatMap(dr => {
+        const centre = axialToPixel(layout, { q: home.q + dq, r: home.r + dr });
+        const corners = hexVertices(layout, centre);
+        return [centre, ...corners, ...corners.map((c, i) => ({ x: (c.x + corners[(i + 1) % 6]!.x) / 2, y: (c.y + corners[(i + 1) % 6]!.y) / 2 }))];
+      }));
+      const best = Math.min(...all.map(p => Math.hypot(p.x - point.x, p.y - point.y)));
       expect(Math.hypot(snapped.x - point.x, snapped.y - point.y)).toBeCloseTo(best, 6);
     }
   });

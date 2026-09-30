@@ -1,8 +1,12 @@
 /** The shapes of an area of effect, as game systems describe them. */
 export type TemplateShape = 'line' | 'cone' | 'cube' | 'sphere' | 'emanation';
 
-/** Where on the grid a template's origin sits: the middle of a cell, or a corner where cells meet. */
-export type TemplateOriginSnap = 'cell-center' | 'intersection';
+/**
+ * Which grid points a template's origin may sit on: any of a cell's centre,
+ * corners and edge middles, or only its centre or only its corners. An emanation
+ * uses the last two to line its footprint up with whole cells.
+ */
+export type TemplateOriginSnap = 'any' | 'cell-center' | 'intersection';
 
 /**
  * A persistent area of effect on the map. Sizes are in grid cells, as
