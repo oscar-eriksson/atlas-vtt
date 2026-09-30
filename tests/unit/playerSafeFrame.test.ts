@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { captureWithLayerVisibility, fitCameraToSize } from '../../src/app/pixi/playerSafeFrame';
+import { captureWithLayerVisibility, fitCameraToSize, framingForSize } from '../../src/app/pixi/playerSafeFrame';
 
 describe('fitCameraToSize', () => {
   const camera = { centerX: 500, centerY: 300, scale: 1.5 };
@@ -17,6 +17,36 @@ describe('fitCameraToSize', () => {
 
   it('leaves the camera alone when the DM pane has no size', () => {
     expect(fitCameraToSize(camera, { width: 0, height: 0 }, { width: 1920, height: 1080 })).toBe(camera);
+  });
+});
+
+describe('framingForSize', () => {
+  const pane = { width: 918, height: 950 };
+
+  it('scales a camera from the DM pane to the surface', () => {
+    const camera = { centerX: 10, centerY: 20, scale: 2 };
+    expect(framingForSize({ camera }, pane, { width: 1836, height: 1900 })).toEqual(fitCameraToSize(camera, pane, { width: 1836, height: 1900 }));
+  });
+
+  it('fits a rectangle whole into the surface, centred on it', () => {
+    const rect = { x: 1000, y: 500, width: 3000, height: 1600 };
+    const camera = framingForSize({ rect }, pane, { width: 1920, height: 1080 });
+    expect([camera.centerX, camera.centerY]).toEqual([2500, 1300]);
+    expect(camera.scale).toBeCloseTo(Math.min(1920 / 3000, 1080 / 1600));
+    // Everything in the rectangle shows.
+    expect(1920 / camera.scale).toBeGreaterThanOrEqual(rect.width - 1e-6);
+    expect(1080 / camera.scale).toBeGreaterThanOrEqual(rect.height - 1e-6);
+  });
+
+  it('gives the rectangle its own size whatever shape the DM pane is', () => {
+    // A wide rectangle, a near-square pane and a wide window: fitting the rectangle into the pane first and scaling
+    // that to the window would lose its size and show far too little of the map.
+    const rect = { x: 0, y: 0, width: 915, height: 515 };
+    const wide = { width: 1883, height: 960 };
+    const direct = framingForSize({ rect }, pane, wide).scale;
+    expect(direct).toBeCloseTo(Math.min(1883 / 915, 960 / 515));
+    const viaPane = fitCameraToSize({ centerX: 0, centerY: 0, scale: Math.min(pane.width / 915, pane.height / 515) }, pane, wide).scale;
+    expect(direct).toBeGreaterThan(viaPane * 1.5);
   });
 });
 

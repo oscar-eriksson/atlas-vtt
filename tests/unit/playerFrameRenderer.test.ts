@@ -25,7 +25,7 @@ beforeEach(() => vi.clearAllMocks());
 describe('PlayerFrameRenderer', () => {
   it('renders the scene onto its own texture, then draws the DM canvas again so no changes are left pending', () => {
     const { app, render, stage, viewport, layer, canvas } = setup();
-    const frame = new PlayerFrameRenderer().render(app, viewport, [{ layer, visible: false }], { width: 1000, height: 600 }, { centerX: 100, centerY: 50, scale: 2 });
+    const frame = new PlayerFrameRenderer().render(app, viewport, [{ layer, visible: false }], { width: 1000, height: 600 }, { camera: { centerX: 100, centerY: 50, scale: 2 } });
 
     expect(frame).toBe(canvas);
     expect(render).toHaveBeenCalledTimes(2);
@@ -39,7 +39,7 @@ describe('PlayerFrameRenderer', () => {
     const seen: { visible: boolean; scale: number }[] = [];
     render.mockImplementation(() => seen.push({ visible: layer.visible, scale: viewport.scale.x }));
 
-    new PlayerFrameRenderer().render(app, viewport, [{ layer, visible: false }], { width: 1000, height: 600 }, { centerX: 100, centerY: 50, scale: 2 });
+    new PlayerFrameRenderer().render(app, viewport, [{ layer, visible: false }], { width: 1000, height: 600 }, { camera: { centerX: 100, centerY: 50, scale: 2 } });
 
     // The pane is 500 wide and the frame 1000: twice the zoom. The DM's own redraw sees the DM's camera again.
     expect(seen[0]).toEqual({ visible: false, scale: 4 });
@@ -51,30 +51,42 @@ describe('PlayerFrameRenderer', () => {
   it('draws on an anti-aliased texture, so thin grid lines do not drop out', async () => {
     const { RenderTexture } = await import('pixi.js');
     const { app, viewport } = setup();
-    new PlayerFrameRenderer().render(app, viewport, [], { width: 1000, height: 600 }, { centerX: 0, centerY: 0, scale: 1 });
+    new PlayerFrameRenderer().render(app, viewport, [], { width: 1000, height: 600 }, { camera: { centerX: 0, centerY: 0, scale: 1 } });
     expect(RenderTexture.create).toHaveBeenCalledWith(expect.objectContaining({ antialias: true, resolution: 1 }));
+  });
+
+  it('fits a viewport rectangle whole into the frame when that is what players follow', () => {
+    const { app, render, viewport } = setup();
+    const seen: { scale: number; x: number }[] = [];
+    render.mockImplementation(() => seen.push({ scale: viewport.scale.x, x: viewport.position.x }));
+
+    new PlayerFrameRenderer().render(app, viewport, [], { width: 1883, height: 960 }, { rect: { x: 0, y: 0, width: 915, height: 515 } });
+
+    // The frame is wider than the rectangle: the height limits the zoom, and the rectangle is centred.
+    expect(seen[0]!.scale).toBeCloseTo(960 / 515);
+    expect(seen[0]!.x).toBeCloseTo(1883 / 2 - 457.5 * (960 / 515));
   });
 
   it('keeps one texture for one size and resizes it when the size changes', () => {
     const { app, viewport } = setup();
     const renderer = new PlayerFrameRenderer();
-    renderer.render(app, viewport, [], { width: 1280, height: 720 }, { centerX: 0, centerY: 0, scale: 1 });
-    renderer.render(app, viewport, [], { width: 1280, height: 720 }, { centerX: 0, centerY: 0, scale: 1 });
+    renderer.render(app, viewport, [], { width: 1280, height: 720 }, { camera: { centerX: 0, centerY: 0, scale: 1 } });
+    renderer.render(app, viewport, [], { width: 1280, height: 720 }, { camera: { centerX: 0, centerY: 0, scale: 1 } });
     expect(texture.resize).not.toHaveBeenCalled();
-    renderer.render(app, viewport, [], { width: 1920, height: 1080 }, { centerX: 0, centerY: 0, scale: 1 });
+    renderer.render(app, viewport, [], { width: 1920, height: 1080 }, { camera: { centerX: 0, centerY: 0, scale: 1 } });
     expect(texture.resize).toHaveBeenCalledWith(1920, 1080);
   });
 
   it('renders nothing for the software renderer, which cannot draw apart from the DM canvas', () => {
     const { app, render, viewport } = setup('canvas');
-    expect(new PlayerFrameRenderer().render(app, viewport, [], { width: 1000, height: 600 }, { centerX: 0, centerY: 0, scale: 1 })).toBeNull();
+    expect(new PlayerFrameRenderer().render(app, viewport, [], { width: 1000, height: 600 }, { camera: { centerX: 0, centerY: 0, scale: 1 } })).toBeNull();
     expect(render).not.toHaveBeenCalled();
   });
 
   it('frees its texture when destroyed', () => {
     const { app, viewport } = setup();
     const renderer = new PlayerFrameRenderer();
-    renderer.render(app, viewport, [], { width: 100, height: 100 }, { centerX: 0, centerY: 0, scale: 1 });
+    renderer.render(app, viewport, [], { width: 100, height: 100 }, { camera: { centerX: 0, centerY: 0, scale: 1 } });
     renderer.destroy();
     expect(texture.destroy).toHaveBeenCalledWith(true);
   });

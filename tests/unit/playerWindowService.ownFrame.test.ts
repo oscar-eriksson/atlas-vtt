@@ -29,7 +29,7 @@ function mirror(window: WindowShape, renderPlayerFrame: (() => HTMLCanvasElement
   (service as any).streamSource = source;
   (service as any).setupPlayerWindow();
   const nextFrame = (): void => vi.mocked(requestAnimationFrame).mock.calls.at(-1)![0](0);
-  return { source, withPlayerSafeFrame, context, doc, nextFrame, window: (service as any).playerWindow as WindowShape };
+  return { source, service, withPlayerSafeFrame, context, doc, nextFrame, window: (service as any).playerWindow as WindowShape };
 }
 
 const frameOf = (width: number, height: number): HTMLCanvasElement => {
@@ -43,7 +43,7 @@ describe('player window frames rendered at the window\'s own size', () => {
   it('asks for a frame the size of the window and shows it at that size, leaving the DM canvas alone', () => {
     const frame = frameOf(1920, 1080);
     const { source, withPlayerSafeFrame, context, doc } = mirror({ innerWidth: 1920, innerHeight: 1080, devicePixelRatio: 1 }, () => frame);
-    expect((source as any).renderPlayerFrame).toHaveBeenCalledWith({ width: 1920, height: 1080 }, expect.anything(), { centerX: 10, centerY: 20, scale: 2 });
+    expect((source as any).renderPlayerFrame).toHaveBeenCalledWith({ width: 1920, height: 1080 }, expect.anything(), { camera: { centerX: 10, centerY: 20, scale: 2 } });
     expect(withPlayerSafeFrame).not.toHaveBeenCalled();
     expect(context.drawImage).toHaveBeenCalledWith(frame, 0, 0);
     const target = doc.getElementById('atlas-player-canvas') as HTMLCanvasElement;
@@ -74,6 +74,16 @@ describe('player window frames rendered at the window\'s own size', () => {
     const { source, withPlayerSafeFrame } = mirror({ innerWidth: 0, innerHeight: 0, devicePixelRatio: 1 }, () => frameOf(10, 10));
     expect((source as any).renderPlayerFrame).not.toHaveBeenCalled();
     expect(withPlayerSafeFrame).toHaveBeenCalledTimes(1);
+  });
+
+  it('fits the followed viewport rectangle into the window, not the DM\'s camera', () => {
+    const { source, service, nextFrame } = mirror({ innerWidth: 1883, innerHeight: 960, devicePixelRatio: 1 }, () => frameOf(1883, 960));
+    const rect = { id: 'v', active: true, x: 100, y: 200, width: 915, height: 515, locked: true };
+    (service as any).streamSource.store = createStore(() => ({ objects: { viewports: { v: rect } }, setFollowViewport: () => {} }));
+    (source as any).getRenderedFrames = () => 1;
+    (service as any).toggleViewportFollow();
+    nextFrame();
+    expect((source as any).renderPlayerFrame).toHaveBeenLastCalledWith({ width: 1883, height: 960 }, expect.anything(), { rect });
   });
 
   it('renders a new frame when the window changes size, though the scene did not change', () => {

@@ -1,7 +1,7 @@
 import { RenderTexture, type Application } from 'pixi.js';
 import type { Viewport } from 'pixi-viewport';
 import type { PlayerCameraState } from '../local-player-view';
-import { captureWithLayerVisibility, fitCameraToSize, type FrameSize, type LayerVisibility } from './playerSafeFrame';
+import { captureWithLayerVisibility, framingForSize, type FrameSize, type LayerVisibility, type PlayerFraming } from './playerSafeFrame';
 import { usesCanvasRenderer } from './utils/rendererType';
 
 declare const __ATLAS_RELEASE_BUILD__: boolean | undefined;
@@ -17,17 +17,17 @@ export class PlayerFrameRenderer {
   private target: RenderTexture | null = null;
 
   /** The frame as a canvas of `size`, or `null` where it cannot be rendered apart from the DM's canvas (the software renderer). */
-  render(app: Application, viewport: Viewport, layers: readonly LayerVisibility[], size: FrameSize, camera: PlayerCameraState): HTMLCanvasElement | null {
+  render(app: Application, viewport: Viewport, layers: readonly LayerVisibility[], size: FrameSize, framing: PlayerFraming): HTMLCanvasElement | null {
     if (usesCanvasRenderer(app.renderer)) return null;
     const target = this.targetOf(size);
-    const framing = fitCameraToSize(camera, { width: viewport.screenWidth, height: viewport.screenHeight }, size);
-    this.reportFraming(viewport, size, camera, framing);
+    const camera = framingForSize(framing, { width: viewport.screenWidth, height: viewport.screenHeight }, size);
+    this.reportFraming(viewport, size, framing, camera);
     const result: { canvas: HTMLCanvasElement | null } = { canvas: null };
     captureWithLayerVisibility(
       layers,
       () => app.renderer.render({ container: app.stage, target, clear: true, clearColor: app.renderer.background.color }),
       () => { result.canvas = app.renderer.extract.canvas({ target }) as HTMLCanvasElement; },
-      { target: { screenWidth: size.width, screenHeight: size.height, position: viewport.position, scale: viewport.scale }, camera: framing },
+      { target: { screenWidth: size.width, screenHeight: size.height, position: viewport.position, scale: viewport.scale }, camera },
       // Drawing the DM's canvas again also takes the changes this render made to the scene (layers hidden, camera
       // moved). Left pending, the render scheduler would draw them as a new frame, which the mirror would render
       // a player frame for, which changes the scene again: a loop that never settles.
@@ -39,13 +39,14 @@ export class PlayerFrameRenderer {
   private frames = 0;
 
   /** Development builds say how a frame is framed now and then, to check what the players' screen shows against the DM's. */
-  private reportFraming(viewport: Viewport, size: FrameSize, camera: PlayerCameraState, framing: PlayerCameraState): void {
+  private reportFraming(viewport: Viewport, size: FrameSize, framing: PlayerFraming, camera: PlayerCameraState): void {
     if (typeof __ATLAS_RELEASE_BUILD__ === 'undefined' || __ATLAS_RELEASE_BUILD__ || ++this.frames % 60 !== 1) return;
     const shown = (width: number, height: number, scale: number): string => `${Math.round(width / scale)} x ${Math.round(height / scale)}`;
     console.debug(
       `[Atlas] player framing: DM pane ${viewport.screenWidth}x${viewport.screenHeight}, player frame ${size.width}x${size.height}, `
-      + `centre ${Math.round(camera.centerX)},${Math.round(camera.centerY)}, zoom ${camera.scale.toFixed(3)} -> ${framing.scale.toFixed(3)}; `
-      + `the DM sees ${shown(viewport.screenWidth, viewport.screenHeight, camera.scale)} map units, players see ${shown(size.width, size.height, framing.scale)}`,
+      + `${'rect' in framing ? 'fitting the viewport rectangle' : 'following the camera'}, centre ${Math.round(camera.centerX)},${Math.round(camera.centerY)}, zoom ${camera.scale.toFixed(3)}; `
+      + `players see ${shown(size.width, size.height, camera.scale)} map units`
+      + ('rect' in framing ? ` (the rectangle is ${Math.round(framing.rect.width)} x ${Math.round(framing.rect.height)})` : ''),
     );
   }
 

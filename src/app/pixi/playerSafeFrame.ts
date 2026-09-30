@@ -16,6 +16,26 @@ export function fitCameraToSize(camera: PlayerCameraState, source: FrameSize, ta
   return { ...camera, scale: camera.scale * Math.min(target.width / source.width, target.height / source.height) };
 }
 
+/** What players are shown: the DM's camera or another, in terms of the DM's own pane; or a rectangle of the map to fit whole. */
+export type PlayerFraming =
+  | { camera: PlayerCameraState }
+  | { rect: { x: number; y: number; width: number; height: number } };
+
+/**
+ * The camera for a surface of `target` size under `framing`. A camera is taken
+ * from the DM's pane and scaled to fit; a rectangle is fitted straight into the
+ * surface, so all of it shows whatever shapes the surface and the DM's pane have.
+ */
+export function framingForSize(framing: PlayerFraming, dmPane: FrameSize, target: FrameSize): PlayerCameraState {
+  if ('camera' in framing) return fitCameraToSize(framing.camera, dmPane, target);
+  const { rect } = framing;
+  return {
+    centerX: rect.x + rect.width / 2,
+    centerY: rect.y + rect.height / 2,
+    scale: Math.min(target.width / rect.width, target.height / rect.height),
+  };
+}
+
 /** Anything whose `visible` flag decides whether it is part of the next render. */
 export interface HideableLayer {
   visible: boolean;

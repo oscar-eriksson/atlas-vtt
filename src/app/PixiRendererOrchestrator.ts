@@ -20,7 +20,7 @@ import { HexLinkRenderer } from "./pixi/hexLinks/HexLinkRenderer";
 import { HexLinkInteraction } from "./pixi/hexLinks/HexLinkInteraction";
 import type { MapRect } from "./grid/hexNumbering";
 import type { NotePin } from "./types";
-import { captureWithLayerVisibility, type FrameSize, type LayerVisibility } from "./pixi/playerSafeFrame";
+import { captureWithLayerVisibility, type FrameSize, type LayerVisibility, type PlayerFraming } from "./pixi/playerSafeFrame";
 import type { PlayerCameraState } from "./local-player-view";
 import { SelectionManager } from "./pixi/SelectionManager"; // Import SelectionManager
 import { FogOfWarRenderer } from "./pixi/fog/FogOfWarRenderer";
@@ -783,16 +783,17 @@ export class PixiRendererOrchestrator { // Renamed class
 
   /**
    * The frame players see, rendered at `size` on a texture of its own so their
-   * screen gets every pixel it has and the DM's canvas is left alone. `camera`
-   * is in the terms of the DM's own pane, and defaults to the DM's camera.
-   * Returns null where the frame can only be taken from the DM's canvas.
+   * screen gets every pixel it has and the DM's canvas is left alone. `framing`
+   * is a camera in the terms of the DM's own pane, or a rectangle to fit whole;
+   * it defaults to the DM's camera. Returns null where the frame can only be
+   * taken from the DM's canvas.
    */
-  public renderPlayerFrame(size: FrameSize, settings: AtlasSettings['localPlayerView'], camera?: PlayerCameraState): HTMLCanvasElement | null {
+  public renderPlayerFrame(size: FrameSize, settings: AtlasSettings['localPlayerView'], framing?: PlayerFraming): HTMLCanvasElement | null {
     const app = this.pixiAppManager.getApp();
     const viewport = this.pixiAppManager.getViewport();
     if (!app?.renderer || !viewport) return null;
-    const framing = camera ?? { centerX: viewport.center.x, centerY: viewport.center.y, scale: viewport.scale.x };
-    return this.playerFrameRenderer.render(app, viewport, this.playerFrameLayers(settings), size, framing);
+    const dmCamera = { centerX: viewport.center.x, centerY: viewport.center.y, scale: viewport.scale.x };
+    return this.playerFrameRenderer.render(app, viewport, this.playerFrameLayers(settings), size, framing ?? { camera: dmCamera });
   }
 
   /** What players must not see, or see differently, while the DM's scene is rendered for them. */

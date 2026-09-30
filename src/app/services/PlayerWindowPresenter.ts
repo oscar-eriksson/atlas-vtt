@@ -158,7 +158,7 @@ async function waitForRenderedFrameSource(view: AtlasView): Promise<PlayerFrameS
     canvas,
     store: view.atlasStore,
     withPlayerSafeFrame: (capture, settings, camera) => renderer.withPlayerSafeFrame(capture, settings, camera),
-    renderPlayerFrame: (size, settings, camera) => renderer.renderPlayerFrame(size, settings, camera),
+    renderPlayerFrame: (size, settings, framing) => renderer.renderPlayerFrame(size, settings, framing),
     getRenderedFrames: () => getRenderedFrames(renderer.getAppInstance()),
     getCamera: () => {
       const viewport = view.serviceManager.getRendererService().getViewport();

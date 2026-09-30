@@ -9,7 +9,7 @@ import type { PlayerOverlay } from './PlayerSceneOverlay';
 import { PlayerDiceRolls } from './PlayerDiceRolls';
 import { PlayerWidgetBar } from './PlayerWidgetBar';
 import { LocalPlayerView, LOCAL_PLAYER_VIEW_TYPE, type PlayerCameraState } from '../local-player-view';
-import type { FrameSize } from '../pixi/playerSafeFrame';
+import type { FrameSize, PlayerFraming } from '../pixi/playerSafeFrame';
 import { freezeCanvasFrame, type SceneTransition } from '../pixi/sceneTransition';
 import type { ViewportRect } from '../types/viewportTypes';
 
@@ -42,7 +42,7 @@ export interface PlayerFrameSource {
    * The frame players see, rendered at `size` apart from `canvas`, so the screen gets
    * every pixel it has. Null where it can only be taken from `canvas`.
    */
-  renderPlayerFrame?(size: FrameSize, settings: AtlasSettings['localPlayerView'], camera?: PlayerCameraState): HTMLCanvasElement | null;
+  renderPlayerFrame?(size: FrameSize, settings: AtlasSettings['localPlayerView'], framing?: PlayerFraming): HTMLCanvasElement | null;
   /** Renders of `canvas` so far. When given, frames are only mirrored after the canvas changed. */
   getRenderedFrames?(): number | undefined;
   /** Camera that fits `rect`'s world bounds into the DM's current render surface, for "Follow viewport". */
@@ -139,12 +139,11 @@ export class PlayerWindowService {
     return this.viewportFollowEnabled;
   }
 
-  /** Camera from the scene's active TV viewport rect, or undefined if follow is off or no rect is active. */
-  private getViewportFollowCamera(): PlayerCameraState | undefined {
-    if (!this.viewportFollowEnabled || !this.streamSource?.getViewportFollowCamera) return undefined;
+  /** The scene's active TV viewport rect, or undefined if follow is off or no rect is active. */
+  private followedRect(): ViewportRect | undefined {
+    if (!this.viewportFollowEnabled || !this.streamSource) return undefined;
     const store = this.streamSource.store ?? this.store;
-    const rect = Object.values(store.getState().objects.viewports).find((vp) => vp.active);
-    return rect ? this.streamSource.getViewportFollowCamera(rect) : undefined;
+    return Object.values(store.getState().objects.viewports).find((vp) => vp.active);
   }
 
   public isWindowOpen(): boolean {
@@ -474,11 +473,16 @@ export class PlayerWindowService {
         lastFrameSize = frameSize;
         this.isMirrorStale = false;
 
-        const viewportCamera = this.getViewportFollowCamera();
+        const followed = this.followedRect();
+        // In the terms of the DM's pane, which is what the copy of the DM canvas is drawn from.
+        const viewportCamera = followed ? source.getViewportFollowCamera?.(followed) : undefined;
         const frozenCamera = viewportCamera ?? this.frozenCamera ?? undefined;
         const settings = this.settingsService.getLocalPlayerViewSettings();
         const started = performance.now();
-        const frame = size ? source.renderPlayerFrame?.(size, settings, frozenCamera ?? source.getCamera?.()) : null;
+        // A followed rectangle is fitted straight into the player's window; a camera is the DM's, scaled to fit it.
+        const camera = this.frozenCamera ?? source.getCamera?.();
+        const framing: PlayerFraming | undefined = followed ? { rect: followed } : camera && { camera };
+        const frame = size ? source.renderPlayerFrame?.(size, settings, framing) : null;
         if (frame && size) this.noteFrameCost(performance.now() - started, size);
         if (frame) draw(frame);
         else source.withPlayerSafeFrame(() => draw(source.canvas), settings, frozenCamera);

@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useState } from "react"
+import { Trash2 } from "lucide-react"
 import { useStore } from "zustand"
 import { useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
-import { useAtlasStore } from "src/app/react/ViewStoreContext"
+import { useAtlasStore, useViewStoreHook } from "src/app/react/ViewStoreContext"
 import { useAtlasUI } from "src/app/react/root/AtlasUIContext"
 import { PlayerWindowService } from "../../../services/PlayerWindowService"
+import { runHistoryTransaction } from "../../../stores/history"
 import { playerWindowStore } from "../../../stores/playerWindowStore"
 import type { TVCalibrationSettings } from "../../../types/viewportTypes"
 import { calibratedViewportSize, physicalCmPerSquare } from "../../../utils/viewportPhysicalScale"
 import { SettingRow, SettingToggleRow } from "../../../react/components/command-palette/SettingRows"
+import { DropdownMenuItem } from "../primitives/DropdownMenuItem"
 import { ToolGroup, type ToolGroupControls } from "./ToolGroup"
 import { viewportToolFace } from "./toolFaces"
 
@@ -19,7 +22,7 @@ const DEFAULT_CALIBRATION: TVCalibrationSettings = {
 };
 
 /** TV viewport calibration and follow controls. DM only, behind TV_VIEWPORT_ENABLED. */
-export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu }: ToolGroupControls): React.ReactElement {
+export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu, closeMenu }: ToolGroupControls): React.ReactElement {
   const hotkeyLabel = useHotkeyLabels()
   const { view } = useAtlasUI()
   const settingsService = view?.serviceManager?.getSettingsService()
@@ -44,6 +47,7 @@ export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
   const viewports = useAtlasStore((state) => state.objects.viewports)
   const gridSize = useAtlasStore((state) => state.grid?.size ?? 70)
   const updateViewport = useAtlasStore((state) => state.updateViewport)
+  const store = useViewStoreHook()
   const activeRect = Object.values(viewports).find((vp) => vp.active)
   const isFollowingViewport = useStore(playerWindowStore, (s) => s.isFollowingViewport)
 
@@ -63,6 +67,15 @@ export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
     const centerY = activeRect.y + activeRect.height / 2
     updateViewport(activeRect.id, { x: centerX - width / 2, y: centerY - height / 2, width, height })
   }, [activeRect, calibration, gridSize, updateViewport])
+
+  /** Takes the rectangle off the map; the players' view then follows the DM's camera again. One undo step. */
+  const removeViewports = useCallback((): void => {
+    runHistoryTransaction(store, () => {
+      const { objects, deleteViewport } = store.getState()
+      for (const id of Object.keys(objects.viewports)) deleteViewport(id)
+    })
+    closeMenu()
+  }, [store, closeMenu])
 
   const toggleFollow = useCallback((): void => {
     PlayerWindowService.getInstance()?.toggleViewportFollow()
@@ -136,6 +149,12 @@ export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
           onToggle={toggleFollow}
         />
       </div>
+
+      {activeRect && (
+        <div className="atlas-dropdown-section">
+          <DropdownMenuItem icon={Trash2} label="Remove viewport" destructive onClick={removeViewports} />
+        </div>
+      )}
     </ToolGroup>
   )
 }
