@@ -22,6 +22,7 @@ export const hotkey = {
   'hotkey.audio': 'Ambient audio',
   'hotkey.nextMood': 'Next mood',
   'hotkey.silence': 'Stop all sound',
+  'hotkey.template': 'Area templates',
   'hotkey.selectAll': 'Select all tokens',
   'hotkey.copy': 'Copy selection',
   'hotkey.cut': 'Cut selection',

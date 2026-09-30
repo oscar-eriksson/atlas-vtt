@@ -37,6 +37,7 @@ export const toolbar = {
   'toolbar.textOptions': 'Text Options',
   'toolbar.optionsOf': '{label} Options',
   'toolbar.textTool': 'Text Tool',
+  'toolbar.templateTool': 'Area Templates',
   'toolbar.moveSelect': 'Move/Select',
   'toolbar.drawTool': 'Draw Tool',
   'toolbar.measureCircle': 'Measure Circle',

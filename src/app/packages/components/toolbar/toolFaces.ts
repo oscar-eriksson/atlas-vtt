@@ -1,6 +1,6 @@
 import { t } from '../../../i18n';
 import type React from "react"
-import { Circle, Cloud, Eraser, Flashlight, Hand, Lightbulb, MapPin, Pencil, Ruler, Stamp, Triangle, Type } from "lucide-react"
+import { Circle, Cloud, Eraser, Flashlight, Hand, Lightbulb, MapPin, Pencil, Ruler, Shapes, Stamp, Triangle, Type } from "lucide-react"
 import { StairsIcon } from "../../../react/components/StairsIcon"
 import type { ViewAtlasState } from "../../../storeFactory"
 
@@ -79,4 +79,8 @@ export function lightingToolFace(activeTool: Tool): ToolFace {
 export function pinToolFace(activeTool: Tool): ToolFace {
   if (activeTool === "stairs") return { icon: StairsIcon, label: t('toolbar.stairs'), tool: activeTool, isActive: true }
   return { icon: MapPin, label: t('toolbar.notePin'), tool: "note-pin", isActive: activeTool === "note-pin" }
+}
+
+export function templateToolFace(activeTool: Tool): ToolFace {
+  return singleToolFace("template", Shapes, t('toolbar.templateTool'), activeTool)
 }

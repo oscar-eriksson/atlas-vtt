@@ -29,3 +29,6 @@ export interface AreaTemplate {
   /** Whether players see the template. */
   visibleToPlayers: boolean;
 }
+
+/** What a new template needs; the store adds its id. */
+export type AreaTemplateInput = Omit<AreaTemplate, 'id'>;

@@ -38,6 +38,9 @@ import { MeasureRenderer } from "./pixi/MeasureRenderer"; // Import MeasureRende
 import { measurePlayersView } from './pixi/measurePlayersView';
 import { NOTHING_SEEN } from './pixi/token-renderer/PlayerSightTokens';
 import type { TokenPerception } from './vision/tokenPerception';
+import { TemplateRenderer } from "./pixi/template-tool/TemplateRenderer";
+import { TemplateInteraction } from "./pixi/template-tool/TemplateInteraction";
+import { TemplateTool } from "./tools/TemplateTool";
 import { LaserPointerRenderer } from "./pixi/LaserPointerRenderer"; // Import LaserPointerRenderer
 import { DrawingRenderer } from "./pixi/DrawingRenderer"; // Import DrawingRenderer
 import { DrawingInteraction } from "./pixi/DrawingInteraction";
@@ -109,6 +112,9 @@ export class PixiRendererOrchestrator { // Renamed class
   private measureRenderer?: MeasureRenderer; // Add MeasureRenderer instance
   /** Ends the measurements' watch on what the players see of the tokens. */
   private stopMeasuresFollowingPlayers: (() => void) | undefined;
+  private templateRenderer?: TemplateRenderer;
+  private templateInteraction?: TemplateInteraction;
+  private templateTool?: TemplateTool;
   private laserPointerRenderer?: LaserPointerRenderer; // Add LaserPointerRenderer instance
   private drawingRenderer?: DrawingRenderer; // Add DrawingRenderer instance
   private drawingInteraction?: DrawingInteraction;
@@ -517,6 +523,7 @@ export class PixiRendererOrchestrator { // Renamed class
       this.measureRenderer = new MeasureRenderer(viewport, this.eventBus, this.store, this.gridSystem);
       this.wireMeasureRendererProvider();
     }
+    this.ensureTemplateRenderer(viewport);
     
     // The laser reads only the active tool.
     this.laserPointerRenderer = new LaserPointerRenderer(
@@ -637,6 +644,7 @@ export class PixiRendererOrchestrator { // Renamed class
       this.measureRenderer = new MeasureRenderer(currentViewport, this.eventBus, this.store, this.gridSystem);
       this.wireMeasureRendererProvider();
     }
+    if (currentViewport) this.ensureTemplateRenderer(currentViewport);
     
     // Initialize TextRenderer if it doesn't exist yet
     const isPlayerView = this.store.getState().isPlayerView || false;
@@ -1007,6 +1015,7 @@ export class PixiRendererOrchestrator { // Renamed class
     if (this.levelLinks) layers.push({ layer: this.levelLinks.view, visible: false });
     for (const layer of this.tokenPlacer?.layers ?? []) layers.push({ layer, visible: false });
     layers.push(...(this.selectionManager?.getPlayerViewLayers() ?? []));
+    if (this.templateRenderer) layers.push({ layer: this.templateRenderer.gmContainer, visible: false });
     return layers;
   }
 
@@ -1214,6 +1223,16 @@ export class PixiRendererOrchestrator { // Renamed class
     }
   }
 
+  /** Draws the map's area templates once the grid exists. */
+  private ensureTemplateRenderer(viewport: Viewport): void {
+    if (this.templateRenderer || !this.gridSystem) return;
+    this.templateRenderer = new TemplateRenderer(viewport, this.store, this.gridSystem);
+    this.templateTool = new TemplateTool(this.eventBus);
+    this.templateInteraction = new TemplateInteraction(viewport, this.store, this.gridSystem, this.templateTool);
+    const rules = rulesLookup(this.obsApp);
+    this.templateInteraction.measurementSettingsProvider = () => mapMeasurementSettings(rules, this.store.getState());
+  }
+
   /** Lets MeasureRenderer read the current map's measurement settings, and follow what the players see of the tokens. */
   private wireMeasureRendererProvider(): void {
     const measure = this.measureRenderer;
@@ -1324,6 +1343,9 @@ export class PixiRendererOrchestrator { // Renamed class
     this.fogRenderer?.destroy(); // Destroy FogRenderer
     this.stopMeasuresFollowingPlayers?.();
     this.measureRenderer?.destroy(); // Destroy MeasureRenderer
+    this.templateInteraction?.destroy();
+    this.templateTool?.destroy();
+    this.templateRenderer?.destroy();
     this.laserPointerRenderer?.destroy(); // Destroy LaserPointerRenderer
     this.drawingRenderer?.destroy(); // Destroy DrawingRenderer
     this.drawingInteraction?.destroy();

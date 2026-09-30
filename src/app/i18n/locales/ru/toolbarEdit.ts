@@ -17,6 +17,8 @@ export const toolbarEdit: Translation = {
   'toolbarEdit.pin.description': 'Прикрепите заметку или ссылку на другую сцену к месту на карте.',
   'toolbarEdit.audio.label': 'Звук окружения',
   'toolbarEdit.audio.description': 'Ставьте на карту звуки, которые становятся громче, когда токены подходят ближе.',
+  'toolbarEdit.template.label': 'Шаблоны областей',
+  'toolbarEdit.template.description': 'Размещайте линии, конусы, кубы, сферы и эманации, которые остаются на карте.',
   'toolbarEdit.dice.label': 'Кубики',
   'toolbarEdit.dice.description': 'Бросайте любой набор кубиков и показывайте результат всем за столом.',
   'toolbarEdit.assets.label': 'Менеджер ресурсов',
