@@ -29,8 +29,8 @@ export function emptyMapObjects(): MapObjects {
 }
 
 /** A scene that has never had floors: the one floor it always had. */
-export function initialFloors(): Pick<FloorsSlice, 'floors' | 'activeFloorId' | 'floorData'> {
-  return { floors: [{ id: DEFAULT_FLOOR_ID, name: 'Floor 1' }], activeFloorId: DEFAULT_FLOOR_ID, floorData: {} };
+export function initialFloors(): Pick<FloorsSlice, 'floors' | 'activeFloorId' | 'floorData' | 'playerFloorId'> {
+  return { floors: [{ id: DEFAULT_FLOOR_ID, name: 'Floor 1' }], activeFloorId: DEFAULT_FLOOR_ID, floorData: {}, playerFloorId: null };
 }
 
 export interface FloorsSlice {
@@ -39,6 +39,13 @@ export interface FloorsSlice {
   activeFloorId: string;
   /** The floors that are not active. */
   floorData: Record<string, FloorData>;
+  /**
+   * The floor the players are kept on, or null while they follow the floor the DM is on.
+   * Not saved: a scene always opens with the players following.
+   */
+  playerFloorId: string | null;
+  /** Keeps the players on a floor, or lets them follow the DM again with null. */
+  setPlayerFloor: (id: string | null) => void;
   /** Adds an empty floor after the last and returns its id. The active floor stays. */
   addFloor: (name?: string) => string;
   renameFloor: (id: string, name: string) => void;
@@ -50,7 +57,7 @@ export interface FloorsSlice {
   switchFloor: (id: string) => void;
 }
 
-type FloorsStoreState = Pick<ViewAtlasState, 'floors' | 'activeFloorId' | 'floorData' | 'objects' | 'background' | 'selectedIds' | '_visionDirty' | '_audioDirty'>;
+type FloorsStoreState = Pick<ViewAtlasState, 'floors' | 'activeFloorId' | 'floorData' | 'playerFloorId' | 'objects' | 'background' | 'selectedIds' | '_visionDirty' | '_audioDirty'>;
 type ImmerSet = (fn: (draft: FloorsStoreState) => void) => void;
 
 function newFloorId(): string {
@@ -63,7 +70,7 @@ function nextFloorName(floors: readonly FloorInfo[]): string {
   for (let n = floors.length + 1; ; n++) if (!names.has(`Floor ${n}`)) return `Floor ${n}`;
 }
 
-export function createFloorsActions(set: ImmerSet): Pick<FloorsSlice, 'addFloor' | 'renameFloor' | 'removeFloor' | 'moveFloor' | 'switchFloor'> {
+export function createFloorsActions(set: ImmerSet): Pick<FloorsSlice, 'addFloor' | 'renameFloor' | 'removeFloor' | 'moveFloor' | 'switchFloor' | 'setPlayerFloor'> {
   return {
     addFloor: (name) => {
       const id = newFloorId();
@@ -85,6 +92,11 @@ export function createFloorsActions(set: ImmerSet): Pick<FloorsSlice, 'addFloor'
       if (index < 0) return;
       draft.floors.splice(index, 1);
       delete draft.floorData[id];
+      if (draft.playerFloorId === id) draft.playerFloorId = null;
+    }),
+
+    setPlayerFloor: (id) => set((draft) => {
+      if (id === null || draft.floors.some(floor => floor.id === id)) draft.playerFloorId = id;
     }),
 
     moveFloor: (id, index) => set((draft) => {
@@ -132,6 +144,11 @@ interface FloorStore {
   getState: () => Pick<ViewAtlasState, 'activeFloorId' | 'switchFloor'>;
 }
 
+/** A view store, as far as showing a floor to the players needs it. */
+interface PlayerFloorStore {
+  getState: () => Pick<ViewAtlasState, 'activeFloorId' | 'switchFloor' | 'setPlayerFloor'>;
+}
+
 /** A view store, as far as removing a floor needs it. */
 interface FloorListStore {
   getState: () => Pick<ViewAtlasState, 'activeFloorId' | 'floors' | 'switchFloor' | 'removeFloor'>;
@@ -177,4 +194,18 @@ export function removeFloorWithHistory(store: FloorListStore, id: string): boole
   store.getState().removeFloor(id);
   forgetFloorHistory(store, id);
   return true;
+}
+
+/**
+ * Whether the players' frame is held instead of being drawn live: they are kept
+ * on a floor the DM is not on, so what they see must not follow the DM away.
+ */
+export function playerFloorHolds(state: Pick<ViewAtlasState, 'playerFloorId' | 'activeFloorId'>): boolean {
+  return typeof state.playerFloorId === 'string' && state.playerFloorId !== state.activeFloorId;
+}
+
+/** Takes the DM to a floor and keeps the players on it, so the DM can move on while they stay. */
+export function showFloorToPlayers(store: PlayerFloorStore, id: string): void {
+  switchFloorWithHistory(store, id);
+  store.getState().setPlayerFloor(id);
 }

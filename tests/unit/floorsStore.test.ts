@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createViewAtlasStore } from '../../src/app/storeFactory';
 import { getHistoryStore } from '../../src/app/stores/history';
-import { removeFloorWithHistory, switchFloorWithHistory } from '../../src/app/stores/floorsSlice';
+import { playerFloorHolds, removeFloorWithHistory, showFloorToPlayers, switchFloorWithHistory } from '../../src/app/stores/floorsSlice';
 import { ATLAS_VERSION } from '../../src/app/services/MapPersistence';
 import type { AreaTemplateInput } from '../../src/app/types/areaTemplateTypes';
 import { createInMemoryApp } from '../mocks/inMemoryVault';
@@ -248,5 +248,70 @@ describe('removing a floor with its history', () => {
     store.getState().addFloor();
     expect(removeFloorWithHistory(store, 'missing')).toBe(false);
     expect(store.getState().floors).toHaveLength(2);
+  });
+});
+
+describe('the floor of the players', () => {
+  it('follows the DM until a floor is chosen', () => {
+    const store = setupStore();
+    expect(store.getState().playerFloorId).toBeNull();
+    const { floors } = store.getState();
+    const upstairs = store.getState().addFloor();
+    store.getState().setPlayerFloor(upstairs);
+    expect(store.getState().playerFloorId).toBe(upstairs);
+    store.getState().setPlayerFloor(null);
+    expect(store.getState().playerFloorId).toBeNull();
+    expect(floors).toHaveLength(1);
+  });
+
+  it('ignores a floor that does not exist', () => {
+    const store = setupStore();
+    store.getState().setPlayerFloor('missing');
+    expect(store.getState().playerFloorId).toBeNull();
+  });
+
+  it('goes back to following when the floor they are kept on is deleted', () => {
+    const store = setupStore();
+    const cellar = store.getState().addFloor();
+    store.getState().setPlayerFloor(cellar);
+    removeFloorWithHistory(store, cellar);
+    expect(store.getState().playerFloorId).toBeNull();
+  });
+
+  it('starts following again when the scene changes, and is never saved', () => {
+    const store = setupStore();
+    store.getState().setPlayerFloor(store.getState().addFloor());
+    store.getState().setPersistenceEnabled(true);
+    expect((store as any).persist.getOptions().partialize(store.getState())).not.toHaveProperty('playerFloorId');
+    store.getState().clearMapState();
+    expect(store.getState().playerFloorId).toBeNull();
+  });
+
+  it('takes the DM to the floor and keeps the players on it', () => {
+    const store = setupStore();
+    const upstairs = store.getState().addFloor();
+    showFloorToPlayers(store, upstairs);
+    expect(store.getState().activeFloorId).toBe(upstairs);
+    expect(store.getState().playerFloorId).toBe(upstairs);
+  });
+
+  it('holds the players\' frame only while the DM is on another floor than theirs', () => {
+    const store = setupStore();
+    const ground = store.getState().activeFloorId;
+    const upstairs = store.getState().addFloor();
+    expect(playerFloorHolds(store.getState())).toBe(false);
+
+    showFloorToPlayers(store, upstairs);
+    expect(playerFloorHolds(store.getState())).toBe(false);
+
+    switchFloorWithHistory(store, ground);
+    expect(playerFloorHolds(store.getState())).toBe(true);
+
+    store.getState().setPlayerFloor(null);
+    expect(playerFloorHolds(store.getState())).toBe(false);
+  });
+
+  it('holds nothing for a store that knows no floors', () => {
+    expect(playerFloorHolds({} as any)).toBe(false);
   });
 });

@@ -250,6 +250,8 @@ export interface ViewAtlasState {
   floors: FloorsSlice['floors'];
   activeFloorId: FloorsSlice['activeFloorId'];
   floorData: FloorsSlice['floorData'];
+  playerFloorId: FloorsSlice['playerFloorId'];
+  setPlayerFloor: FloorsSlice['setPlayerFloor'];
   addFloor: FloorsSlice['addFloor'];
   renameFloor: FloorsSlice['renameFloor'];
   removeFloor: FloorsSlice['removeFloor'];
@@ -359,7 +361,7 @@ export const DEFAULT_TOKEN_SETTINGS: Readonly<ViewAtlasState['tokenSettings']> =
   tokenRingSize: 1,
 };
 
-const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapPath' | 'background' | 'grid' | 'objects' | 'viewports' | 'floors' | 'activeFloorId' | 'floorData' | 'camera' | 'persistenceEnabled' | 'widgetSettings' | 'widgetValues' | 'dmNotePath' | 'followViewport' | 'tokenSettings' | 'initiative' | 'diceLog' | 'pinnedNotePreviews' | 'lootRoller'> => ({
+const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapPath' | 'background' | 'grid' | 'objects' | 'viewports' | 'floors' | 'activeFloorId' | 'floorData' | 'playerFloorId' | 'camera' | 'persistenceEnabled' | 'widgetSettings' | 'widgetValues' | 'dmNotePath' | 'followViewport' | 'tokenSettings' | 'initiative' | 'diceLog' | 'pinnedNotePreviews' | 'lootRoller'> => ({
   schema: ATLAS_SCHEMA,
   version: ATLAS_VERSION,
   mapPath: null,

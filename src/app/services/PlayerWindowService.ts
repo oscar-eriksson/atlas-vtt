@@ -10,6 +10,7 @@ import { PlayerDiceRolls } from './PlayerDiceRolls';
 import { PlayerWidgetBar } from './PlayerWidgetBar';
 import { LocalPlayerView, LOCAL_PLAYER_VIEW_TYPE, type PlayerCameraState } from '../local-player-view';
 import type { FrameSize, PlayerFraming } from '../pixi/playerSafeFrame';
+import { playerFloorHolds } from '../stores/floorsSlice';
 import { freezeCanvasFrame, type SceneTransition } from '../pixi/sceneTransition';
 import type { ViewportRect } from '../types/viewportTypes';
 
@@ -72,6 +73,8 @@ export class PlayerWindowService {
   private viewportFollowEnabled = false;
   /** Last player frame, shown unchanged while the DM works on another scene tab. */
   private heldFrame: HTMLCanvasElement | null = null;
+  /** The last frame of the floor the players are kept on, shown while the DM is on another floor. Apart from `heldFrame`, which a scene change holds. */
+  private floorHeldFrame: HTMLCanvasElement | null = null;
   /** Crossfade from the previous map, still playing after the DM presented another scene. */
   private mapTransition: SceneTransition | null = null;
   private static instance: PlayerWindowService | null = null;
@@ -449,7 +452,14 @@ export class PlayerWindowService {
       this.animationFrame = this.playerWindow.requestAnimationFrame(copyCanvas);
 
       try {
-        const held = this.heldFrame;
+        // Kept on a floor the DM has left, the players stay on its last frame until the DM is back on it or lets them follow.
+        const holdsFloor = playerFloorHolds((this.streamSource.store ?? this.store).getState());
+        if (holdsFloor && !this.floorHeldFrame && !this.heldFrame) this.floorHeldFrame = this.snapshotPlayerFrame();
+        if (!holdsFloor && this.floorHeldFrame) {
+          this.floorHeldFrame = null;
+          this.isMirrorStale = true;
+        }
+        const held = this.heldFrame ?? (holdsFloor ? this.floorHeldFrame : null);
         if (held) {
           // A held frame is static: draw it once, then idle until it changes.
           if (held !== lastHeldFrame) draw(held);
@@ -561,6 +571,7 @@ export class PlayerWindowService {
     this.playerView = null;
     this.streamSource = null;
     this.heldFrame = null;
+    this.floorHeldFrame = null;
     this.frozenCamera = null;
     resetPlayerWindowStore();
     // The window is gone: drop the singleton so the next present binds to the presenting view's store.

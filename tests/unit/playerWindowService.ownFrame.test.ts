@@ -86,6 +86,50 @@ describe('player window frames rendered at the window\'s own size', () => {
     expect((source as any).renderPlayerFrame).toHaveBeenLastCalledWith({ width: 1883, height: 960 }, expect.anything(), { rect });
   });
 
+  it('keeps the players on their floor\'s last frame while the DM is on another floor, and is live again on return', () => {
+    const { source, service, nextFrame, context } = mirror({ innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 }, () => frameOf(1280, 720));
+    const sceneStore = createStore(() => ({ viewports: {}, playerFloorId: null as string | null, activeFloorId: 'ground' }));
+    (service as any).streamSource.store = sceneStore;
+    (source as any).getRenderedFrames = () => 1;
+    nextFrame();
+    const live = (source as any).renderPlayerFrame.mock.calls.length;
+
+    // The players are kept on the upstairs, which the DM has left.
+    sceneStore.setState({ playerFloorId: 'upstairs' });
+    context.drawImage.mockClear();
+    nextFrame();
+    expect((source as any).renderPlayerFrame).toHaveBeenCalledTimes(live);
+    // The frame is copied to keep it, and shown once.
+    expect(context.drawImage).toHaveBeenCalledTimes(2);
+
+    // While the DM works, what the players see is not drawn again.
+    (source as any).getRenderedFrames = () => 2;
+    nextFrame();
+    nextFrame();
+    expect((source as any).renderPlayerFrame).toHaveBeenCalledTimes(live);
+    expect(context.drawImage).toHaveBeenCalledTimes(2);
+
+    // The DM comes back to the floor the players are on.
+    sceneStore.setState({ activeFloorId: 'upstairs' });
+    nextFrame();
+    expect((source as any).renderPlayerFrame.mock.calls.length).toBeGreaterThan(live);
+  });
+
+  it('follows the DM again as soon as the players are let go', () => {
+    const { source, service, nextFrame } = mirror({ innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 }, () => frameOf(1280, 720));
+    const sceneStore = createStore(() => ({ viewports: {}, playerFloorId: 'upstairs' as string | null, activeFloorId: 'ground' }));
+    (service as any).streamSource.store = sceneStore;
+    (source as any).getRenderedFrames = () => 1;
+    nextFrame();
+    const held = (source as any).renderPlayerFrame.mock.calls.length;
+    nextFrame();
+    expect((source as any).renderPlayerFrame).toHaveBeenCalledTimes(held);
+
+    sceneStore.setState({ playerFloorId: null });
+    nextFrame();
+    expect((source as any).renderPlayerFrame.mock.calls.length).toBeGreaterThan(held);
+  });
+
   it('renders a new frame when the window changes size, though the scene did not change', () => {
     const { source, nextFrame, window } = mirror({ innerWidth: 1280, innerHeight: 720, devicePixelRatio: 1 }, () => frameOf(1280, 720));
     (source as any).getRenderedFrames = () => 5;
