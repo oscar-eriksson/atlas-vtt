@@ -8,7 +8,8 @@ import { usesCanvasRenderer } from './utils/rendererType';
  * Renders the frame players see on a texture of its own, at the size of their
  * window, so their screen gets every pixel it has and the DM's canvas is never
  * drawn on for them. The scene is drawn with the player layers and camera
- * applied for that one render, then everything is put back as it was.
+ * applied for that one render, then everything is put back and the DM's own
+ * canvas is drawn again, as it is for any player frame.
  */
 export class PlayerFrameRenderer {
   private target: RenderTexture | null = null;
@@ -24,8 +25,10 @@ export class PlayerFrameRenderer {
       () => app.renderer.render({ container: app.stage, target, clear: true, clearColor: app.renderer.background.color }),
       () => { result.canvas = app.renderer.extract.canvas({ target }) as HTMLCanvasElement; },
       { target: { screenWidth: size.width, screenHeight: size.height, position: viewport.position, scale: viewport.scale }, camera: framing },
-      // The DM's canvas was not drawn on, so there is nothing to draw back.
-      () => undefined,
+      // Drawing the DM's canvas again also takes the changes this render made to the scene (layers hidden, camera
+      // moved). Left pending, the render scheduler would draw them as a new frame, which the mirror would render
+      // a player frame for, which changes the scene again: a loop that never settles.
+      () => app.renderer.render(app.stage),
     );
     return result.canvas;
   }
