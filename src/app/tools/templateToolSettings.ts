@@ -9,6 +9,8 @@ export interface TemplateToolSettings {
   footprint: number;
   /** Width of a line, in cells. */
   lineWidth: number;
+  /** Hex colour of templates placed next; unset uses the theme's accent. */
+  color?: string | undefined;
   visibleToPlayers: boolean;
 }
 

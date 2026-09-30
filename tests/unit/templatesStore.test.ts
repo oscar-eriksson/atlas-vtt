@@ -47,6 +47,28 @@ describe('area template store actions', () => {
     expect(store.getState().selectedIds).toEqual([]);
   });
 
+  it('is removed by the normal delete of the selection, in one undo step', () => {
+    const store = setupStore();
+    const id = store.getState().addTemplate(cone);
+    store.getState().setSelection([id]);
+    const before = undoSteps(store);
+    store.getState().deleteSelected();
+    expect(store.getState().objects.templates[id]).toBeUndefined();
+    expect(store.getState().selectedIds).toEqual([]);
+    expect(undoSteps(store)).toBe(before + 1);
+    getHistoryStore(store)!.getState().undo();
+    expect(store.getState().objects.templates[id]).toBeDefined();
+  });
+
+  it('can be recoloured and set back to the theme colour', () => {
+    const store = setupStore();
+    const id = store.getState().addTemplate(cone);
+    store.getState().updateTemplate(id, { color: '#e5484d' });
+    expect(store.getState().objects.templates[id]?.color).toBe('#e5484d');
+    store.getState().updateTemplate(id, { color: undefined });
+    expect(store.getState().objects.templates[id]?.color).toBeUndefined();
+  });
+
   it('is one undo step to add and to undo it', () => {
     const store = setupStore();
     const before = undoSteps(store);

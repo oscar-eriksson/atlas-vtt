@@ -1,6 +1,9 @@
 import React, { useState } from "react"
 import { CircleDot, Dot, Minus, Plus, Square, Triangle, Circle } from "lucide-react"
+import { useViewStoreHook } from "src/app/react/ViewStoreContext"
 import { useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
+import { runHistoryTransaction } from "../../../stores/history"
+import { TEMPLATE_COLORS } from "../../../templates/templateColors"
 import { DEFAULT_TEMPLATE_TOOL_SETTINGS, TEMPLATE_SETTINGS_EVENT, type TemplateToolSettings } from "../../../tools/templateToolSettings"
 import type { TemplateShape } from "../../../types/areaTemplateTypes"
 import { DropdownMenuItem } from "../primitives/DropdownMenuItem"
@@ -23,6 +26,7 @@ const SHAPE_OPTIONS: readonly { shape: TemplateShape; icon: typeof Minus; label:
 export function TemplateToolGroup({ activeTool, selectTool, menuOpen, toggleMenu }: ToolGroupControls): React.ReactElement {
   const hotkeyLabel = useHotkeyLabels()
   const emit = useEmitViewEvent()
+  const store = useViewStoreHook()
   const [settings, setSettings] = useState<TemplateToolSettings>(DEFAULT_TEMPLATE_TOOL_SETTINGS)
   const face = templateToolFace(activeTool)
 
@@ -30,6 +34,15 @@ export function TemplateToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
   const update = (changes: Partial<TemplateToolSettings>): void => {
     setSettings(current => ({ ...current, ...changes }))
     emit(TEMPLATE_SETTINGS_EVENT, changes)
+  }
+
+  /** The colour applies to the selected templates and to the ones placed next; no colour is the theme's accent. */
+  const chooseColor = (color: string | undefined): void => {
+    update({ color })
+    runHistoryTransaction(store, () => {
+      const { selectedIds, objects, updateTemplate } = store.getState()
+      for (const id of selectedIds) if (objects.templates[id]) updateTemplate(id, { color })
+    })
   }
 
   return (
@@ -96,6 +109,26 @@ export function TemplateToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
       <div className="atlas-dropdown-separator"></div>
 
       <div className="atlas-dropdown-section">
+        <div className="atlas-template-swatches" role="group" aria-label="Template colour">
+          <button
+            type="button"
+            className="atlas-template-swatch"
+            aria-label="Theme colour"
+            aria-pressed={!settings.color}
+            onClick={() => chooseColor(undefined)}
+          />
+          {TEMPLATE_COLORS.map(({ hex, label }) => (
+            <button
+              key={hex}
+              type="button"
+              className="atlas-template-swatch"
+              style={{ "--swatch": hex } as React.CSSProperties}
+              aria-label={label}
+              aria-pressed={settings.color === hex}
+              onClick={() => chooseColor(hex)}
+            />
+          ))}
+        </div>
         <DropdownToggleRow
           label="Visible to players"
           value={settings.visibleToPlayers}

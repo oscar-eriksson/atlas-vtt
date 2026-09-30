@@ -25,7 +25,7 @@ export interface AreaTemplate {
   /** Cells across the creature an emanation spreads from (1 for a medium creature, 2 for a large one). */
   footprint?: number;
   /** Hex colour; unset uses the theme accent. */
-  color?: string;
+  color?: string | undefined;
   /** Whether players see the template. */
   visibleToPlayers: boolean;
 }

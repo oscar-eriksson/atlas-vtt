@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { templateOutline } from '../../src/app/templates/templateGeometry';
+import { templateContainsPoint, templateOutline } from '../../src/app/templates/templateGeometry';
 import type { AreaTemplate } from '../../src/app/types/areaTemplateTypes';
 
 const base: AreaTemplate = { id: 't', shape: 'line', x: 100, y: 100, snap: 'intersection', size: 3, angle: 0, visibleToPlayers: true };
@@ -51,5 +51,36 @@ describe('templateOutline', () => {
 
   it('treats an emanation without a footprint as a one-cell creature', () => {
     expect(templateOutline({ ...base, shape: 'emanation', size: 1 }, CELL)).toMatchObject({ width: 210, height: 210, radius: 70 });
+  });
+});
+
+describe('templateContainsPoint', () => {
+  const at = (template: AreaTemplate, x: number, y: number): boolean => templateContainsPoint(template, CELL, { x, y });
+
+  it('finds points inside a cone and rejects those behind its tip or beyond its edge', () => {
+    const cone: AreaTemplate = { ...base, shape: 'cone', size: 3 };
+    expect(at(cone, 200, 100)).toBe(true);
+    expect(at(cone, 300, 100 + 100)).toBe(true);
+    expect(at(cone, 80, 100)).toBe(false);
+    expect(at(cone, 150, 100 + 120)).toBe(false);
+  });
+
+  it('follows the direction of a line', () => {
+    const down: AreaTemplate = { ...base, shape: 'line', size: 3, angle: Math.PI / 2 };
+    expect(at(down, 100, 250)).toBe(true);
+    expect(at(down, 250, 100)).toBe(false);
+  });
+
+  it('finds points in a sphere but not outside its radius', () => {
+    const sphere: AreaTemplate = { ...base, shape: 'sphere', size: 2 };
+    expect(at(sphere, 100 + 130, 100)).toBe(true);
+    expect(at(sphere, 100 + 150, 100)).toBe(false);
+  });
+
+  it('leaves the rounded corners of an emanation out', () => {
+    const emanation: AreaTemplate = { ...base, shape: 'emanation', size: 2, footprint: 1 };
+    // Half a cell of creature plus two cells out is 175 px; the corner is beyond the rounded arc.
+    expect(at(emanation, 100 + 170, 100)).toBe(true);
+    expect(at(emanation, 100 + 170, 100 + 170)).toBe(false);
   });
 });

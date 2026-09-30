@@ -17,6 +17,41 @@ export function localTemplateOutline(template: AreaTemplate, cellSize: number): 
   return templateOutline({ ...template, x: 0, y: 0, angle: 0 }, cellSize);
 }
 
+/** Whether `point` lies inside the polygon, by counting how many edges a ray from it crosses. */
+function insidePolygon(point: Point, polygon: readonly Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i]!;
+    const b = polygon[j]!;
+    if (a.y > point.y !== b.y > point.y && point.x < ((b.x - a.x) * (point.y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
+/** Whether a map point lies inside the template, for picking one with a click. */
+export function templateContainsPoint(template: AreaTemplate, cellSize: number, point: Point): boolean {
+  const outline = localTemplateOutline(template, cellSize);
+  // Turn the point into the template's own space, where it points along +x from the origin.
+  const angle = isDirectionalShape(template.shape) ? -template.angle : 0;
+  const dx = point.x - template.x;
+  const dy = point.y - template.y;
+  const local = { x: dx * Math.cos(angle) - dy * Math.sin(angle), y: dx * Math.sin(angle) + dy * Math.cos(angle) };
+
+  switch (outline.kind) {
+    case 'polygon':
+      return insidePolygon(local, outline.points);
+    case 'circle':
+      return Math.hypot(local.x - outline.center.x, local.y - outline.center.y) <= outline.radius;
+    case 'roundedRect': {
+      const halfWidth = outline.width / 2;
+      const halfHeight = outline.height / 2;
+      const beyondX = Math.max(Math.abs(local.x - (outline.x + halfWidth)) - (halfWidth - outline.radius), 0);
+      const beyondY = Math.max(Math.abs(local.y - (outline.y + halfHeight)) - (halfHeight - outline.radius), 0);
+      return Math.hypot(beyondX, beyondY) <= outline.radius;
+    }
+  }
+}
+
 /** How wide a line of effect is when the template does not say: one cell. */
 export const DEFAULT_LINE_WIDTH_CELLS = 1;
 
