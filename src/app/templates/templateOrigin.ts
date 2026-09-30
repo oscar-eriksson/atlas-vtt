@@ -1,29 +1,63 @@
 import type { GridGeometry } from '../grid/gridDistance';
-import { createHexLayout, hexVertices, isHexGridType, nearestHexCenter, pixelToAxial, axialToPixel, type Point } from '../grid/hexGeometry';
+import {
+  axialToPixel, createHexLayout, hexVertices, isHexGridType, nearestHexCenter, pixelToAxial,
+  type AxialCoord, type HexLayout, type Point,
+} from '../grid/hexGeometry';
 import type { TemplateOriginSnap, TemplateShape } from '../types/areaTemplateTypes';
 
+const HEX_NEIGHBOURS: readonly AxialCoord[] = [
+  { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 }, { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 },
+];
+
+/** A hex's centre, its six corners and the middle of its six edges. */
+function hexSnapPoints(layout: HexLayout, hex: AxialCoord): Point[] {
+  const center = axialToPixel(layout, hex);
+  const corners = hexVertices(layout, center);
+  const edgeMiddles = corners.map((corner, i) => {
+    const next = corners[(i + 1) % corners.length]!;
+    return { x: (corner.x + next.x) / 2, y: (corner.y + next.y) / 2 };
+  });
+  return [center, ...corners, ...edgeMiddles];
+}
+
+function nearestOf(candidates: readonly Point[], point: Point): Point {
+  return candidates.reduce((nearest, candidate) =>
+    Math.hypot(candidate.x - point.x, candidate.y - point.y) < Math.hypot(nearest.x - point.x, nearest.y - point.y) ? candidate : nearest);
+}
+
+function snapToHexGrid(layout: HexLayout, point: Point, snap: TemplateOriginSnap): Point {
+  if (snap === 'cell-center') return nearestHexCenter(layout, point);
+  const home = pixelToAxial(layout, point);
+  if (snap === 'intersection') {
+    // The nearest corner of the whole grid is always a corner of the hex holding the point.
+    return nearestOf(hexVertices(layout, axialToPixel(layout, home)), point);
+  }
+  // Every snap point near the pointer belongs to the hex holding it or to one of its neighbours.
+  const hexes = [home, ...HEX_NEIGHBOURS.map(step => ({ q: home.q + step.q, r: home.r + step.r }))];
+  return nearestOf(hexes.flatMap(hex => hexSnapPoints(layout, hex)), point);
+}
+
 /**
- * The point a template's origin lands on: the middle of the cell under
- * `point`, or the nearest corner where cells meet. On hex grids a corner is a
- * hex vertex.
+ * The point a template's origin lands on. `any` is the nearest of a cell's
+ * centre, its corners and the middle of its edges, which on a square grid is
+ * the nearest half cell in each direction. `cell-center` and `intersection`
+ * allow just that kind of point. On hex grids a corner is a hex vertex.
  */
 export function snapTemplateOrigin(grid: GridGeometry, point: Point, snap: TemplateOriginSnap): Point {
   const offsetX = grid.offsetX ?? 0;
   const offsetY = grid.offsetY ?? 0;
 
-  if (isHexGridType(grid.type)) {
-    const layout = createHexLayout(grid.type, grid.size, offsetX, offsetY);
-    if (snap === 'cell-center') return nearestHexCenter(layout, point);
-    // The nearest vertex of the whole grid is always a vertex of the hex holding the point.
-    const center = axialToPixel(layout, pixelToAxial(layout, point));
-    return hexVertices(layout, center).reduce((nearest, vertex) =>
-      Math.hypot(vertex.x - point.x, vertex.y - point.y) < Math.hypot(nearest.x - point.x, nearest.y - point.y) ? vertex : nearest);
-  }
+  if (isHexGridType(grid.type)) return snapToHexGrid(createHexLayout(grid.type, grid.size, offsetX, offsetY), point, snap);
 
-  const cell = (value: number, offset: number): number => (snap === 'cell-center'
-    ? offset + (Math.floor((value - offset) / grid.size) + 0.5) * grid.size
-    : offset + Math.round((value - offset) / grid.size) * grid.size);
-  return { x: cell(point.x, offsetX), y: cell(point.y, offsetY) };
+  const axis = (value: number, offset: number): number => {
+    const cells = (value - offset) / grid.size;
+    switch (snap) {
+      case 'cell-center': return offset + (Math.floor(cells) + 0.5) * grid.size;
+      case 'intersection': return offset + Math.round(cells) * grid.size;
+      case 'any': return offset + (Math.round(cells * 2) / 2) * grid.size;
+    }
+  };
+  return { x: axis(point.x, offsetX), y: axis(point.y, offsetY) };
 }
 
 /**
@@ -35,17 +69,9 @@ export function footprintSnap(footprint: number): TemplateOriginSnap {
 }
 
 /**
- * Where a template being placed starts: an emanation is centred on its
- * footprint; every other shape starts where the GM chose, a corner where cells
- * meet or a cell centre. `flip` (Shift held) picks the other of the two.
+ * Where a template being placed may start: an emanation is centred on its
+ * footprint; every other shape snaps to the nearest cell centre, corner or edge middle.
  */
-export function resolveOriginSnap(
-  shape: TemplateShape,
-  footprint: number,
-  choice: TemplateOriginSnap,
-  flip: boolean,
-): TemplateOriginSnap {
-  if (shape === 'emanation') return footprintSnap(footprint);
-  if (!flip) return choice;
-  return choice === 'intersection' ? 'cell-center' : 'intersection';
+export function resolveOriginSnap(shape: TemplateShape, footprint: number): TemplateOriginSnap {
+  return shape === 'emanation' ? footprintSnap(footprint) : 'any';
 }
