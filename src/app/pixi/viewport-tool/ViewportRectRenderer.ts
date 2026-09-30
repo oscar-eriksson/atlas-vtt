@@ -43,7 +43,7 @@ export class ViewportRectRenderer {
     this.unsubscribe = store.subscribe((state) => {
       // Stays visible while panning/using other tools, not just while the
       // viewport tool itself is selected, so the DM can always see the frame.
-      const visible = TV_VIEWPORT_ENABLED && Object.keys(state.objects.viewports).length > 0;
+      const visible = TV_VIEWPORT_ENABLED && Object.keys(state.viewports).length > 0;
       this.container.visible = visible;
       if (visible) this.redraw();
     });
@@ -58,15 +58,15 @@ export class ViewportRectRenderer {
     if (visible) this.redraw();
   }
 
-  private getActiveRect(): ViewAtlasState['objects']['viewports'][string] | undefined {
-    return Object.values(this.store.getState().objects.viewports).find((vp) => vp.active);
+  private getActiveRect(): ViewAtlasState['viewports'][string] | undefined {
+    return Object.values(this.store.getState().viewports).find((vp) => vp.active);
   }
 
   private redraw(): void {
     this.rectGraphics.clear();
     this.handleGraphics.clear();
 
-    const rects = Object.values(this.store.getState().objects.viewports);
+    const rects = Object.values(this.store.getState().viewports);
     for (const rect of rects) {
       const color = rect.active ? 0x00ffff : 0xffffff;
       const alpha = rect.active ? 0.15 : 0.05;
@@ -97,7 +97,7 @@ export class ViewportRectRenderer {
 
   /** Returns the id of the viewport rect whose body contains this world point, or null. */
   hitTestBody(worldX: number, worldY: number): string | null {
-    for (const rect of Object.values(this.store.getState().objects.viewports)) {
+    for (const rect of Object.values(this.store.getState().viewports)) {
       if (worldX >= rect.x && worldX <= rect.x + rect.width && worldY >= rect.y && worldY <= rect.y + rect.height) {
         return rect.id;
       }

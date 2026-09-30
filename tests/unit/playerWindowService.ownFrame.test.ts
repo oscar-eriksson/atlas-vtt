@@ -79,7 +79,7 @@ describe('player window frames rendered at the window\'s own size', () => {
   it('fits the followed viewport rectangle into the window, not the DM\'s camera', () => {
     const { source, service, nextFrame } = mirror({ innerWidth: 1883, innerHeight: 960, devicePixelRatio: 1 }, () => frameOf(1883, 960));
     const rect = { id: 'v', active: true, x: 100, y: 200, width: 915, height: 515, locked: true };
-    (service as any).streamSource.store = createStore(() => ({ objects: { viewports: { v: rect } }, setFollowViewport: () => {} }));
+    (service as any).streamSource.store = createStore(() => ({ viewports: { v: rect }, setFollowViewport: () => {} }));
     (source as any).getRenderedFrames = () => 1;
     (service as any).toggleViewportFollow();
     nextFrame();

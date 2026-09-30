@@ -25,7 +25,7 @@ export interface FloorData {
 export const DEFAULT_FLOOR_ID = 'floor-1';
 
 export function emptyMapObjects(): MapObjects {
-  return { tokens: {}, fog: {}, pins: {}, texts: {}, drawings: {}, walls: {}, lights: {}, audios: {}, viewports: {}, templates: {} };
+  return { tokens: {}, fog: {}, pins: {}, texts: {}, drawings: {}, walls: {}, lights: {}, audios: {}, templates: {} };
 }
 
 /** A scene that has never had floors: the one floor it always had. */

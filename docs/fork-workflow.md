@@ -24,7 +24,7 @@ back into `main`. A feature meant for upstream is moved onto `origin/beta` for i
 
 1. `git fetch origin`
 2. Look at `ATLAS_VERSION` in `src/app/services/MapPersistence.ts` on `origin/beta`. This fork saves maps at its own
-   version (TV viewports at 5, area templates at 6). If upstream used the same number for something else, renumber
+   version (TV viewports at 5, area templates at 6, floors at 7, viewports out of the floor's objects at 8). If upstream used the same number for something else, renumber
    ours before merging, or maps will be read wrongly.
 3. `git switch main && git merge origin/beta`
 4. Fix conflicts. `rerere` is on, so a conflict fixed once is fixed the same way next time. The files both sides

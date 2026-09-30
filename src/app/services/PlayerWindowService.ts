@@ -143,7 +143,7 @@ export class PlayerWindowService {
   private followedRect(): ViewportRect | undefined {
     if (!this.viewportFollowEnabled || !this.streamSource) return undefined;
     const store = this.streamSource.store ?? this.store;
-    return Object.values(store.getState().objects.viewports).find((vp) => vp.active);
+    return Object.values(store.getState().viewports).find((vp) => vp.active);
   }
 
   public isWindowOpen(): boolean {

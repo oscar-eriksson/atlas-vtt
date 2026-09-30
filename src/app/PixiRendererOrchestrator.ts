@@ -1200,7 +1200,7 @@ export class PixiRendererOrchestrator { // Renamed class
     }
 
     // No rect exists yet: place one, centered on the click, sized from calibration.
-    const existing = Object.keys(this.store.getState().objects.viewports).length > 0;
+    const existing = Object.keys(this.store.getState().viewports).length > 0;
     if (existing) return false;
 
     const calibration = SettingsService.forApp(this.obsApp)?.getTVCalibration();

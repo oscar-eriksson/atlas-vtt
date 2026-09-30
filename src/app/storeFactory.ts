@@ -13,6 +13,7 @@ import type { ViewportRect, ViewportInput } from './types/viewportTypes';
 import type { AreaTemplate } from './types/areaTemplateTypes';
 import { createTemplatesActions, type TemplatesSlice } from './stores/templatesSlice';
 import { createFloorsActions, initialFloors, type FloorsSlice } from './stores/floorsSlice';
+import { hoistLegacyViewports } from './stores/legacyViewports';
 import type { AudioSource, AudioInput } from './types/audioTypes';
 import type { AnyWidget, WidgetSettings } from './types/widgetTypes';
 import type { InitiativeState, InitiativeEntry, InitiativeConfig } from './types/initiativeTypes';
@@ -79,7 +80,6 @@ export interface ViewAtlasState {
     walls: Record<string, WallSegment>;
     lights: Record<string, LightSource>;
     audios: Record<string, AudioSource>;
-    viewports: Record<string, ViewportRect>;
     templates: Record<string, AreaTemplate>;
   };
   
@@ -243,6 +243,9 @@ export interface ViewAtlasState {
   duplicateMapObjects: MapObjectsSlice['duplicateMapObjects'];
   removeMapObjects: MapObjectsSlice['removeMapObjects'];
 
+  /** The TV viewport rectangles of the scene. They belong to the table and not to a floor, so every floor shows them at the same place. */
+  viewports: Record<string, ViewportRect>;
+
   // Floors (from floorsSlice.ts): `objects` and `background` are the active floor's
   floors: FloorsSlice['floors'];
   activeFloorId: FloorsSlice['activeFloorId'];
@@ -356,7 +359,7 @@ export const DEFAULT_TOKEN_SETTINGS: Readonly<ViewAtlasState['tokenSettings']> =
   tokenRingSize: 1,
 };
 
-const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapPath' | 'background' | 'grid' | 'objects' | 'floors' | 'activeFloorId' | 'floorData' | 'camera' | 'persistenceEnabled' | 'widgetSettings' | 'widgetValues' | 'dmNotePath' | 'followViewport' | 'tokenSettings' | 'initiative' | 'diceLog' | 'pinnedNotePreviews' | 'lootRoller'> => ({
+const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapPath' | 'background' | 'grid' | 'objects' | 'viewports' | 'floors' | 'activeFloorId' | 'floorData' | 'camera' | 'persistenceEnabled' | 'widgetSettings' | 'widgetValues' | 'dmNotePath' | 'followViewport' | 'tokenSettings' | 'initiative' | 'diceLog' | 'pinnedNotePreviews' | 'lootRoller'> => ({
   schema: ATLAS_SCHEMA,
   version: ATLAS_VERSION,
   mapPath: null,
@@ -382,9 +385,9 @@ const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapP
     walls: {},
     lights: {},
     audios: {},
-    viewports: {},
     templates: {},
   },
+  viewports: {},
   camera: { x: 0, y: 0, scale: 1 },
   persistenceEnabled: true,
   widgetSettings: createDefaultWidgets(),
@@ -937,8 +940,8 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
                 }
                 break;
               case 'viewport':
-                if (draft.objects.viewports[id]) {
-                  delete draft.objects.viewports[id];
+                if (draft.viewports[id]) {
+                  delete draft.viewports[id];
                   draft.selectedIds = draft.selectedIds.filter(selectedId => selectedId !== id);
                 }
                 break;
@@ -1258,18 +1261,18 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
             const id = `viewport_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
             set((draft) => {
               if (data.active) {
-                for (const vp of Object.values(draft.objects.viewports)) vp.active = false;
+                for (const vp of Object.values(draft.viewports)) vp.active = false;
               }
-              draft.objects.viewports[id] = { id, kind: 'viewport', ...data };
+              draft.viewports[id] = { id, kind: 'viewport', ...data };
             });
             return id;
           },
 
           updateViewport: (id, changes) => set((draft) => {
-            const viewport = draft.objects.viewports[id];
+            const viewport = draft.viewports[id];
             if (!viewport) return;
             if (changes.active) {
-              for (const other of Object.values(draft.objects.viewports)) {
+              for (const other of Object.values(draft.viewports)) {
                 if (other.id !== id) other.active = false;
               }
             }
@@ -1277,12 +1280,12 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
           }),
 
           deleteViewport: (id) => set((draft) => {
-            delete draft.objects.viewports[id];
+            delete draft.viewports[id];
             draft.selectedIds = draft.selectedIds.filter(sid => sid !== id);
           }),
 
           setActiveViewport: (id) => set((draft) => {
-            for (const vp of Object.values(draft.objects.viewports)) {
+            for (const vp of Object.values(draft.viewports)) {
               vp.active = vp.id === id;
             }
           }),
@@ -1325,9 +1328,9 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
               walls: {},
               lights: {},
               audios: {},
-              viewports: {},
               templates: {},
             };
+            draft.viewports = {};
             // Reset grid to defaults
             draft.grid = {
               enabled: true,
@@ -1529,6 +1532,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
               background: state.background,
               grid: state.grid,
               objects: state.objects,
+              viewports: state.viewports,
               floors: state.floors,
               activeFloorId: state.activeFloorId,
               floorData: state.floorData,
@@ -1548,7 +1552,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
           
           // The map file arrives unchecked; fields that need it are checked here, once per load.
           merge: (persisted, current): ViewAtlasState => {
-            const saved: Partial<ViewAtlasState> = isRecord(persisted) ? persisted : {};
+            const saved: Partial<ViewAtlasState> = hoistLegacyViewports(isRecord(persisted) ? persisted : {});
             return { ...current, ...saved, lootRoller: readLootRollerState(saved.lootRoller) };
           },
 

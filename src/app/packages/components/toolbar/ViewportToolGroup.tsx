@@ -5,7 +5,6 @@ import { useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
 import { useAtlasStore, useViewStoreHook } from "src/app/react/ViewStoreContext"
 import { useAtlasUI } from "src/app/react/root/AtlasUIContext"
 import { PlayerWindowService } from "../../../services/PlayerWindowService"
-import { runHistoryTransaction } from "../../../stores/history"
 import { playerWindowStore } from "../../../stores/playerWindowStore"
 import type { TVCalibrationSettings } from "../../../types/viewportTypes"
 import { calibratedViewportSize, physicalCmPerSquare } from "../../../utils/viewportPhysicalScale"
@@ -44,7 +43,7 @@ export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
     [settingsService],
   )
 
-  const viewports = useAtlasStore((state) => state.objects.viewports)
+  const viewports = useAtlasStore((state) => state.viewports)
   const gridSize = useAtlasStore((state) => state.grid?.size ?? 70)
   const updateViewport = useAtlasStore((state) => state.updateViewport)
   const store = useViewStoreHook()
@@ -68,12 +67,10 @@ export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
     updateViewport(activeRect.id, { x: centerX - width / 2, y: centerY - height / 2, width, height })
   }, [activeRect, calibration, gridSize, updateViewport])
 
-  /** Takes the rectangle off the map; the players' view then follows the DM's camera again. One undo step. */
+  /** Takes the rectangle off the map; the players' view then follows the DM's camera again. */
   const removeViewports = useCallback((): void => {
-    runHistoryTransaction(store, () => {
-      const { objects, deleteViewport } = store.getState()
-      for (const id of Object.keys(objects.viewports)) deleteViewport(id)
-    })
+    const { viewports: rectangles, deleteViewport } = store.getState()
+    for (const id of Object.keys(rectangles)) deleteViewport(id)
     closeMenu()
   }, [store, closeMenu])
 
