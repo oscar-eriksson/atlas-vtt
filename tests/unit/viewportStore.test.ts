@@ -14,7 +14,7 @@ describe('Viewport store actions', () => {
   it('adds a viewport rect and returns its id', () => {
     const store = setupStore();
     const id = store.getState().addViewport({ x: 0, y: 0, width: 700, height: 400, locked: true, active: true });
-    const rect = store.getState().objects.viewports[id];
+    const rect = store.getState().viewports[id];
     expect(rect).toMatchObject({ id, kind: 'viewport', x: 0, y: 0, width: 700, height: 400, locked: true, active: true });
   });
 
@@ -22,8 +22,8 @@ describe('Viewport store actions', () => {
     const store = setupStore();
     const first = store.getState().addViewport({ x: 0, y: 0, width: 700, height: 400, locked: true, active: true });
     const second = store.getState().addViewport({ x: 100, y: 100, width: 700, height: 400, locked: true, active: true });
-    expect(store.getState().objects.viewports[first].active).toBe(false);
-    expect(store.getState().objects.viewports[second].active).toBe(true);
+    expect(store.getState().viewports[first].active).toBe(false);
+    expect(store.getState().viewports[second].active).toBe(true);
   });
 
   it('setActiveViewport activates exactly one rect', () => {
@@ -31,8 +31,8 @@ describe('Viewport store actions', () => {
     const first = store.getState().addViewport({ x: 0, y: 0, width: 700, height: 400, locked: true, active: true });
     const second = store.getState().addViewport({ x: 100, y: 100, width: 700, height: 400, locked: true, active: false });
     store.getState().setActiveViewport(second);
-    expect(store.getState().objects.viewports[first].active).toBe(false);
-    expect(store.getState().objects.viewports[second].active).toBe(true);
+    expect(store.getState().viewports[first].active).toBe(false);
+    expect(store.getState().viewports[second].active).toBe(true);
   });
 
   it('updateViewport deactivates other rects when activating one', () => {
@@ -40,8 +40,8 @@ describe('Viewport store actions', () => {
     const first = store.getState().addViewport({ x: 0, y: 0, width: 700, height: 400, locked: true, active: true });
     const second = store.getState().addViewport({ x: 100, y: 100, width: 700, height: 400, locked: true, active: false });
     store.getState().updateViewport(second, { active: true });
-    expect(store.getState().objects.viewports[first].active).toBe(false);
-    expect(store.getState().objects.viewports[second].active).toBe(true);
+    expect(store.getState().viewports[first].active).toBe(false);
+    expect(store.getState().viewports[second].active).toBe(true);
   });
 
   it('deleteViewport removes the rect and clears its selection', () => {
@@ -49,7 +49,7 @@ describe('Viewport store actions', () => {
     const id = store.getState().addViewport({ x: 0, y: 0, width: 700, height: 400, locked: true, active: true });
     store.getState().setSelection([id]);
     store.getState().deleteViewport(id);
-    expect(store.getState().objects.viewports[id]).toBeUndefined();
+    expect(store.getState().viewports[id]).toBeUndefined();
     expect(store.getState().selectedIds).not.toContain(id);
   });
 
@@ -58,7 +58,7 @@ describe('Viewport store actions', () => {
     store.getState().addViewport({ x: 0, y: 0, width: 700, height: 400, locked: true, active: true });
     store.getState().setFollowViewport(true);
     store.getState().clearMapState();
-    expect(store.getState().objects.viewports).toEqual({});
+    expect(store.getState().viewports).toEqual({});
     expect(store.getState().followViewport).toBe(false);
   });
 });

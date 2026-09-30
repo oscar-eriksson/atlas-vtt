@@ -6,7 +6,6 @@ import { useAtlasSettings, useHotkeyLabels } from "../../../keyboard/useMapHotke
 import { useAtlasStore, useViewStoreHook } from "src/app/react/ViewStoreContext"
 import { DEFAULT_SETTINGS } from "../../../services/atlasSettings"
 import { PlayerWindowService } from "../../../services/PlayerWindowService"
-import { runHistoryTransaction, runUntracked } from "../../../stores/history"
 import { playerWindowStore } from "../../../stores/playerWindowStore"
 import type { TVCalibrationSettings } from "../../../types/viewportTypes"
 import { calibratedViewportSize, CM_PER_INCH, physicalCmPerSquare } from "../../../utils/viewportPhysicalScale"
@@ -59,7 +58,7 @@ export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
     [settingsService],
   )
 
-  const viewports = useAtlasStore((state) => state.objects.viewports)
+  const viewports = useAtlasStore((state) => state.viewports)
   const gridSize = useAtlasStore((state) => state.grid?.size ?? 70)
   const updateViewport = useAtlasStore((state) => state.updateViewport)
   const store = useViewStoreHook()
@@ -80,16 +79,13 @@ export function ViewportToolGroup({ activeTool, selectTool, menuOpen, toggleMenu
     if (Math.abs(width - activeRect.width) < 0.01 && Math.abs(height - activeRect.height) < 0.01) return
     const centerX = activeRect.x + activeRect.width / 2
     const centerY = activeRect.y + activeRect.height / 2
-    // Derived from the settings, not an edit of the map: undo must not step through it.
-    runUntracked(store, () => updateViewport(activeRect.id, { x: centerX - width / 2, y: centerY - height / 2, width, height }))
-  }, [activeRect, calibration, gridSize, store, updateViewport])
+    updateViewport(activeRect.id, { x: centerX - width / 2, y: centerY - height / 2, width, height })
+  }, [activeRect, calibration, gridSize, updateViewport])
 
-  /** Takes the frame off the map; players then follow the DM's camera again. One undo step. */
+  /** Takes the rectangle off the map; the players' view then follows the DM's camera again. */
   const removeViewports = useCallback((): void => {
-    runHistoryTransaction(store, () => {
-      const { objects, deleteViewport } = store.getState()
-      for (const id of Object.keys(objects.viewports)) deleteViewport(id)
-    })
+    const { viewports: rectangles, deleteViewport } = store.getState()
+    for (const id of Object.keys(rectangles)) deleteViewport(id)
     closeMenu()
   }, [store, closeMenu])
 

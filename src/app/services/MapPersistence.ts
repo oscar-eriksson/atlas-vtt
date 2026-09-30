@@ -28,7 +28,7 @@ export type Pin = NotePin;
 
 // Add constants for schema identification and versioning
 export const ATLAS_SCHEMA = 'atlas-vtt' as const;
-export const ATLAS_VERSION = 7;
+export const ATLAS_VERSION = 8;
 
 /**
  * Defines the structure of the persisted .atlasmap file.
@@ -50,11 +50,11 @@ export interface MapFile {
     lights: Record<string, LightSource>;
     /** Absent in files from before light zones, and until a map has one. */
     lightZones?: Record<string, LightZone>;
-    /** Absent in files from before TV viewports, and until a map has one. */
-    viewports?: Record<string, ViewportRect>;
     /** Absent in files from before area templates, and until a map has one. */
     templates?: Record<string, AreaTemplate>;
   };
+  /** The TV viewport rectangles. They belong to the table and not to a floor; older maps kept them in `objects`. */
+  viewports?: Record<string, ViewportRect>;
   camera: CameraState;
   followViewport?: boolean;
   /** The floors of the scene in order, which is active, and the objects of the ones that are not; `objects` and `background` are the active floor's. A map without them has one floor. */
@@ -85,6 +85,8 @@ export interface LegacyMapFile extends Partial<Omit<MapFile, 'objects' | 'grid' 
     tokens?: Record<string, LegacyToken>;
     /** Validated separately by `migrateFogData`; several incompatible formats existed. */
     fog?: unknown;
+    /** Where maps from before the viewports belonged to the scene kept them. */
+    viewports?: Record<string, ViewportRect>;
   }) | null;
 }
 
@@ -230,10 +232,7 @@ export function createAtlasStorage<T extends { mapPath: string | null; mapLoaded
       if (state?.objects && !state.objects.lights) {
         state.objects.lights = {};
       }
-      // Maps from before TV viewports lack them (no version change: older Atlas ignores what it does not know)
-      if (state?.objects && !state.objects.viewports) {
-        state.objects.viewports = {};
-      }
+      // Maps from before TV viewports lack the follow toggle (the viewports themselves are taken out of `objects` when the state is merged)
       if (state && state.followViewport === undefined) {
         state.followViewport = false;
       }
@@ -398,9 +397,9 @@ export function migrateMapFile(persisted: unknown): MapFile {
       drawings: {},
       walls: {},
       lights: {},
-      viewports: {},
       templates: {},
     },
+    viewports: {},
     camera: { x: 0, y: 0, scale: 1 },
     followViewport: false,
   };
@@ -433,9 +432,9 @@ export function migrateMapFile(persisted: unknown): MapFile {
       walls: isRecord(persisted.objects?.walls) ? persisted.objects.walls : {},
       lights: isRecord(persisted.objects?.lights) ? persisted.objects.lights : {},
       ...(zones && { lightZones: zones }),
-      viewports: isRecord(persisted.objects?.viewports) ? persisted.objects.viewports : {},
       templates: isRecord(persisted.objects?.templates) ? persisted.objects.templates : {},
     },
+    viewports: persisted.viewports ?? persisted.objects?.viewports ?? {},
     grid: persisted.grid ? migrateGrid(persisted.grid) : initial.grid,
     camera: persisted.camera || initial.camera
   };

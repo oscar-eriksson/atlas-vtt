@@ -145,7 +145,7 @@ export class PlayerWindowService {
   private getViewportFollowCamera(): PlayerCameraState | undefined {
     if (!this.viewportFollowEnabled) return undefined;
     const store = this.streamSource?.store ?? this.store;
-    const rect = Object.values(store.getState().objects.viewports).find((viewport) => viewport.active);
+    const rect = Object.values(store.getState().viewports).find((viewport) => viewport.active);
     return rect ? viewportFollowCamera(rect, this.streamSource?.getScreen?.()) : undefined;
   }
 

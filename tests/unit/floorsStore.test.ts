@@ -131,7 +131,7 @@ describe('floors', () => {
     const saved = options.partialize(store.getState());
     expect(saved).toMatchObject({ activeFloorId: ground, floors: [{ id: ground }, { id: cellar, name: 'Cellar' }] });
     expect(Object.keys(saved.floorData)).toEqual([cellar]);
-    expect(ATLAS_VERSION).toBe(7);
+    expect(ATLAS_VERSION).toBe(8);
 
     // A scene from before floors has none of these, and keeps the one floor a new scene starts with.
     const restored = options.merge({ objects: saved.objects }, setupStore().getState());
@@ -139,6 +139,38 @@ describe('floors', () => {
     const reopened = options.merge(JSON.parse(JSON.stringify(saved)), setupStore().getState());
     expect(reopened.floors.map((floor: { name: string }) => floor.name)).toEqual(['Floor 1', 'Cellar']);
     expect(Object.keys(reopened.floorData)).toEqual([cellar]);
+  });
+});
+
+describe('the TV viewports across floors', () => {
+  const rect = { x: 100, y: 200, width: 915, height: 515, locked: true, active: true };
+
+  it('are the same on every floor, since they belong to the table', () => {
+    const store = setupStore();
+    const id = store.getState().addViewport(rect);
+    const upstairs = store.getState().addFloor();
+    store.getState().switchFloor(upstairs);
+    expect(store.getState().viewports[id]).toMatchObject(rect);
+    store.getState().updateViewport(id, { x: 500 });
+    store.getState().switchFloor(store.getState().floors[0]!.id);
+    expect(store.getState().viewports[id]).toMatchObject({ x: 500 });
+  });
+
+  it('are not kept in the objects of a floor', () => {
+    const store = setupStore();
+    store.getState().addViewport(rect);
+    expect(store.getState().objects).not.toHaveProperty('viewports');
+    store.getState().switchFloor(store.getState().addFloor());
+    expect(store.getState().floorData).not.toHaveProperty('viewports');
+  });
+
+  it('are not touched by undo on a floor', () => {
+    const store = setupStore();
+    store.getState().addTemplate({ shape: 'cone', x: 0, y: 0, snap: 'any', size: 3, angle: 0, visibleToPlayers: true });
+    const id = store.getState().addViewport(rect);
+    store.getState().updateViewport(id, { x: 900 });
+    getHistoryStore(store)!.getState().undo();
+    expect(store.getState().viewports[id]).toMatchObject({ x: 900 });
   });
 });
 

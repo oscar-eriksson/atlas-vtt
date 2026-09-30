@@ -33,7 +33,7 @@ export class ViewportInteraction {
   handlePointerDown(worldX: number, worldY: number): boolean {
     const handleId = this.renderer.hitTestHandle(worldX, worldY);
     if (handleId) {
-      const rect = this.store.getState().objects.viewports[handleId];
+      const rect = this.store.getState().viewports[handleId];
       if (!rect) return false;
       this.draggingId = handleId;
       this.dragKind = 'handle';
@@ -45,7 +45,7 @@ export class ViewportInteraction {
 
     const bodyId = this.renderer.hitTestBody(worldX, worldY);
     if (bodyId) {
-      const rect = this.store.getState().objects.viewports[bodyId];
+      const rect = this.store.getState().viewports[bodyId];
       if (!rect) return false;
       this.draggingId = bodyId;
       this.dragKind = 'body';

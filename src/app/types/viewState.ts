@@ -56,9 +56,11 @@ export interface ViewState extends ViewUIState {
     audios: Record<string, AudioSource>;
     /** Areas with ambient light of their own, in the order they were drawn; absent until the first is. Read with `lightZoneList`. */
     lightZones?: Record<string, LightZone>;
-    viewports: Record<string, ViewportRect>;
     templates: Record<string, AreaTemplate>;
   };
+
+  /** The TV viewport rectangles of the scene. They belong to the table and not to a floor, so every floor shows them at the same place. */
+  viewports: Record<string, ViewportRect>;
 
   // Camera state
   camera: CameraState;

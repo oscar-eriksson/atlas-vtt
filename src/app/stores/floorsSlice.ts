@@ -25,7 +25,7 @@ export interface FloorData {
 export const DEFAULT_FLOOR_ID = 'floor-1';
 
 export function emptyMapObjects(): MapObjects {
-  return { tokens: {}, fog: {}, pins: {}, texts: {}, drawings: {}, walls: {}, lights: {}, audios: {}, viewports: {}, templates: {} };
+  return { tokens: {}, fog: {}, pins: {}, texts: {}, drawings: {}, walls: {}, lights: {}, audios: {}, templates: {} };
 }
 
 /** A scene that has never had floors: the one floor it always had. */
@@ -111,8 +111,8 @@ export function createFloorsActions(set: ImmerSet): Pick<FloorsSlice, 'addFloor'
 }
 
 interface HistoryStacks {
-  past: unknown[];
-  future: unknown[];
+  past: readonly unknown[];
+  future: readonly unknown[];
 }
 
 /** Each floor's undo and redo steps, kept while another floor is active. */

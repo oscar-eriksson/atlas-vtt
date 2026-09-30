@@ -96,7 +96,7 @@ describe('map files and area templates', () => {
   it('opens a map file from before templates with none', () => {
     const older = {
       schema: 'atlas-vtt', version: 5, background: null, grid: null,
-      objects: { tokens: {}, fog: {}, pins: {}, texts: {}, drawings: {}, walls: {}, lights: {}, viewports: {} },
+      objects: { tokens: {}, fog: {}, pins: {}, texts: {}, drawings: {}, walls: {}, lights: {} },
       camera: { x: 0, y: 0, scale: 1 },
     };
     expect(migrateMapFile(older).objects.templates).toEqual({});
