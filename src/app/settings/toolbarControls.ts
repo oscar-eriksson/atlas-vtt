@@ -11,6 +11,7 @@ export const TOOLBAR_CONTROLS = [
   { id: 'text', label: 'Text tool', desc: 'Write labels on the map.', hideable: true, shownByDefault: true },
   { id: 'measure', label: 'Measure tools', desc: 'Line, circle and cone measurements.', hideable: false, shownByDefault: true },
   { id: 'pin', label: 'Note pin', desc: 'Pin notes and scene links to the map.', hideable: true, shownByDefault: true },
+  { id: 'viewport', label: 'TV viewport', desc: 'For a TV lying flat under physical miniatures. Calibrates the player window and follows the viewport you place.', hideable: true, shownByDefault: false },
   { id: 'dice', label: 'Dice tray', desc: 'Roll dice.', hideable: false, shownByDefault: true },
   { id: 'loot', label: 'Loot roller', desc: 'Roll loot tables.', hideable: true, shownByDefault: true },
   { id: 'assets', label: 'Asset manager', desc: 'Open the asset manager.', hideable: true, shownByDefault: true },

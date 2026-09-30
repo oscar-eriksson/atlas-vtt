@@ -8,6 +8,7 @@ import {
   resolveLaserPointerSettings,
   type LaserPointerSettings,
 } from '../tools/laserPointerSettings';
+import type { TVCalibrationSettings } from '../types/viewportTypes';
 
 /**
  * How wheel events drive the map viewport.
@@ -54,6 +55,12 @@ export interface AtlasSettings {
     showDiceRolls: boolean;
     showCommandPalette: boolean;
   };
+  /**
+   * Describes the physical TV/rig used to mirror the player window at real
+   * physical scale (Mystic Mirror-style hybrid tabletop). This is a device
+   * fact, not a per-scene one, so it lives here rather than on the map file.
+   */
+  tvCalibration: TVCalibrationSettings;
 }
 
 const DEFAULT_SETTINGS: AtlasSettings = {
@@ -81,6 +88,12 @@ const DEFAULT_SETTINGS: AtlasSettings = {
     showInitiative: true,
     showDiceRolls: false,
     showCommandPalette: false // Hide command palette
+  },
+  tvCalibration: {
+    diagonalInches: 55,
+    resolutionWidth: 3840,
+    resolutionHeight: 2160,
+    targetSquareCm: 2.5,
   },
 };
 
@@ -331,6 +344,16 @@ export class SettingsService {
 
   setLocalPlayerViewSettings(settings: Partial<AtlasSettings['localPlayerView']>): void {
     this.settings.localPlayerView = { ...this.settings.localPlayerView, ...settings };
+    this.commit();
+  }
+
+  // TV viewport calibration (physical rig settings for the hybrid tabletop camera lock)
+  getTVCalibration(): TVCalibrationSettings {
+    return { ...this.settings.tvCalibration };
+  }
+
+  setTVCalibration(settings: Partial<TVCalibrationSettings>): void {
+    this.settings.tvCalibration = { ...this.settings.tvCalibration, ...settings };
     this.commit();
   }
 

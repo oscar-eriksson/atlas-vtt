@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { isToolbarControlShown, movedToolbarOrder, orderedToolbarIds, readToolbarControlOverrides, readToolbarOrder, withToolbarControl } from '../../src/app/settings/toolbarControls';
 
 describe('toolbar controls', () => {
-  it('shows controls by default', () => {
+  it('shows controls by default except the TV viewport', () => {
     expect(isToolbarControlShown({}, 'fog')).toBe(true);
-    expect(isToolbarControlShown(undefined, 'pin')).toBe(true);
+    expect(isToolbarControlShown(undefined, 'viewport')).toBe(false);
   });
 
   it('keeps only overrides that differ from the default', () => {
@@ -12,11 +12,11 @@ describe('toolbar controls', () => {
     expect(hidden).toEqual({ fog: false });
     expect(isToolbarControlShown(hidden, 'fog')).toBe(false);
     expect(withToolbarControl(hidden, 'fog', true)).toEqual({});
-    expect(withToolbarControl({ pin: false }, 'fog', false)).toEqual({ pin: false, fog: false });
+    expect(withToolbarControl({}, 'viewport', true)).toEqual({ viewport: true });
   });
 
   it('ignores unknown ids and non-boolean values in a stored file', () => {
-    expect(readToolbarControlOverrides({ fog: false, bogus: false, draw: 'no', move: false })).toEqual({ fog: false });
+    expect(readToolbarControlOverrides({ fog: false, bogus: false, draw: 'no', viewport: false })).toEqual({ fog: false });
     expect(readToolbarControlOverrides(['fog'])).toEqual({});
     expect(readToolbarControlOverrides(null)).toEqual({});
   });

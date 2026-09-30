@@ -1,15 +1,16 @@
 import React from "react"
 import { MapPin, Volume2 } from "lucide-react"
-import { AMBIENT_AUDIO_ENABLED, WALLS_AND_LIGHTING_ENABLED } from "../../../../featureFlags"
+import { AMBIENT_AUDIO_ENABLED, TV_VIEWPORT_ENABLED, WALLS_AND_LIGHTING_ENABLED } from "../../../../featureFlags"
 import { isAtlasToolAvailable } from "../../../../tools/toolAvailability"
 import { DrawToolGroup } from "../DrawToolGroup"
 import { FogToolGroup } from "../FogToolGroup"
 import { MeasureToolGroup } from "../MeasureToolGroup"
 import { MoveToolGroup } from "../MoveToolGroup"
 import { TextToolGroup } from "../TextToolGroup"
+import { ViewportToolGroup } from "../ViewportToolGroup"
 import { WallToolGroup } from "../WallToolGroup"
 import { buttonItem, toolGroupItem } from "../toolbarItems"
-import { drawToolFace, fogToolFace, measureToolFace, moveToolFace, textToolFace, wallToolFace } from "../toolFaces"
+import { drawToolFace, fogToolFace, measureToolFace, moveToolFace, textToolFace, viewportToolFace, wallToolFace } from "../toolFaces"
 import type { ToolbarControl } from "../toolbarControl"
 
 /** The map tools, from the ones a GM reaches for during play down to setup and reference tools. */
@@ -51,5 +52,9 @@ export const TOOL_CONTROLS: ToolbarControl[] = [
       icon: Volume2, label: "Ambient Sound", shortcut: ctx.hotkeyLabel('audio'),
       isActive: ctx.activeTool === "audio", pinned: ctx.activeTool === "audio", onClick: () => ctx.selectTool("audio"),
     }),
+  },
+  {
+    id: 'viewport', priority: 30, dmOnly: true, available: TV_VIEWPORT_ENABLED,
+    item: ctx => toolGroupItem(ctx, 'viewport', viewportToolFace(ctx.activeTool), <ViewportToolGroup {...ctx.groupControls('viewport')} />),
   },
 ]

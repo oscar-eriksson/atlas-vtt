@@ -163,6 +163,7 @@ async function waitForRenderedFrameSource(view: AtlasView): Promise<PlayerFrameS
       const viewport = view.serviceManager.getRendererService().getViewport();
       return viewport ? { centerX: viewport.center.x, centerY: viewport.center.y, scale: viewport.scale.x } : undefined;
     },
+    getViewportFollowCamera: (rect) => renderer.getViewportFollowCamera(rect),
   };
 }
 

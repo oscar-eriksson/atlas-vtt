@@ -41,6 +41,11 @@ import { openLightConfigPanel } from './pixi/vision/LightConfigPanel';
 import { WALLS_AND_LIGHTING_ENABLED } from './featureFlags';
 import { openAudioConfigPanel } from './pixi/audio/AudioConfigPanel';
 import { AudioRenderer } from './pixi/audio/AudioRenderer';
+import { ViewportRectRenderer } from './pixi/viewport-tool/ViewportRectRenderer';
+import { ViewportInteraction } from './pixi/viewport-tool/ViewportInteraction';
+import { ViewportTool } from './tools/ViewportTool';
+import type { ViewportRect } from './types/viewportTypes';
+import { calibratedViewportSize } from './utils/viewportPhysicalScale';
 import { SoundRegistry } from './audio/SoundRegistry';
 import { AudioBufferCache } from './audio/AudioBufferCache';
 import { SpatialAudioEngine } from './audio/SpatialAudioEngine';
@@ -76,6 +81,9 @@ export class PixiRendererOrchestrator { // Renamed class
   private soundRegistry?: SoundRegistry;
   private bufferCache?: AudioBufferCache;
   private spatialAudioEngine?: SpatialAudioEngine;
+  private viewportRectRenderer?: ViewportRectRenderer;
+  private viewportInteraction?: ViewportInteraction;
+  private viewportTool?: ViewportTool;
   private peekKeydownHandler: ((e: KeyboardEvent) => void) | null = null;
   private peekKeyupHandler: ((e: KeyboardEvent) => void) | null = null;
 
@@ -412,6 +420,11 @@ export class PixiRendererOrchestrator { // Renamed class
     // Initialize Audio system
     this.audioRenderer = new AudioRenderer(viewport, this.store);
     this.audioTool = new AudioTool(this.eventBus);
+
+    // Initialize TV viewport tool
+    this.viewportRectRenderer = new ViewportRectRenderer(viewport, this.store);
+    this.viewportInteraction = new ViewportInteraction(this.store, this.viewportRectRenderer);
+    this.viewportTool = new ViewportTool(this.eventBus);
 
     // Initialize SoundRegistry and SpatialAudioEngine
     const pluginDir = this.store.getState().plugin?.manifest?.dir ?? `${this.obsApp.vault.configDir}/plugins/atlas-vtt`;
@@ -762,9 +775,28 @@ export class PixiRendererOrchestrator { // Renamed class
     layers.push(...(this.fogRenderer?.getPlayerViewLayers() ?? []));
     layers.push(...(this.selectionManager?.getPlayerViewLayers() ?? []));
     for (const overlay of this.dmScreenOverlays) layers.push({ layer: overlay, visible: false });
+    if (this.viewportRectRenderer) layers.push({ layer: this.viewportRectRenderer.container, visible: false });
     const viewport = this.pixiAppManager.getViewport();
     const playerCamera = camera && viewport ? { target: viewport, camera } : undefined;
     captureWithLayerVisibility(layers, () => app.renderer.render(app.stage), capture, playerCamera);
+  }
+
+  /**
+   * Camera that fits `rect`'s world bounds into the DM's own current render
+   * surface. Anchored to the DM's own pane (not the popout) because that is
+   * the surface `withPlayerSafeFrame` actually renders and bit-copies — see
+   * the "known limitation" note in the TV viewport plan for why this can
+   * letterbox/leak content when the DM's pane aspect differs from the rect's.
+   */
+  public getViewportFollowCamera(rect: ViewportRect): PlayerCameraState | undefined {
+    const viewport = this.pixiAppManager.getViewport();
+    if (!viewport) return undefined;
+    const scale = Math.min(viewport.screenWidth / rect.width, viewport.screenHeight / rect.height);
+    return {
+      centerX: rect.x + rect.width / 2,
+      centerY: rect.y + rect.height / 2,
+      scale,
+    };
   }
 
   getViewportInstance(): Viewport | null { return this.pixiAppManager.getViewport(); }
@@ -953,6 +985,22 @@ export class PixiRendererOrchestrator { // Renamed class
         // Future: hover feedback for audio sources
       });
     }
+
+    // Wire TV viewport tool handlers
+    if (this.viewportInteraction && this.viewportTool) {
+      this.tokenRenderer.setViewportPointerDownHandler((worldX, worldY, _e) => {
+        return this.handleViewportPointerDown(worldX, worldY);
+      });
+      this.tokenRenderer.setViewportPointerMoveHandler((worldX, worldY, _e) => {
+        this.viewportInteraction?.handlePointerMove(worldX, worldY);
+      });
+      this.tokenRenderer.setViewportPointerUpHandler(() => {
+        this.viewportInteraction?.handlePointerUp();
+      });
+      this.tokenRenderer.setViewportCursorProvider((worldX, worldY) => {
+        return this.viewportInteraction?.cursorAt(worldX, worldY) ?? 'crosshair';
+      });
+    }
   }
 
   /** Lets MeasureRenderer read the current map's measurement settings. */
@@ -1099,6 +1147,35 @@ export class PixiRendererOrchestrator { // Renamed class
       this.wallTool.finishFreeform();
       this.wallRenderer?.clearFreeformPreview();
     }
+  }
+
+  /** Handle TV viewport tool pointer down: drag an existing rect, or place a new one. */
+  private handleViewportPointerDown(worldX: number, worldY: number): boolean {
+    if (!this.viewportInteraction) return false;
+
+    // Body or handle drag on an existing rect takes priority.
+    if (this.viewportInteraction.handlePointerDown(worldX, worldY)) {
+      return true;
+    }
+
+    // No rect exists yet: place one, centered on the click, sized from calibration.
+    const existing = Object.keys(this.store.getState().objects.viewports).length > 0;
+    if (existing) return false;
+
+    const calibration = SettingsService.forApp(this.obsApp)?.getTVCalibration();
+    if (!calibration) return false;
+    const gridSize = this.store.getState().grid?.size ?? 70;
+    const { width, height } = calibratedViewportSize(calibration, gridSize);
+
+    this.store.getState().addViewport({
+      x: worldX - width / 2,
+      y: worldY - height / 2,
+      width,
+      height,
+      locked: true,
+      active: true,
+    });
+    return true;
   }
 
   /** Handle audio tool pointer down: click to select existing source or place new one */
@@ -1429,6 +1506,7 @@ export class PixiRendererOrchestrator { // Renamed class
     this.wallRenderer?.destroy();
     this.wallInteraction?.destroy();
     this.audioRenderer?.destroy();
+    this.viewportRectRenderer?.destroy();
     this.spatialAudioEngine?.dispose();
     this.bufferCache?.dispose();
     this.gridSystem?.destroy(); // Destroy GridSystem

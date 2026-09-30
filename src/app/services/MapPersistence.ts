@@ -2,6 +2,7 @@ import type { PersistStorage, StorageValue } from 'zustand/middleware';
 import { App, Notice, TFile } from 'obsidian';
 import type { TokenEntity, TextElement, DrawingStroke, NotePin } from '../types';
 import type { WallSegment, LightSource } from '../types/wallTypes';
+import type { ViewportRect } from '../types/viewportTypes';
 import type { WidgetSettings } from '../types/widgetTypes';
 import type { HexNumberFormat } from '../grid/hexNumbering';
 import type AtlasVTTPlugin from '../../../main';
@@ -53,7 +54,7 @@ export type Pin = NotePin;
 
 // Add constants for schema identification and versioning
 export const ATLAS_SCHEMA = 'atlas-vtt' as const;
-export const ATLAS_VERSION = 4;
+export const ATLAS_VERSION = 5;
 
 /**
  * Defines the structure of the persisted .atlasmap file.
@@ -73,8 +74,10 @@ export interface MapFile {
     drawings: Record<string, DrawingStroke>;
     walls: Record<string, WallSegment>;
     lights: Record<string, LightSource>;
+    viewports: Record<string, ViewportRect>;
   };
   camera: CameraState;
+  followViewport?: boolean;
 }
 
 /** A token as found in older map files, where conditions were still called `statuses`. */
@@ -224,6 +227,13 @@ export function createAtlasStorage<T extends { mapPath: string | null }, S = unk
           }
           if (state?.objects && !state.objects.lights) {
             state.objects.lights = {};
+          }
+          // v4 → v5 migration: add viewports and the follow-viewport toggle if missing
+          if (state?.objects && !state.objects.viewports) {
+            state.objects.viewports = {};
+          }
+          if (state && state.followViewport === undefined) {
+            state.followViewport = false;
           }
           if (state?.version && state.version < ATLAS_VERSION) {
             state.version = ATLAS_VERSION;
@@ -443,8 +453,10 @@ export function migrateMapFile(persisted: unknown): MapFile {
       drawings: {},
       walls: {},
       lights: {},
+      viewports: {},
     },
-    camera: { x: 0, y: 0, scale: 1 }
+    camera: { x: 0, y: 0, scale: 1 },
+    followViewport: false,
   };
 
   if (!isLegacyMapFile(persisted)) return initial;
@@ -471,6 +483,7 @@ export function migrateMapFile(persisted: unknown): MapFile {
       drawings: persisted.objects?.drawings || {},
       walls: persisted.objects?.walls || {},
       lights: persisted.objects?.lights || {},
+      viewports: persisted.objects?.viewports || {},
     },
     grid: persisted.grid ? migrateGrid(persisted.grid) : initial.grid,
     camera: persisted.camera || initial.camera

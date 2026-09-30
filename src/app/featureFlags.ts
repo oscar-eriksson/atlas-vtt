@@ -14,3 +14,6 @@ export const AMBIENT_AUDIO_ENABLED = false;
 
 /** Walls & dynamic lighting: wall tool, light sources, token vision, collection vision settings. */
 export const WALLS_AND_LIGHTING_ENABLED = false;
+
+/** TV viewport tool: DM-placed viewport rectangle the player window camera can follow. */
+export const TV_VIEWPORT_ENABLED = true;

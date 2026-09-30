@@ -10,6 +10,7 @@ import { PlayerDiceRolls } from './PlayerDiceRolls';
 import { PlayerWidgetBar } from './PlayerWidgetBar';
 import { LocalPlayerView, LOCAL_PLAYER_VIEW_TYPE, type PlayerCameraState } from '../local-player-view';
 import { freezeCanvasFrame, type SceneTransition } from '../pixi/sceneTransition';
+import type { ViewportRect } from '../types/viewportTypes';
 
 /** Scopes the rules in `player-window.scss` to the popout document. */
 const PLAYER_WINDOW_BODY_CLASS = 'atlas-player-window';
@@ -33,6 +34,8 @@ export interface PlayerFrameSource {
   withPlayerSafeFrame(capture: () => void, settings: AtlasSettings['localPlayerView'], camera?: PlayerCameraState): void;
   /** Renders of `canvas` so far. When given, frames are only mirrored after the canvas changed. */
   getRenderedFrames?(): number | undefined;
+  /** Camera that fits `rect`'s world bounds into the DM's current render surface, for "Follow viewport". */
+  getViewportFollowCamera?(rect: ViewportRect): PlayerCameraState | undefined;
 }
 
 /**
@@ -54,6 +57,8 @@ export class PlayerWindowService {
   private animationFrame: number | null = null;
   /** Camera the DM froze players on; the presented scene is still rendered live through it. */
   private frozenCamera: PlayerCameraState | null = null;
+  /** When true, the player camera follows the scene's active TV viewport rect instead of the DM's camera. */
+  private viewportFollowEnabled = false;
   /** Last player frame, shown unchanged while the DM works on another scene tab. */
   private heldFrame: HTMLCanvasElement | null = null;
   /** Crossfade from the previous map, still playing after the DM presented another scene. */
@@ -106,6 +111,29 @@ export class PlayerWindowService {
 
   public isFrozen(): boolean {
     return this.frozenCamera !== null;
+  }
+
+  /** Toggle following the scene's active TV viewport rect and return the new state. */
+  public toggleViewportFollow(): boolean {
+    this.viewportFollowEnabled = !this.viewportFollowEnabled;
+    this.isMirrorStale = true;
+    const store = this.streamSource?.store ?? this.store;
+    store.getState().setFollowViewport(this.viewportFollowEnabled);
+    playerWindowStore.setState({ isFollowingViewport: this.viewportFollowEnabled });
+    new Notice(this.viewportFollowEnabled ? 'Player view following TV viewport' : 'Player view following DM camera');
+    return this.viewportFollowEnabled;
+  }
+
+  public isFollowingViewport(): boolean {
+    return this.viewportFollowEnabled;
+  }
+
+  /** Camera from the scene's active TV viewport rect, or undefined if follow is off or no rect is active. */
+  private getViewportFollowCamera(): PlayerCameraState | undefined {
+    if (!this.viewportFollowEnabled || !this.streamSource?.getViewportFollowCamera) return undefined;
+    const store = this.streamSource.store ?? this.store;
+    const rect = Object.values(store.getState().objects.viewports).find((vp) => vp.active);
+    return rect ? this.streamSource.getViewportFollowCamera(rect) : undefined;
   }
 
   public isWindowOpen(): boolean {
@@ -430,7 +458,8 @@ export class PlayerWindowService {
         lastRenderedFrames = renderedFrames;
         this.isMirrorStale = false;
 
-        const frozenCamera = this.frozenCamera ?? undefined;
+        const viewportCamera = this.getViewportFollowCamera();
+        const frozenCamera = viewportCamera ?? this.frozenCamera ?? undefined;
         source.withPlayerSafeFrame(() => draw(source.canvas), this.settingsService.getLocalPlayerViewSettings(), frozenCamera);
         this.recordPlayerCamera(frozenCamera ?? source.getCamera?.());
       } catch (error) {

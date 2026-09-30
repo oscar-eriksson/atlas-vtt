@@ -1,4 +1,4 @@
-import { AMBIENT_AUDIO_ENABLED, WALLS_AND_LIGHTING_ENABLED } from '../featureFlags';
+import { AMBIENT_AUDIO_ENABLED, WALLS_AND_LIGHTING_ENABLED, TV_VIEWPORT_ENABLED } from '../featureFlags';
 import { isActiveAtlasLeaf } from '../utils/activeLeafGuard';
 import type { SettingsService } from '../services/SettingsService';
 
@@ -20,6 +20,7 @@ export const MAP_HOTKEYS = [
   { id: 'pin', label: 'Note pin', group: 'Tools', defaultKey: 'p', dmOnly: true },
   { id: 'wall', label: 'Walls and lighting', group: 'Tools', defaultKey: 'w', dmOnly: true, enabled: WALLS_AND_LIGHTING_ENABLED },
   { id: 'audio', label: 'Ambient audio', group: 'Tools', defaultKey: 's', dmOnly: true, enabled: AMBIENT_AUDIO_ENABLED },
+  { id: 'viewport', label: 'TV viewport', group: 'Tools', defaultKey: 'u', dmOnly: true, enabled: TV_VIEWPORT_ENABLED },
   { id: 'selectAll', label: 'Select all tokens', group: 'Editing', defaultKey: 'Mod+a', dmOnly: true },
   { id: 'copy', label: 'Copy selection', group: 'Editing', defaultKey: 'Mod+c', dmOnly: true, yieldsToTextSelection: true },
   { id: 'cut', label: 'Cut selection', group: 'Editing', defaultKey: 'Mod+x', dmOnly: true, yieldsToTextSelection: true },

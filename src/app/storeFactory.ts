@@ -9,6 +9,7 @@ import type AtlasVTTPlugin from '../../main';
 import type { TokenEntity, Character, NotePin, TextElement, DrawingStroke } from './types';
 import type { FogOperation, FogOperationInput } from './types/fogTypes';
 import type { WallSegment, WallInput, LightSource, LightInput } from './types/wallTypes';
+import type { ViewportRect, ViewportInput } from './types/viewportTypes';
 import type { AudioSource, AudioInput } from './types/audioTypes';
 import type { AnyWidget, WidgetSettings } from './types/widgetTypes';
 import type { InitiativeState, InitiativeEntry, InitiativeConfig } from './types/initiativeTypes';
@@ -75,6 +76,7 @@ export interface ViewAtlasState {
     walls: Record<string, WallSegment>;
     lights: Record<string, LightSource>;
     audios: Record<string, AudioSource>;
+    viewports: Record<string, ViewportRect>;
   };
   
   // Camera state
@@ -171,6 +173,12 @@ export interface ViewAtlasState {
   updateLight: (id: string, changes: Partial<LightSource>) => void;
   deleteLight: (id: string) => void;
 
+  // Viewport actions (DM-placed TV viewport rectangles)
+  addViewport: (data: ViewportInput) => string;
+  updateViewport: (id: string, changes: Partial<ViewportRect>) => void;
+  deleteViewport: (id: string) => void;
+  setActiveViewport: (id: string | null) => void;
+
   // Audio dirty flag (non-persisted)
   _audioDirty: boolean;
   markAudioDirty: () => void;
@@ -182,7 +190,7 @@ export interface ViewAtlasState {
   deleteAudio: (id: string) => void;
 
   // Tool and selection state
-  activeTool: 'move' | 'select' | 'fog' | 'text' | 'measure' | 'measure-circle' | 'measure-cone' | 'eraser' | 'asset' | 'note-pin' | 'laser-pointer' | 'draw-pen' | 'draw-eraser' | 'draw-icon' | 'draw-line' | 'draw-rectangle' | 'draw-circle' | 'wall' | 'audio';
+  activeTool: 'move' | 'select' | 'fog' | 'text' | 'measure' | 'measure-circle' | 'measure-cone' | 'eraser' | 'asset' | 'note-pin' | 'laser-pointer' | 'draw-pen' | 'draw-eraser' | 'draw-icon' | 'draw-line' | 'draw-rectangle' | 'draw-circle' | 'wall' | 'audio' | 'viewport';
   setActiveTool: (tool: ViewAtlasState['activeTool']) => void;
   selectionMode: 'box' | 'lasso';
   setSelectionMode: (mode: ViewAtlasState['selectionMode']) => void;
@@ -222,13 +230,17 @@ export interface ViewAtlasState {
   dmNotePath: string | null;
   setDMNotePath: (path: string | null) => void;
 
+  // TV viewport follow: when true, the player window camera locks onto the active ViewportRect
+  followViewport: boolean;
+  setFollowViewport: (follow: boolean) => void;
+
   // Copy, paste and duplicate (from mapObjectsSlice.ts)
   insertMapObjects: MapObjectsSlice['insertMapObjects'];
   duplicateMapObjects: MapObjectsSlice['duplicateMapObjects'];
   removeMapObjects: MapObjectsSlice['removeMapObjects'];
 
   // Map state management
-  deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio', id: string) => void;
+  deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio' | 'viewport', id: string) => void;
   clearMapState: () => void;
   
   // Collection management
@@ -325,7 +337,7 @@ export const DEFAULT_TOKEN_SETTINGS: Readonly<ViewAtlasState['tokenSettings']> =
   tokenRingSize: 1,
 };
 
-const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapPath' | 'background' | 'grid' | 'objects' | 'camera' | 'persistenceEnabled' | 'widgetSettings' | 'widgetValues' | 'dmNotePath' | 'tokenSettings' | 'initiative' | 'diceLog' | 'pinnedNotePreviews' | 'lootRoller'> => ({
+const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapPath' | 'background' | 'grid' | 'objects' | 'camera' | 'persistenceEnabled' | 'widgetSettings' | 'widgetValues' | 'dmNotePath' | 'followViewport' | 'tokenSettings' | 'initiative' | 'diceLog' | 'pinnedNotePreviews' | 'lootRoller'> => ({
   schema: ATLAS_SCHEMA,
   version: ATLAS_VERSION,
   mapPath: null,
@@ -351,12 +363,14 @@ const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapP
     walls: {},
     lights: {},
     audios: {},
+    viewports: {},
   },
   camera: { x: 0, y: 0, scale: 1 },
   persistenceEnabled: true,
   widgetSettings: createDefaultWidgets(),
   widgetValues: {}, // Widget values stored separately
   dmNotePath: null, // DM note linking
+  followViewport: false, // TV viewport camera follow
   tokenSettings: {
     showNameplates: false,
     showHPBars: true,
@@ -838,7 +852,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
           // --- Copy, paste and duplicate (from mapObjectsSlice.ts) ---
           ...createMapObjectsActions(set, get),
 
-          deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio', id: string) => set((draft) => {
+          deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio' | 'viewport', id: string) => set((draft) => {
             switch (type) {
               case 'token':
                 if (draft.objects.tokens[id]) {
@@ -895,6 +909,12 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
                   draft._audioDirty = true;
                 }
                 break;
+              case 'viewport':
+                if (draft.objects.viewports[id]) {
+                  delete draft.objects.viewports[id];
+                  draft.selectedIds = draft.selectedIds.filter(selectedId => selectedId !== id);
+                }
+                break;
               default:
                 break;
             }
@@ -903,6 +923,11 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
           // DM Dashboard actions
           setDMNotePath: (path) => set((draft) => {
             draft.dmNotePath = path;
+          }),
+
+          // TV viewport follow toggle
+          setFollowViewport: (follow) => set((draft) => {
+            draft.followViewport = follow;
           }),
 
           // Token settings
@@ -1201,6 +1226,40 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
             draft._visionDirty = true;
           }),
 
+          // Viewport actions
+          addViewport: (data) => {
+            const id = `viewport_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+            set((draft) => {
+              if (data.active) {
+                for (const vp of Object.values(draft.objects.viewports)) vp.active = false;
+              }
+              draft.objects.viewports[id] = { id, kind: 'viewport', ...data };
+            });
+            return id;
+          },
+
+          updateViewport: (id, changes) => set((draft) => {
+            const viewport = draft.objects.viewports[id];
+            if (!viewport) return;
+            if (changes.active) {
+              for (const other of Object.values(draft.objects.viewports)) {
+                if (other.id !== id) other.active = false;
+              }
+            }
+            Object.assign(viewport, changes);
+          }),
+
+          deleteViewport: (id) => set((draft) => {
+            delete draft.objects.viewports[id];
+            draft.selectedIds = draft.selectedIds.filter(sid => sid !== id);
+          }),
+
+          setActiveViewport: (id) => set((draft) => {
+            for (const vp of Object.values(draft.objects.viewports)) {
+              vp.active = vp.id === id;
+            }
+          }),
+
           // Audio actions
           addAudio: (data) => {
             const id = `audio_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
@@ -1239,6 +1298,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
               walls: {},
               lights: {},
               audios: {},
+              viewports: {},
             };
             // Reset grid to defaults
             draft.grid = {
@@ -1257,6 +1317,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
             draft.camera = { x: 0, y: 0, scale: 1 };
             draft.selectedIds = [];
             draft.dmNotePath = null;
+            draft.followViewport = false;
             // Maps without saved widgets must not inherit the previous map's
             draft.widgetSettings = createDefaultWidgets();
             draft.widgetValues = {};
@@ -1443,6 +1504,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
               widgetValues: sceneWidgets.widgetValues,
               widgetSettings: { ...state.widgetSettings, widgets: sceneWidgets.widgets },
               dmNotePath: state.dmNotePath, // DM note linking
+              followViewport: state.followViewport, // TV viewport camera follow
               tokenSettings: state.tokenSettings, // Token display settings
               initiative: state.initiative, // Initiative tracker state
               initiativeTrackerOpen: state.initiativeTrackerOpen, // Initiative tracker open/closed state
