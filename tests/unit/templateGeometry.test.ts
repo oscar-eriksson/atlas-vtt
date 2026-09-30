@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import { templateOutline } from '../../src/app/templates/templateGeometry';
+import type { AreaTemplate } from '../../src/app/types/areaTemplateTypes';
+
+const base: AreaTemplate = { id: 't', shape: 'line', x: 100, y: 100, snap: 'intersection', size: 3, angle: 0, visibleToPlayers: true };
+const CELL = 70;
+
+const polygon = (template: AreaTemplate): { x: number; y: number }[] => {
+  const outline = templateOutline(template, CELL);
+  if (outline.kind !== 'polygon') throw new Error(`expected a polygon, got ${outline.kind}`);
+  return outline.points;
+};
+
+describe('templateOutline', () => {
+  it('draws a line as a one-cell-wide rectangle along the angle', () => {
+    expect(polygon(base)).toEqual([
+      { x: 100, y: 65 }, { x: 310, y: 65 }, { x: 310, y: 135 }, { x: 100, y: 135 },
+    ]);
+  });
+
+  it('honours a line width and turns with the angle', () => {
+    const points = polygon({ ...base, width: 2, angle: Math.PI / 2 });
+    expect(points[0]!.x).toBeCloseTo(170); expect(points[0]!.y).toBeCloseTo(100);
+    expect(points[2]!.x).toBeCloseTo(30); expect(points[2]!.y).toBeCloseTo(310);
+  });
+
+  it('draws a cone as wide as it is long: its far edge equals its length', () => {
+    const [tip, left, right] = polygon({ ...base, shape: 'cone', size: 3 });
+    expect(tip).toEqual({ x: 100, y: 100 });
+    expect(Math.hypot(right!.x - left!.x, right!.y - left!.y)).toBeCloseTo(3 * CELL);
+    // Width at any distance along the cone equals that distance.
+    expect(left!.x).toBeCloseTo(310);
+    expect(Math.abs(left!.y - 100)).toBeCloseTo(3 * CELL / 2);
+  });
+
+  it('draws a cube with its near face centred on the origin', () => {
+    const points = polygon({ ...base, shape: 'cube', size: 2 });
+    expect(points).toEqual([{ x: 100, y: 30 }, { x: 240, y: 30 }, { x: 240, y: 170 }, { x: 100, y: 170 }]);
+  });
+
+  it('draws a sphere as a circle around the origin', () => {
+    expect(templateOutline({ ...base, shape: 'sphere', size: 4 }, CELL)).toEqual({ kind: 'circle', center: { x: 100, y: 100 }, radius: 280 });
+  });
+
+  it('grows an emanation from the creature footprint by the radius, with rounded corners', () => {
+    const medium = templateOutline({ ...base, shape: 'emanation', size: 3, footprint: 1 }, CELL);
+    expect(medium).toEqual({ kind: 'roundedRect', x: 100 - 245, y: 100 - 245, width: 490, height: 490, radius: 210 });
+    const large = templateOutline({ ...base, shape: 'emanation', size: 3, footprint: 2 }, CELL);
+    expect(large).toMatchObject({ width: 560, height: 560 });
+  });
+
+  it('treats an emanation without a footprint as a one-cell creature', () => {
+    expect(templateOutline({ ...base, shape: 'emanation', size: 1 }, CELL)).toMatchObject({ width: 210, height: 210, radius: 70 });
+  });
+});
