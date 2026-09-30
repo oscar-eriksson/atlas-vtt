@@ -51,6 +51,11 @@ describe('templateFromDrag', () => {
     expect(templateFromDrag(settings(), grid, origin, 'intersection', { x: 350, y: 140 })).not.toHaveProperty('color');
   });
 
+  it('carries the coverage rule, half by default', () => {
+    expect(templateFromDrag(settings(), grid, origin, 'any', { x: 350, y: 140 })?.coverage).toBe('half');
+    expect(templateFromDrag(settings({ coverage: 'off' }), grid, origin, 'any', { x: 350, y: 140 })?.coverage).toBe('off');
+  });
+
   it('keeps the visibility choice', () => {
     expect(templateFromDrag(settings({ visibleToPlayers: false }), grid, origin, 'intersection', { x: 350, y: 140 })?.visibleToPlayers).toBe(false);
   });

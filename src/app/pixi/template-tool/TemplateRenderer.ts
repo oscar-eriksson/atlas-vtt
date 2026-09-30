@@ -4,10 +4,14 @@ import type { ViewAtlasStore } from '../../storeFactory';
 import type { GridSystem } from '../../grid/GridSystem';
 import type { AreaTemplate } from '../../types/areaTemplateTypes';
 import { destroyTree } from '../utils/destroyTree';
+import { showCoveredCells } from './templateCellsGraphics';
 import { showTemplate } from './templateGraphics';
 
 interface TemplateView {
   graphics: Graphics;
+  /** The highlighted cells, drawn under the outline. */
+  cells: Graphics;
+  cellsKey: string;
   /** What the outline was last drawn from; a change here means a redraw, a move does not. */
   shapeKey: string;
   template: AreaTemplate;
@@ -74,6 +78,7 @@ export class TemplateRenderer {
     for (const [id, view] of this.views) {
       if (templates[id]) continue;
       destroyTree(view.graphics);
+      destroyTree(view.cells);
       this.views.delete(id);
     }
 
@@ -86,11 +91,14 @@ export class TemplateRenderer {
 
   private apply(template: AreaTemplate, existing: TemplateView | undefined, cellSize: number, selected: boolean): void {
     const graphics = existing?.graphics ?? new Graphics();
+    const cells = existing?.cells ?? new Graphics();
     const shapeKey = showTemplate(graphics, template, cellSize, existing?.shapeKey, selected);
+    const cellsKey = showCoveredCells(cells, template, this.gridSystem.getOptions(), existing?.cellsKey);
 
+    // Cells go in first, so the outline is drawn over them.
     const container = template.visibleToPlayers ? this.playerContainer : this.gmContainer;
-    if (graphics.parent !== container) container.addChild(graphics);
-    this.views.set(template.id, { graphics, shapeKey, template });
+    if (graphics.parent !== container) container.addChild(cells, graphics);
+    this.views.set(template.id, { graphics, cells, cellsKey, shapeKey, template });
   }
 
   destroy(): void {
