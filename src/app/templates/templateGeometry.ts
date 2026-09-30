@@ -12,6 +12,11 @@ export function isDirectionalShape(shape: TemplateShape): boolean {
   return shape === 'line' || shape === 'cone';
 }
 
+/** The side, in pixels, of the creature an emanation spreads from: the footprint in cells. Other shapes have none. */
+export function creatureSide(shape: TemplateShape, footprint: number | undefined, cellSize: number): number | undefined {
+  return shape === 'emanation' ? (footprint ?? 1) * cellSize : undefined;
+}
+
 /** The template's outline around its own origin, pointing along +x: what to draw once and then move by position and rotation. */
 export function localTemplateOutline(template: AreaTemplate, cellSize: number): TemplateOutline {
   return templateOutline({ ...template, x: 0, y: 0, angle: 0 }, cellSize);
