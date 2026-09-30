@@ -33,9 +33,10 @@ describe('templateOutline', () => {
     expect(Math.abs(left!.y - 100)).toBeCloseTo(3 * CELL / 2);
   });
 
-  it('draws a cube with its near face centred on the origin', () => {
-    const points = polygon({ ...base, shape: 'cube', size: 2 });
-    expect(points).toEqual([{ x: 100, y: 30 }, { x: 240, y: 30 }, { x: 240, y: 170 }, { x: 100, y: 170 }]);
+  it('draws a cube as a square centred on the origin, whatever the angle', () => {
+    const square = [{ x: 30, y: 30 }, { x: 170, y: 30 }, { x: 170, y: 170 }, { x: 30, y: 170 }];
+    expect(polygon({ ...base, shape: 'cube', size: 2 })).toEqual(square);
+    expect(polygon({ ...base, shape: 'cube', size: 2, angle: 1 })).toEqual(square);
   });
 
   it('draws a sphere as a circle around the origin', () => {
@@ -63,6 +64,12 @@ describe('templateContainsPoint', () => {
     expect(at(cone, 300, 100 + 100)).toBe(true);
     expect(at(cone, 80, 100)).toBe(false);
     expect(at(cone, 150, 100 + 120)).toBe(false);
+  });
+
+  it('finds points in a cube on every side of its origin', () => {
+    const cube: AreaTemplate = { ...base, shape: 'cube', size: 2, angle: 1 };
+    for (const [x, y] of [[100 - 60, 100], [100 + 60, 100], [100, 100 - 60], [100, 100 + 60]]) expect(at(cube, x!, y!)).toBe(true);
+    expect(at(cube, 100 + 80, 100)).toBe(false);
   });
 
   it('follows the direction of a line', () => {

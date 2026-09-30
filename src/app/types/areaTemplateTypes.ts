@@ -20,7 +20,7 @@ export interface AreaTemplate {
   size: number;
   /** Width of a line. */
   width?: number;
-  /** Direction in radians for a line, cone or cube. */
+  /** Direction in radians for a line or cone; the other shapes grow the same way on every side. */
   angle: number;
   /** Cells across the creature an emanation spreads from (1 for a medium creature, 2 for a large one). */
   footprint?: number;
