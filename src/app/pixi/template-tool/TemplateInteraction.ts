@@ -3,7 +3,7 @@ import type { Viewport } from 'pixi-viewport';
 import type { GridSystem } from '../../grid/GridSystem';
 import { formatDistance, resolveMeasurementSettings, type MeasurementSettings } from '../../grid/measurementFormat';
 import type { ViewAtlasStore } from '../../storeFactory';
-import { templateFromDrag } from '../../templates/templateDrag';
+import { placeTemplate } from '../../templates/templateDrag';
 import { creatureSide, templateContainsPoint } from '../../templates/templateGeometry';
 import { snapTemplateOrigin } from '../../templates/templateOrigin';
 import { DEFAULT_TEMPLATE_SNAP_RULES, resolveOriginSnap, type TemplateSnapRules } from '../../templates/templateSnapRules';
@@ -46,7 +46,7 @@ export class TemplateInteraction {
   private hoverCreatureSide: number | undefined;
   private readonly pill = new Graphics();
   private readonly label: Text = createMeasureLabelText();
-  private drag: { origin: Point; snap: TemplateOriginSnap; pressedAt: Point } | null = null;
+  private drag: { pressedAt: Point } | null = null;
   private draft: AreaTemplateInput | null = null;
   private moving: { id: string; offset: Point; snap: TemplateOriginSnap } | null = null;
   private outlineKey: string | undefined;
@@ -92,11 +92,15 @@ export class TemplateInteraction {
     if (!enabled) this.clear();
   }
 
-  private snapAt(event: FederatedPointerEvent): { origin: Point; snap: TemplateOriginSnap; pressedAt: Point } {
+  private snapRules(): Readonly<TemplateSnapRules> {
+    return this.snapRulesProvider?.() ?? DEFAULT_TEMPLATE_SNAP_RULES;
+  }
+
+  /** Where a template would start under the pointer: the nearest point its shape may start on. */
+  private hoverOrigin(event: FederatedPointerEvent): Point {
     const settings = this.tool.getSettings();
-    const snap = resolveOriginSnap(settings.shape, settings.footprint, this.snapRulesProvider?.() ?? DEFAULT_TEMPLATE_SNAP_RULES);
-    const world = this.viewport.toWorld(event.global);
-    return { origin: snapTemplateOrigin(this.gridSystem.getOptions(), world, snap), snap, pressedAt: world };
+    const snap = resolveOriginSnap(settings.shape, settings.footprint, this.snapRules());
+    return snapTemplateOrigin(this.gridSystem.getOptions(), this.viewport.toWorld(event.global), snap);
   }
 
   private handleDown(event: FederatedPointerEvent): void {
@@ -105,9 +109,10 @@ export class TemplateInteraction {
     event.stopPropagation();
     this.hoverMarker.visible = false;
     this.hoverCreature.visible = false;
-    const grabbed = this.grabbedTemplate(this.viewport.toWorld(event.global));
-    if (grabbed) this.startMove(grabbed, this.viewport.toWorld(event.global));
-    else this.drag = this.snapAt(event);
+    const pressedAt = this.viewport.toWorld(event.global);
+    const grabbed = this.grabbedTemplate(pressedAt);
+    if (grabbed) this.startMove(grabbed, pressedAt);
+    else this.drag = { pressedAt };
   }
 
   /** The template a press at `point` takes hold of: one whose origin dot is there, or the selected one's body. */
@@ -142,12 +147,12 @@ export class TemplateInteraction {
       return;
     }
     if (!this.drag) {
-      this.showHoverMarker(this.snapAt(event).origin);
+      this.showHoverMarker(this.hoverOrigin(event));
       return;
     }
     event.stopPropagation();
     this.lastPointer = this.viewport.toWorld(event.global);
-    this.draft = templateFromDrag(this.tool.getSettings(), this.gridSystem.getOptions(), this.drag.origin, this.drag.snap, this.lastPointer);
+    this.draft = placeTemplate(this.tool.getSettings(), this.gridSystem.getOptions(), this.snapRules(), this.drag.pressedAt, this.lastPointer);
     this.showDraft(this.lastPointer);
   }
 
