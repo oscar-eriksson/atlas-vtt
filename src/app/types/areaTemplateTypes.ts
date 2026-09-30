@@ -9,6 +9,13 @@ export type TemplateShape = 'line' | 'cone' | 'cube' | 'sphere' | 'emanation';
 export type TemplateOriginSnap = 'any' | 'cell-center' | 'intersection';
 
 /**
+ * Which grid cells a template highlights besides its exact outline:
+ * `any` those it touches at all, `half` those at least half covered (the
+ * Dungeon Master's Guide's grid variant), `center` those whose centre it covers.
+ */
+export type CellCoverage = 'off' | 'any' | 'half' | 'center';
+
+/**
  * A persistent area of effect on the map. Sizes are in grid cells, as
  * distances are everywhere else, so they follow the grid and not the unit.
  */
@@ -28,6 +35,8 @@ export interface AreaTemplate {
   angle: number;
   /** Cells across the creature an emanation spreads from (1 for a medium creature, 2 for a large one). */
   footprint?: number;
+  /** Which cells to highlight; unset highlights none. */
+  coverage?: CellCoverage | undefined;
   /** Hex colour; unset uses the theme accent. */
   color?: string | undefined;
   /** Whether players see the template. */

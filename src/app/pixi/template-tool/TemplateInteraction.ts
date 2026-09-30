@@ -12,6 +12,7 @@ import type { AreaTemplate, AreaTemplateInput, TemplateOriginSnap, TemplateShape
 import { cssColorToHexNumber, getObsidianAccentColor } from '../utils/colorUtils';
 import { createMeasureLabelText, drawMeasureLabel, measureLabelFontSize } from '../utils/measureDrawing';
 import { destroyTree } from '../utils/destroyTree';
+import { showCoveredCells } from './templateCellsGraphics';
 import { showTemplate } from './templateGraphics';
 
 const SHAPE_NAMES: Record<TemplateShape, string> = { line: 'line', cone: 'cone', cube: 'cube', sphere: 'sphere', emanation: 'emanation' };
@@ -33,6 +34,7 @@ export class TemplateInteraction {
   measurementSettingsProvider: (() => MeasurementSettings) | null = null;
 
   private readonly outline = new Graphics();
+  private readonly cells = new Graphics();
   private readonly hoverMarker = new Graphics();
   private readonly pill = new Graphics();
   private readonly label: Text = createMeasureLabelText();
@@ -40,6 +42,7 @@ export class TemplateInteraction {
   private draft: AreaTemplateInput | null = null;
   private moving: { id: string; offset: Point; snap: TemplateOriginSnap } | null = null;
   private outlineKey: string | undefined;
+  private cellsKey: string | undefined;
   private enabled = false;
   private readonly unsubscribeTool: () => void;
 
@@ -53,7 +56,7 @@ export class TemplateInteraction {
     private readonly gridSystem: GridSystem,
     private readonly tool: TemplateTool,
   ) {
-    for (const item of [this.outline, this.hoverMarker, this.pill, this.label]) {
+    for (const item of [this.cells, this.outline, this.hoverMarker, this.pill, this.label]) {
       item.eventMode = 'none';
       item.visible = false;
       viewport.addChild(item);
@@ -156,11 +159,13 @@ export class TemplateInteraction {
 
   private showDraft(pointer: Point): void {
     const draft = this.draft;
-    this.outline.visible = draft !== null;
+    this.outline.visible = this.cells.visible = draft !== null;
     this.label.visible = this.pill.visible = draft !== null;
     if (!draft) return;
 
-    this.outlineKey = showTemplate(this.outline, { ...draft, id: 'preview' }, this.gridSystem.getOptions().size, this.outlineKey);
+    const preview = { ...draft, id: 'preview' };
+    this.outlineKey = showTemplate(this.outline, preview, this.gridSystem.getOptions().size, this.outlineKey);
+    this.cellsKey = showCoveredCells(this.cells, preview, this.gridSystem.getOptions(), this.cellsKey);
     const settings = this.measurementSettingsProvider?.() ?? resolveMeasurementSettings(undefined, this.store.getState().grid);
     const scale = this.viewport.scale.x;
     this.label.text = `${formatDistance(draft.size, settings)} ${SHAPE_NAMES[draft.shape]}`;
@@ -174,15 +179,17 @@ export class TemplateInteraction {
     this.drag = null;
     this.draft = null;
     this.outlineKey = undefined;
+    this.cellsKey = undefined;
     this.outline.clear();
+    this.cells.clear();
     this.pill.clear();
-    for (const item of [this.outline, this.hoverMarker, this.pill, this.label]) item.visible = false;
+    for (const item of [this.cells, this.outline, this.hoverMarker, this.pill, this.label]) item.visible = false;
   }
 
   destroy(): void {
     this.unsubscribeTool();
     this.setEnabled(false);
-    for (const item of [this.outline, this.hoverMarker, this.pill, this.label]) {
+    for (const item of [this.cells, this.outline, this.hoverMarker, this.pill, this.label]) {
       item.parent?.removeChild(item);
       destroyTree(item);
     }
