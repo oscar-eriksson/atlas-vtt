@@ -3,6 +3,7 @@ import { App, Notice, TFile } from 'obsidian';
 import type { TokenEntity, TextElement, DrawingStroke, NotePin } from '../types';
 import type { WallSegment, LightSource } from '../types/wallTypes';
 import type { ViewportRect } from '../types/viewportTypes';
+import type { AreaTemplate } from '../types/areaTemplateTypes';
 import type { WidgetSettings } from '../types/widgetTypes';
 import type { HexNumberFormat } from '../grid/hexNumbering';
 import type AtlasVTTPlugin from '../../../main';
@@ -54,7 +55,7 @@ export type Pin = NotePin;
 
 // Add constants for schema identification and versioning
 export const ATLAS_SCHEMA = 'atlas-vtt' as const;
-export const ATLAS_VERSION = 5;
+export const ATLAS_VERSION = 6;
 
 /**
  * Defines the structure of the persisted .atlasmap file.
@@ -75,6 +76,7 @@ export interface MapFile {
     walls: Record<string, WallSegment>;
     lights: Record<string, LightSource>;
     viewports: Record<string, ViewportRect>;
+    templates: Record<string, AreaTemplate>;
   };
   camera: CameraState;
   followViewport?: boolean;
@@ -234,6 +236,10 @@ export function createAtlasStorage<T extends { mapPath: string | null }, S = unk
           }
           if (state && state.followViewport === undefined) {
             state.followViewport = false;
+          }
+          // v5 → v6 migration: add area templates if missing
+          if (state?.objects && !state.objects.templates) {
+            state.objects.templates = {};
           }
           if (state?.version && state.version < ATLAS_VERSION) {
             state.version = ATLAS_VERSION;
@@ -454,6 +460,7 @@ export function migrateMapFile(persisted: unknown): MapFile {
       walls: {},
       lights: {},
       viewports: {},
+      templates: {},
     },
     camera: { x: 0, y: 0, scale: 1 },
     followViewport: false,
@@ -484,6 +491,7 @@ export function migrateMapFile(persisted: unknown): MapFile {
       walls: persisted.objects?.walls || {},
       lights: persisted.objects?.lights || {},
       viewports: persisted.objects?.viewports || {},
+      templates: persisted.objects?.templates || {},
     },
     grid: persisted.grid ? migrateGrid(persisted.grid) : initial.grid,
     camera: persisted.camera || initial.camera

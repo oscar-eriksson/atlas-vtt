@@ -10,6 +10,8 @@ import type { TokenEntity, Character, NotePin, TextElement, DrawingStroke } from
 import type { FogOperation, FogOperationInput } from './types/fogTypes';
 import type { WallSegment, WallInput, LightSource, LightInput } from './types/wallTypes';
 import type { ViewportRect, ViewportInput } from './types/viewportTypes';
+import type { AreaTemplate } from './types/areaTemplateTypes';
+import { createTemplatesActions, type TemplatesSlice } from './stores/templatesSlice';
 import type { AudioSource, AudioInput } from './types/audioTypes';
 import type { AnyWidget, WidgetSettings } from './types/widgetTypes';
 import type { InitiativeState, InitiativeEntry, InitiativeConfig } from './types/initiativeTypes';
@@ -77,6 +79,7 @@ export interface ViewAtlasState {
     lights: Record<string, LightSource>;
     audios: Record<string, AudioSource>;
     viewports: Record<string, ViewportRect>;
+    templates: Record<string, AreaTemplate>;
   };
   
   // Camera state
@@ -239,6 +242,11 @@ export interface ViewAtlasState {
   duplicateMapObjects: MapObjectsSlice['duplicateMapObjects'];
   removeMapObjects: MapObjectsSlice['removeMapObjects'];
 
+  // Area templates (from templatesSlice.ts)
+  addTemplate: TemplatesSlice['addTemplate'];
+  updateTemplate: TemplatesSlice['updateTemplate'];
+  deleteTemplate: TemplatesSlice['deleteTemplate'];
+
   // Map state management
   deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio' | 'viewport', id: string) => void;
   clearMapState: () => void;
@@ -364,6 +372,7 @@ const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapP
     lights: {},
     audios: {},
     viewports: {},
+    templates: {},
   },
   camera: { x: 0, y: 0, scale: 1 },
   persistenceEnabled: true,
@@ -852,6 +861,9 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
           // --- Copy, paste and duplicate (from mapObjectsSlice.ts) ---
           ...createMapObjectsActions(set, get),
 
+          // --- Area templates (from templatesSlice.ts) ---
+          ...createTemplatesActions(set),
+
           deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio' | 'viewport', id: string) => set((draft) => {
             switch (type) {
               case 'token':
@@ -1299,6 +1311,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
               lights: {},
               audios: {},
               viewports: {},
+              templates: {},
             };
             // Reset grid to defaults
             draft.grid = {
