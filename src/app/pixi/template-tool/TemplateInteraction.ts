@@ -24,7 +24,7 @@ interface Point { x: number; y: number }
 /**
  * Places area templates: hovering shows the snapped origin, pressing sets it
  * and dragging sets the direction and length, releasing stores the template.
- * Holding Shift when pressing uses the other snap (corner or cell centre).
+ * The origin snaps to the nearest cell centre, corner or edge middle.
  * Pressing a template's origin dot, or the body of the selected template, moves
  * it instead; the move keeps the template's own snap and is one undo step.
  */
@@ -78,7 +78,7 @@ export class TemplateInteraction {
 
   private snapAt(event: FederatedPointerEvent): { origin: Point; snap: TemplateOriginSnap; pressedAt: Point } {
     const settings = this.tool.getSettings();
-    const snap = resolveOriginSnap(settings.shape, settings.footprint, settings.snap, event.shiftKey);
+    const snap = resolveOriginSnap(settings.shape, settings.footprint);
     const world = this.viewport.toWorld(event.global);
     return { origin: snapTemplateOrigin(this.gridSystem.getOptions(), world, snap), snap, pressedAt: world };
   }
