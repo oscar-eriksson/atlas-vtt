@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { templateContainsPoint, templateOutline } from '../../src/app/templates/templateGeometry';
+import { creatureSide, templateContainsPoint, templateOutline } from '../../src/app/templates/templateGeometry';
 import type { AreaTemplate } from '../../src/app/types/areaTemplateTypes';
 
 const base: AreaTemplate = { id: 't', shape: 'line', x: 100, y: 100, snap: 'intersection', size: 3, angle: 0, visibleToPlayers: true };
@@ -89,5 +89,16 @@ describe('templateContainsPoint', () => {
     // Half a cell of creature plus two cells out is 175 px; the corner is beyond the rounded arc.
     expect(at(emanation, 100 + 170, 100)).toBe(true);
     expect(at(emanation, 100 + 170, 100 + 170)).toBe(false);
+  });
+});
+
+describe('creatureSide', () => {
+  it('is the footprint in pixels for an emanation, one cell when none is given', () => {
+    expect(creatureSide('emanation', 2, CELL)).toBe(140);
+    expect(creatureSide('emanation', undefined, CELL)).toBe(70);
+  });
+
+  it('is nothing for a shape that spreads from no creature', () => {
+    for (const shape of ['line', 'cone', 'cube', 'sphere'] as const) expect(creatureSide(shape, 2, CELL)).toBeUndefined();
   });
 });

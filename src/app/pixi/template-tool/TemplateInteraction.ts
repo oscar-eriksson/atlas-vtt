@@ -4,7 +4,7 @@ import type { GridSystem } from '../../grid/GridSystem';
 import { formatDistance, resolveMeasurementSettings, type MeasurementSettings } from '../../grid/measurementFormat';
 import type { ViewAtlasStore } from '../../storeFactory';
 import { templateFromDrag } from '../../templates/templateDrag';
-import { templateContainsPoint } from '../../templates/templateGeometry';
+import { creatureSide, templateContainsPoint } from '../../templates/templateGeometry';
 import { snapTemplateOrigin } from '../../templates/templateOrigin';
 import { DEFAULT_TEMPLATE_SNAP_RULES, resolveOriginSnap, type TemplateSnapRules } from '../../templates/templateSnapRules';
 import { beginHistoryTransaction, endHistoryTransaction } from '../../stores/history';
@@ -14,6 +14,7 @@ import { cssColorToHexNumber, getObsidianAccentColor } from '../utils/colorUtils
 import { createMeasureLabelText, drawMeasureLabel, measureLabelFontSize } from '../utils/measureDrawing';
 import { destroyTree } from '../utils/destroyTree';
 import { showCoveredCells } from './templateCellsGraphics';
+import { drawCreatureOutline } from './templateDrawing';
 import { showTemplate } from './templateGraphics';
 
 const SHAPE_NAMES: Record<TemplateShape, string> = { line: 'line', cone: 'cone', cube: 'cube', sphere: 'sphere', emanation: 'emanation' };
@@ -40,6 +41,9 @@ export class TemplateInteraction {
   private readonly outline = new Graphics();
   private readonly cells = new Graphics();
   private readonly hoverMarker = new Graphics();
+  /** The creature an emanation would spread from, shown where it will be placed. */
+  private readonly hoverCreature = new Graphics();
+  private hoverCreatureSide: number | undefined;
   private readonly pill = new Graphics();
   private readonly label: Text = createMeasureLabelText();
   private drag: { origin: Point; snap: TemplateOriginSnap; pressedAt: Point } | null = null;
@@ -64,7 +68,7 @@ export class TemplateInteraction {
   ) {
     // A unit circle, drawn once; its position and scale follow the pointer and the zoom.
     this.hoverMarker.circle(0, 0, 1).fill({ color: 0xffffff, alpha: 0.9 });
-    for (const item of [this.cells, this.outline, this.hoverMarker, this.pill, this.label]) {
+    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker, this.pill, this.label]) {
       item.eventMode = 'none';
       item.visible = false;
       viewport.addChild(item);
@@ -100,6 +104,7 @@ export class TemplateInteraction {
     if (event.button !== 0) return;
     event.stopPropagation();
     this.hoverMarker.visible = false;
+    this.hoverCreature.visible = false;
     const grabbed = this.grabbedTemplate(this.viewport.toWorld(event.global));
     if (grabbed) this.startMove(grabbed, this.viewport.toWorld(event.global));
     else this.drag = this.snapAt(event);
@@ -161,10 +166,25 @@ export class TemplateInteraction {
   }
 
   private showHoverMarker(origin: Point): void {
+    this.showHoverCreature(origin);
     this.hoverMarker.position.set(origin.x, origin.y);
     this.hoverMarker.tint = cssColorToHexNumber(getObsidianAccentColor());
     this.scaleHoverMarker();
     this.hoverMarker.visible = true;
+  }
+
+  /** For an emanation, outlines the creature's space at the snapped origin; it is drawn once per size and then moved. */
+  private showHoverCreature(origin: Point): void {
+    const settings = this.tool.getSettings();
+    const side = creatureSide(settings.shape, settings.footprint, this.gridSystem.getOptions().size);
+    this.hoverCreature.visible = side !== undefined;
+    if (side === undefined) return;
+    if (side !== this.hoverCreatureSide) {
+      this.hoverCreature.clear();
+      drawCreatureOutline(this.hoverCreature, side, cssColorToHexNumber(getObsidianAccentColor()));
+      this.hoverCreatureSide = side;
+    }
+    this.hoverCreature.position.set(origin.x, origin.y);
   }
 
   /** Keeps the hover marker the same size on screen after a zoom, which moves no pointer. */
@@ -205,13 +225,13 @@ export class TemplateInteraction {
     this.outline.clear();
     this.cells.clear();
     this.pill.clear();
-    for (const item of [this.cells, this.outline, this.hoverMarker, this.pill, this.label]) item.visible = false;
+    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker, this.pill, this.label]) item.visible = false;
   }
 
   destroy(): void {
     this.unsubscribeTool();
     this.setEnabled(false);
-    for (const item of [this.cells, this.outline, this.hoverMarker, this.pill, this.label]) {
+    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker, this.pill, this.label]) {
       item.parent?.removeChild(item);
       destroyTree(item);
     }

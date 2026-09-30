@@ -18,7 +18,7 @@ export const DEFAULT_TEMPLATE_TOOL_SETTINGS: TemplateToolSettings = {
   shape: 'cone',
   footprint: 1,
   lineWidth: 1,
-  coverage: 'half',
+  coverage: 'center',
   visibleToPlayers: true,
 };
 
