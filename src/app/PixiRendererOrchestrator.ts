@@ -20,12 +20,13 @@ import { HexLinkRenderer } from "./pixi/hexLinks/HexLinkRenderer";
 import { HexLinkInteraction } from "./pixi/hexLinks/HexLinkInteraction";
 import type { MapRect } from "./grid/hexNumbering";
 import type { NotePin } from "./types";
-import { captureWithLayerVisibility, type LayerVisibility } from "./pixi/playerSafeFrame";
+import { captureWithLayerVisibility, type FrameSize, type LayerVisibility } from "./pixi/playerSafeFrame";
 import type { PlayerCameraState } from "./local-player-view";
 import { SelectionManager } from "./pixi/SelectionManager"; // Import SelectionManager
 import { FogOfWarRenderer } from "./pixi/fog/FogOfWarRenderer";
 import { MeasureRenderer } from "./pixi/MeasureRenderer"; // Import MeasureRenderer
 import { TemplateRenderer } from "./pixi/template-tool/TemplateRenderer";
+import { PlayerFrameRenderer } from "./pixi/PlayerFrameRenderer";
 import { TemplateInteraction } from "./pixi/template-tool/TemplateInteraction";
 import { TemplateTool } from "./tools/TemplateTool";
 import { LaserPointerRenderer } from "./pixi/LaserPointerRenderer"; // Import LaserPointerRenderer
@@ -69,6 +70,7 @@ export class PixiRendererOrchestrator { // Renamed class
   private fogRenderer?: FogOfWarRenderer; // Add FogRenderer instance
   private measureRenderer?: MeasureRenderer; // Add MeasureRenderer instance
   private templateRenderer?: TemplateRenderer;
+  private readonly playerFrameRenderer = new PlayerFrameRenderer();
   private templateInteraction?: TemplateInteraction;
   private templateTool?: TemplateTool;
   private laserPointerRenderer?: LaserPointerRenderer; // Add LaserPointerRenderer instance
@@ -774,6 +776,27 @@ export class PixiRendererOrchestrator { // Renamed class
   public withPlayerSafeFrame(capture: () => void, settings: AtlasSettings['localPlayerView'], camera?: PlayerCameraState): void {
     const app = this.pixiAppManager.getApp();
     if (!app?.renderer) return;
+    const viewport = this.pixiAppManager.getViewport();
+    const playerCamera = camera && viewport ? { target: viewport, camera } : undefined;
+    captureWithLayerVisibility(this.playerFrameLayers(settings), () => app.renderer.render(app.stage), capture, playerCamera);
+  }
+
+  /**
+   * The frame players see, rendered at `size` on a texture of its own so their
+   * screen gets every pixel it has and the DM's canvas is left alone. `camera`
+   * is in the terms of the DM's own pane, and defaults to the DM's camera.
+   * Returns null where the frame can only be taken from the DM's canvas.
+   */
+  public renderPlayerFrame(size: FrameSize, settings: AtlasSettings['localPlayerView'], camera?: PlayerCameraState): HTMLCanvasElement | null {
+    const app = this.pixiAppManager.getApp();
+    const viewport = this.pixiAppManager.getViewport();
+    if (!app?.renderer || !viewport) return null;
+    const framing = camera ?? { centerX: viewport.center.x, centerY: viewport.center.y, scale: viewport.scale.x };
+    return this.playerFrameRenderer.render(app, viewport, this.playerFrameLayers(settings), size, framing);
+  }
+
+  /** What players must not see, or see differently, while the DM's scene is rendered for them. */
+  private playerFrameLayers(settings: AtlasSettings['localPlayerView']): LayerVisibility[] {
     const layers: LayerVisibility[] = [];
     if (this.pinRenderer) layers.push({ layer: this.pinRenderer.getPinContainer(), visible: false });
     if (this.hexLinkRenderer) layers.push({ layer: this.hexLinkRenderer.container, visible: false });
@@ -785,9 +808,7 @@ export class PixiRendererOrchestrator { // Renamed class
     for (const overlay of this.dmScreenOverlays) layers.push({ layer: overlay, visible: false });
     if (this.viewportRectRenderer) layers.push({ layer: this.viewportRectRenderer.container, visible: false });
     if (this.templateRenderer) layers.push({ layer: this.templateRenderer.gmContainer, visible: false });
-    const viewport = this.pixiAppManager.getViewport();
-    const playerCamera = camera && viewport ? { target: viewport, camera } : undefined;
-    captureWithLayerVisibility(layers, () => app.renderer.render(app.stage), capture, playerCamera);
+    return layers;
   }
 
   /**
@@ -1516,6 +1537,7 @@ export class PixiRendererOrchestrator { // Renamed class
     this.hexLinkRenderer?.destroy();
     this.fogRenderer?.destroy(); // Destroy FogRenderer
     this.measureRenderer?.destroy(); // Destroy MeasureRenderer
+    this.playerFrameRenderer.destroy();
     this.templateInteraction?.destroy();
     this.templateTool?.destroy();
     this.templateRenderer?.destroy();

@@ -9,10 +9,16 @@ import type { PlayerOverlay } from './PlayerSceneOverlay';
 import { PlayerDiceRolls } from './PlayerDiceRolls';
 import { PlayerWidgetBar } from './PlayerWidgetBar';
 import { LocalPlayerView, LOCAL_PLAYER_VIEW_TYPE, type PlayerCameraState } from '../local-player-view';
+import type { FrameSize } from '../pixi/playerSafeFrame';
 import { freezeCanvasFrame, type SceneTransition } from '../pixi/sceneTransition';
 import type { ViewportRect } from '../types/viewportTypes';
 
 /** Scopes the rules in `player-window.scss` to the popout document. */
+declare const __ATLAS_RELEASE_BUILD__: boolean | undefined;
+
+/** The longest edge, in pixels, of a frame rendered for the player window; a 4K screen fits, and a huge window cannot ask for a texture the GPU refuses. */
+const MAX_PLAYER_FRAME_EDGE = 4096;
+
 const PLAYER_WINDOW_BODY_CLASS = 'atlas-player-window';
 /** Set once frames are being mirrored: swaps the loading message for the canvas. */
 const PLAYER_WINDOW_LIVE_CLASS = 'atlas-player-window--live';
@@ -32,6 +38,11 @@ export interface PlayerFrameSource {
    * rendered from `camera` when given instead of the DM's camera.
    */
   withPlayerSafeFrame(capture: () => void, settings: AtlasSettings['localPlayerView'], camera?: PlayerCameraState): void;
+  /**
+   * The frame players see, rendered at `size` apart from `canvas`, so the screen gets
+   * every pixel it has. Null where it can only be taken from `canvas`.
+   */
+  renderPlayerFrame?(size: FrameSize, settings: AtlasSettings['localPlayerView'], camera?: PlayerCameraState): HTMLCanvasElement | null;
   /** Renders of `canvas` so far. When given, frames are only mirrored after the canvas changed. */
   getRenderedFrames?(): number | undefined;
   /** Camera that fits `rect`'s world bounds into the DM's current render surface, for "Follow viewport". */
@@ -416,6 +427,7 @@ export class PlayerWindowService {
     let lastHeldFrame: HTMLCanvasElement | null = null;
     let lastDrawnCanvas: HTMLCanvasElement | null = null;
     let lastRenderedFrames: number | undefined;
+    let lastFrameSize = '';
     const loopId = ++this.mirrorLoopId;
     this.isMirrorStale = true;
 
@@ -451,16 +463,25 @@ export class PlayerWindowService {
         // A live frame only changes when the DM canvas rendered something new
         const source = this.streamSource;
         const renderedFrames = source.getRenderedFrames?.();
-        const isUnchanged = !this.isMirrorStale && lastDrawnCanvas === source.canvas
+        // A window of another size needs a frame of that size, even when the scene did not change.
+        const size = this.playerFrameSize();
+        const frameSize = size ? `${size.width}x${size.height}` : '';
+        const isUnchanged = !this.isMirrorStale && lastDrawnCanvas === source.canvas && frameSize === lastFrameSize
           && renderedFrames !== undefined && renderedFrames === lastRenderedFrames;
         if (isUnchanged) return;
         lastDrawnCanvas = source.canvas;
         lastRenderedFrames = renderedFrames;
+        lastFrameSize = frameSize;
         this.isMirrorStale = false;
 
         const viewportCamera = this.getViewportFollowCamera();
         const frozenCamera = viewportCamera ?? this.frozenCamera ?? undefined;
-        source.withPlayerSafeFrame(() => draw(source.canvas), this.settingsService.getLocalPlayerViewSettings(), frozenCamera);
+        const settings = this.settingsService.getLocalPlayerViewSettings();
+        const started = performance.now();
+        const frame = size ? source.renderPlayerFrame?.(size, settings, frozenCamera ?? source.getCamera?.()) : null;
+        if (frame && size) this.noteFrameCost(performance.now() - started, size);
+        if (frame) draw(frame);
+        else source.withPlayerSafeFrame(() => draw(source.canvas), settings, frozenCamera);
         this.recordPlayerCamera(frozenCamera ?? source.getCamera?.());
       } catch (error) {
         console.error('[PlayerWindowService] Error copying canvas:', error);
@@ -469,6 +490,28 @@ export class PlayerWindowService {
 
     // Start the copy loop
     copyCanvas();
+  }
+
+  private frameCosts: number[] = [];
+
+  /** Development builds report what a player frame costs, every so many frames, to judge the render against the window's size. */
+  private noteFrameCost(milliseconds: number, size: FrameSize): void {
+    if (typeof __ATLAS_RELEASE_BUILD__ === 'undefined' || __ATLAS_RELEASE_BUILD__) return;
+    this.frameCosts.push(milliseconds);
+    if (this.frameCosts.length < 30) return;
+    const average = this.frameCosts.reduce((sum, cost) => sum + cost, 0) / this.frameCosts.length;
+    console.debug(`[Atlas] player frame ${size.width}x${size.height}: ${average.toFixed(1)} ms on average, ${Math.max(...this.frameCosts).toFixed(1)} ms at worst, over ${this.frameCosts.length} frames`);
+    this.frameCosts = [];
+  }
+
+  /** The player window's size in device pixels: what a frame needs to be sharp on it. None while it has no size. */
+  private playerFrameSize(): FrameSize | null {
+    const win = this.playerWindow;
+    if (!win || win.closed) return null;
+    const scale = win.devicePixelRatio || 1;
+    const width = Math.min(Math.round(win.innerWidth * scale), MAX_PLAYER_FRAME_EDGE);
+    const height = Math.min(Math.round(win.innerHeight * scale), MAX_PLAYER_FRAME_EDGE);
+    return width > 0 && height > 0 ? { width, height } : null;
   }
 
   /** Persist the camera players see so a restored window reopens on the same framing. */

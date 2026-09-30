@@ -1,5 +1,21 @@
 import type { PlayerCameraState } from '../local-player-view';
 
+/** A width and a height in pixels. */
+export interface FrameSize {
+  width: number;
+  height: number;
+}
+
+/**
+ * The camera for a surface of `target` size that shows what `camera` shows on
+ * one of `source` size: the same centre, the zoom scaled so all of it fits
+ * whatever the two shapes are.
+ */
+export function fitCameraToSize(camera: PlayerCameraState, source: FrameSize, target: FrameSize): PlayerCameraState {
+  if (source.width <= 0 || source.height <= 0) return camera;
+  return { ...camera, scale: camera.scale * Math.min(target.width / source.width, target.height / source.height) };
+}
+
 /** Anything whose `visible` flag decides whether it is part of the next render. */
 export interface HideableLayer {
   visible: boolean;
@@ -71,13 +87,15 @@ function applyCamera({ target, camera }: PlayerFrameCamera): () => void {
 
 /**
  * Temporarily apply player visibility, opacity and (optionally) a frozen player
- * camera, then restore the DM frame.
+ * camera, then restore the DM frame. `restore` draws the DM frame again; it
+ * is `render` unless the capture rendered somewhere else than the DM's canvas.
  */
 export function captureWithLayerVisibility(
   layers: readonly LayerVisibility[],
   render: () => void,
   capture: () => void,
   camera?: PlayerFrameCamera,
+  restore: () => void = render,
 ): void {
   const changed = layers.filter(({ layer, visible, alpha }) =>
     layer.visible !== visible || (alpha !== undefined && layer.alpha !== alpha))
@@ -100,6 +118,6 @@ export function captureWithLayerVisibility(
       layer.visible = previous;
       if (alpha !== undefined) layer.alpha = previousAlpha;
     }
-    render();
+    restore();
   }
 }
