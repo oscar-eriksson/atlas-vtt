@@ -3,6 +3,7 @@ import type { FogOperation } from './fogTypes';
 import type { WallSegment } from './wallTypes';
 import type { LightSource, LightZone, SceneLighting } from './lightingTypes';
 import type { AudioSource } from './audioTypes';
+import type { AreaTemplate } from './areaTemplateTypes';
 import type { WidgetSettings } from './widgetTypes';
 import type { InitiativeState } from './initiativeTypes';
 import type { DiceRollResult } from './diceTypes';
@@ -83,6 +84,7 @@ export interface ViewState extends ViewUIState {
     liquids?: Record<string, LiquidSurface>;
     /** Areas carved out of the rock, whose outline stands as walls; absent until the first is carved. Read with `roomList`. */
     rooms?: Record<string, Room>;
+    templates: Record<string, AreaTemplate>;
   };
 
   // Camera state

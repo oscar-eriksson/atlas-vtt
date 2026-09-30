@@ -12,6 +12,7 @@ import type { TokenEntity, Character, NotePin, TextElement, DrawingStroke } from
 import type { FogOperation, FogOperationInput } from './types/fogTypes';
 import type { WallSegment, WallInput } from './types/wallTypes';
 import { DEFAULT_SCENE_LIGHTING, type LightChanges, type LightInput, type LightZoneChanges, type LightZoneInput, type SceneLightingChanges, type SceneLightingOption } from './types/lightingTypes';
+import { createTemplatesActions, type TemplatesSlice } from './stores/templatesSlice';
 import type { AudioSource, AudioInput } from './types/audioTypes';
 import type { AnyWidget, WidgetSettings } from './types/widgetTypes';
 import type { InitiativeEntry, InitiativeConfig } from './types/initiativeTypes';
@@ -272,6 +273,11 @@ export interface ViewAtlasState extends ViewState {
   removeMapObjects: MapObjectsSlice['removeMapObjects'];
   placeOffMapToken: MapObjectsSlice['placeOffMapToken'];
 
+  // Area templates (from templatesSlice.ts)
+  addTemplate: TemplatesSlice['addTemplate'];
+  updateTemplate: TemplatesSlice['updateTemplate'];
+  deleteTemplate: TemplatesSlice['deleteTemplate'];
+
   // Map state management
   deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio', id: string) => void;
   clearMapState: () => void;
@@ -389,6 +395,7 @@ const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapP
     walls: {},
     lights: {},
     audios: {},
+    templates: {},
   },
   camera: { x: 0, y: 0, scale: 1 },
   persistenceEnabled: true,
@@ -930,6 +937,9 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
           // --- Copy, paste and duplicate (from mapObjectsSlice.ts) ---
           ...createMapObjectsActions(set, get),
 
+          // --- Area templates (from templatesSlice.ts) ---
+          ...createTemplatesActions(set),
+
           deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio', id: string) => set((draft) => {
             switch (type) {
               case 'token':
@@ -1396,6 +1406,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
               walls: {},
               lights: {},
               audios: {},
+              templates: {},
             };
             // Reset grid to defaults
             draft.grid = {
