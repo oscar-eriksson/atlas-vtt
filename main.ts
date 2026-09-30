@@ -19,6 +19,7 @@ import { AssetService } from './src/app/services/AssetService';
 import { SettingsService } from './src/app/services/SettingsService';
 import { addStarterTokens } from './src/app/services/starterTokens';
 import type { WidgetSyncService } from './src/app/services/WidgetSyncService';
+import { createMapFromImage } from './src/app/mapFromImage/createMapFromImage';
 import { AtlasSettingTab } from './src/app/settings/AtlasSettingTab';
 import { changelogSettingsSection } from './src/app/settings/changelogSettingsSection';
 import { hotkeySettingsSection, onboardingSettingsSection } from './src/app/settings/hotkeySettingsSection';
@@ -89,6 +90,7 @@ export default class AtlasVTTPlugin extends Plugin {
 
     this.globalAssetManager = new GlobalAssetManagerService(this.app);
     this.imageDisplayService = new ImageDisplayService(this.app);
+    this.imageDisplayService.registerImageAction({ title: 'Create Atlas map…', icon: 'map', run: (file) => void createMapFromImage(this.app, file) });
 
     this.addSettingTab(new AtlasSettingTab(this.app, this, () => [
       navigationSettingsSection(this.settingsService),

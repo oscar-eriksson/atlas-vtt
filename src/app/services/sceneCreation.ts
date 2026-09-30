@@ -12,6 +12,16 @@ export interface NewSceneOptions {
   backgroundPath: string | null;
 }
 
+/** Where the map file of the scene `name` in a collection lives. */
+export function sceneFilePath(collectionId: string, name: string): string {
+  return normalizePath(`atlas-vtt/collections/${collectionId}/scenes/${name.trim()}.atlasmap`);
+}
+
+/** Whether the collection has no scene called `name` yet. */
+export function sceneNameIsFree(app: App, collectionId: string, name: string): boolean {
+  return !app.vault.getAbstractFileByPath(sceneFilePath(collectionId, name));
+}
+
 /** Thrown when the collection already has a scene with the chosen name. */
 export class SceneNameTakenError extends Error {
   constructor(name: string) {
@@ -63,8 +73,8 @@ export async function createScene(app: App, assetService: AssetService, collecti
     throw new Error(`Collection "${collectionId}" no longer exists. Select another collection and try again.`);
   }
   const name = options.name.trim();
-  const scenePath = normalizePath(`atlas-vtt/collections/${collection.id}/scenes/${name}.atlasmap`);
-  if (app.vault.getAbstractFileByPath(scenePath)) throw new SceneNameTakenError(name);
+  const scenePath = sceneFilePath(collection.id, name);
+  if (!sceneNameIsFree(app, collection.id, name)) throw new SceneNameTakenError(name);
 
   const mapData = newSceneMapData(assetService.getCollectionSettings(collection.id), options.backgroundPath);
   return assetService.runExclusive(async () => {
