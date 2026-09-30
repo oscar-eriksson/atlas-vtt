@@ -74,7 +74,8 @@ function cellsInBox(grid: GridGeometry, box: ReturnType<typeof bounds>): Point[]
   return [...seen.values()];
 }
 
-const centreOf = (cell: readonly Point[]): Point => ({
+/** The middle of a cell's outline. */
+export const cellCentre = (cell: readonly Point[]): Point => ({
   x: cell.reduce((sum, point) => sum + point.x, 0) / cell.length,
   y: cell.reduce((sum, point) => sum + point.y, 0) / cell.length,
 });
@@ -90,7 +91,7 @@ export function coveredCells(template: AreaTemplate, grid: GridGeometry, rule: E
   const outline = templateOutline(template, grid.size);
   const shape = outlinePolygon(outline);
   return cellsInBox(grid, bounds(shape)).filter((cell) => {
-    if (rule === 'center') return templateContainsPoint(template, grid.size, centreOf(cell));
+    if (rule === 'center') return templateContainsPoint(template, grid.size, cellCentre(cell));
     const overlap = polygonArea(clipToConvex(shape, cell));
     return rule === 'any' ? overlap > MIN_OVERLAP * polygonArea(cell) : overlap >= polygonArea(cell) / 2 - MIN_OVERLAP * polygonArea(cell);
   });
