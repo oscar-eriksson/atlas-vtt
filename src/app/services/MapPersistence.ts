@@ -4,6 +4,7 @@ import type { App } from 'obsidian';
 import type { TokenEntity, TextElement, DrawingStroke, NotePin } from '../types';
 import type { WallSegment } from '../types/wallTypes';
 import type { LightSource, LightZone } from '../types/lightingTypes';
+import type { AreaTemplate } from '../types/areaTemplateTypes';
 import type { WidgetSettings } from '../types/widgetTypes';
 import type { CellNumberFormat } from '../grid/cellNumbering';
 import type AtlasVTTPlugin from '../../../main';
@@ -73,6 +74,8 @@ export interface MapFile {
     mapFeatures?: Record<string, MapFeature>;
     /** Water, lava and acid that move on animated maps; absent until a map has some. */
     liquids?: Record<string, LiquidSurface>;
+    /** Absent in files from before area templates, and until a map has one. */
+    templates?: Record<string, AreaTemplate>;
   };
   camera: CameraState;
   /** Frames the GM saved for the players' TV; absent in older files and until a scene has one. Read with `readPlayerFrames`. */
@@ -123,7 +126,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** The kinds of objects a scene in memory always holds a record of (`ViewState['objects']`). */
-const OBJECT_KINDS = ['tokens', 'fog', 'pins', 'texts', 'drawings', 'walls', 'lights', 'audios'] as const;
+const OBJECT_KINDS = ['tokens', 'fog', 'pins', 'texts', 'drawings', 'walls', 'lights', 'audios', 'templates'] as const;
 
 /** Gives `objects` an empty record of every kind it lacks; what it holds stays as it is. */
 function fillObjectKinds(objects: Record<string, unknown>): void {
@@ -417,6 +420,7 @@ export function migrateMapFile(persisted: unknown): MapFile {
       drawings: {},
       walls: {},
       lights: {},
+      templates: {},
     },
     camera: { x: 0, y: 0, scale: 1 }
   };
@@ -461,6 +465,7 @@ export function migrateMapFile(persisted: unknown): MapFile {
       ...(surfaces && { levelSurfaces: surfaces }),
       ...(features && { mapFeatures: features }),
       ...(liquids && { liquids }),
+      templates: isRecord(persisted.objects?.templates) ? persisted.objects.templates : {},
     },
     grid: persisted.grid ? migrateGrid(persisted.grid) : initial.grid,
     camera: persisted.camera || initial.camera

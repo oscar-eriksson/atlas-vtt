@@ -3,6 +3,7 @@ import type { FogOperation } from './fogTypes';
 import type { WallSegment } from './wallTypes';
 import type { LightSource, LightZone, SceneLighting } from './lightingTypes';
 import type { AudioSource } from './audioTypes';
+import type { AreaTemplate } from './areaTemplateTypes';
 import type { WidgetSettings } from './widgetTypes';
 import type { InitiativeState } from './initiativeTypes';
 import type { DiceRollResult } from './diceTypes';
@@ -79,6 +80,7 @@ export interface ViewState extends ViewUIState {
     mapFeatures?: Record<string, MapFeature>;
     /** Water, lava and acid that move while maps are animated; absent until the first is added. Read with `liquidList`. */
     liquids?: Record<string, LiquidSurface>;
+    templates: Record<string, AreaTemplate>;
   };
 
   // Camera state
