@@ -11,6 +11,7 @@ import type { PlayerOverlay } from './PlayerSceneOverlay';
 import { PlayerDiceRolls } from './PlayerDiceRolls';
 import { PlayerWidgetBar } from './PlayerWidgetBar';
 import { LocalPlayerView, LOCAL_PLAYER_VIEW_TYPE, type PlayerCameraState } from '../local-player-view';
+import { playerFloorHolds } from '../stores/floorsSlice';
 import { freezeCanvasFrame, type SceneTransition } from '../pixi/sceneTransition';
 import { t } from '../i18n';
 import { cannotRender, PlayerFrameMirror, type PlayerFrameSource } from './PlayerFrameMirror';
@@ -58,6 +59,8 @@ export class PlayerWindowService {
   private viewportFollowEnabled = false;
   /** Last player frame, shown unchanged while the DM works on another scene tab. */
   private heldFrame: HTMLCanvasElement | null = null;
+  /** The last frame of the floor the players are kept on, shown while the DM is on another floor. Apart from `heldFrame`, which a scene change holds. */
+  private floorHeldFrame: HTMLCanvasElement | null = null;
   /** Crossfade from the previous map, still playing after the DM presented another scene. */
   private mapTransition: SceneTransition | null = null;
   private static instance: PlayerWindowService | null = null;
@@ -308,6 +311,20 @@ export class PlayerWindowService {
   }
 
   /** Copy the frame players currently see so it can be held while the DM is elsewhere. */
+  /**
+   * The still frame players see instead of the live canvas: the scene change's, or the last frame of a floor
+   * they are kept on while the DM works on another, until the DM is back on it or lets them follow.
+   */
+  private heldPlayerFrame(): HTMLCanvasElement | null {
+    const holdsFloor = playerFloorHolds((this.streamSource?.store ?? this.store).getState());
+    if (holdsFloor && !this.floorHeldFrame && !this.heldFrame) this.floorHeldFrame = this.snapshotPlayerFrame();
+    if (!holdsFloor && this.floorHeldFrame) {
+      this.floorHeldFrame = null;
+      this.mirror?.markStale();
+    }
+    return this.heldFrame ?? (holdsFloor ? this.floorHeldFrame : null);
+  }
+
   private snapshotPlayerFrame(): HTMLCanvasElement | null {
     if (!this.streamSource || !this.playerWindow || this.playerWindow.closed) return null;
 
@@ -470,7 +487,7 @@ export class PlayerWindowService {
     const mirror = new PlayerFrameMirror(targetCanvas, targetCtx, {
       source: () => this.streamSource,
       window: () => this.windowScreen(targetCanvas),
-      heldFrame: () => this.heldFrame,
+      heldFrame: () => this.heldPlayerFrame(),
       // Following the TV viewport wins over a freeze: it is the deliberate choice for the physical table.
       frozenCamera: () => this.getViewportFollowCamera() ?? this.frozenCamera,
       settings: () => this.settingsService.getLocalPlayerViewSettings(),
@@ -545,6 +562,7 @@ export class PlayerWindowService {
     this.playerView = null;
     this.streamSource = null;
     this.heldFrame = null;
+    this.floorHeldFrame = null;
     this.frozenCamera = null;
     this.shownCamera = null;
     resetPlayerWindowStore();

@@ -48,12 +48,16 @@ A map file from before floors opens as one floor, "Floor 1".
 
 ## The players' floor
 
-While the DM and the players are on the same floor, nothing changes: the players' frame is rendered from the DM's
-scene. When they are on different floors, the players' floor is not in the DM's scene at all (`objects` is the
-DM's floor). Because the DM is editing another floor, the players' floor stays as it is until the DM switches
-to it, so it can be a scene of its own built once from the saved floor and redrawn only when that floor changes.
-`PlayerView` shows the pieces already exist to run a second scene from a second store. This is the largest and
-least certain part, so it comes last.
+The players either follow the DM's floor or are kept on a floor the DM chooses (`playerFloorId`, not saved: a scene
+always opens with the players following). Nothing is drawn differently: while the DM is on the floor the players are
+kept on, frames are live as always; when the DM moves to another floor, the players stay on the last frame of
+theirs (`PlayerWindowService` holds a snapshot, the way it does for a scene change), and go live again when the DM
+is back on that floor or lets them follow.
+
+This costs no second scene. The one limit: a floor can only be shown to the players by taking the DM to it first
+(Show to players switches to it and keeps the players there), because the players' frame is a render of the
+DM's scene. What the players see of a floor they are kept on does not update while the DM is away, which is when
+nothing on it can change anyway, and a resized player window keeps the old frame until the DM returns.
 
 ## Phases
 
@@ -61,7 +65,7 @@ least certain part, so it comes last.
    a floor list in the toolbar (add, rename, delete, reorder, a background for each), per-floor undo history.
    Players follow the DM's floor.
 2. **Across floors.** Move tokens to another floor, stairs pins, copy and paste between floors.
-3. **The players' own floor.** A second scene for a floor the DM is not on, and a control to pin the players.
+3. **The players' own floor.** Follow or keep the players on a floor (done, without a second scene).
 4. **Polish.** Show the floor below faintly, scene thumbnails and the dashboard, fit-to-view per floor.
 
 ## Risks
