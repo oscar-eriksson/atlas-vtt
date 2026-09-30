@@ -13,6 +13,13 @@ import { showNotice } from '../ui/notice';
 import { statblockImageAt } from './statblockImageTarget';
 import { playerWindowStore } from '../stores/playerWindowStore';
 
+/** An action other parts of Atlas add to the right-click menu of an image. */
+export interface ImageMenuAction {
+  title: string;
+  icon: string;
+  run: (file: TFile) => void;
+}
+
 /** An image overlay in the player window. */
 interface ImageDisplay {
   container: HTMLDivElement;
@@ -35,6 +42,7 @@ export class ImageDisplayService {
   private lastContextMenuTarget: HTMLElement | null = null;
   private contextMenuEventRefs: EventRef[] = [];
   private contextMenuRegistered = false;
+  private readonly imageActions: ImageMenuAction[] = [];
 
   constructor(app: App) {
     this.app = app;
@@ -45,6 +53,11 @@ export class ImageDisplayService {
 
   public static getInstance(): ImageDisplayService | null {
     return ImageDisplayService.instance;
+  }
+
+  /** Adds an action to the right-click menu of every image: in the file explorer, links, embeds in notes and image views. */
+  public registerImageAction(action: ImageMenuAction): void {
+    this.imageActions.push(action);
   }
 
   /**
@@ -60,7 +73,7 @@ export class ImageDisplayService {
     // Register for file menu (in file explorer)
     const fileMenuRef = this.app.workspace.on('file-menu', (menu, file) => {
       if (file instanceof TFile && this.isImageFile(file)) {
-        this.addImageDisplayMenuItem(menu, file);
+        this.addImageMenuItems(menu, file);
       }
     });
     this.contextMenuEventRefs.push(fileMenuRef);
@@ -69,7 +82,7 @@ export class ImageDisplayService {
     const linkMenuRef = this.app.workspace.on('link-menu', (menu, linktext, sourcePath) => {
       const file = this.app.metadataCache.getFirstLinkpathDest(linktext, sourcePath);
       if (file instanceof TFile && this.isImageFile(file)) {
-        this.addImageDisplayMenuItem(menu, file);
+        this.addImageMenuItems(menu, file);
       }
     });
     this.contextMenuEventRefs.push(linkMenuRef);
@@ -88,7 +101,7 @@ export class ImageDisplayService {
       const result = this.resolveImageFromTarget(target);
       if (!result) return;
 
-      this.addImageDisplayMenuItem(menu, result.file);
+      this.addImageMenuItems(menu, result.file);
       menu.addItem((item) => {
         item.setTitle(t('image.copy')).setIcon('copy').onClick(() => this.copyImageToClipboard(result.imgElement));
       });
@@ -220,6 +233,7 @@ export class ImageDisplayService {
 
     const entries: ContextMenuEntry[] = [
       { type: 'item', label: t('image.display'), icon: 'monitor', onClick: () => this.displayImageOnPlayerView(file) },
+      ...this.imageActions.map((action): ContextMenuEntry => ({ type: 'item', label: action.title, icon: action.icon, onClick: () => action.run(file) })),
       { type: 'item', label: t('image.copy'), icon: 'copy', onClick: () => this.copyImageToClipboard(imgElement) },
       { type: 'item', label: t('image.openDefaultMenu'), icon: 'external-link', onClick: () => this.app.openWithDefaultApp(file.path) },
     ];
@@ -263,10 +277,8 @@ export class ImageDisplayService {
     });
   }
 
-  /**
-   * Add menu item to display image on player view
-   */
-  private addImageDisplayMenuItem(menu: Menu, file: TFile): void {
+  /** Adds the image's menu items: display on the player view, then the actions other parts of Atlas registered. */
+  private addImageMenuItems(menu: Menu, file: TFile): void {
     menu.addItem((item) => {
       item
         .setTitle(t('image.display'))
@@ -275,6 +287,9 @@ export class ImageDisplayService {
           await this.displayImageOnPlayerView(file);
         });
     });
+    for (const action of this.imageActions) {
+      menu.addItem((item) => item.setTitle(action.title).setIcon(action.icon).onClick(() => action.run(file)));
+    }
   }
 
   /**
