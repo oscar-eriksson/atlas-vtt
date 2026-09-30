@@ -57,18 +57,13 @@ describe('templateFromDrag', () => {
 });
 
 describe('resolveOriginSnap', () => {
-  it('starts where the GM chose', () => {
-    expect(resolveOriginSnap('cone', 1, 'intersection', false)).toBe('intersection');
-    expect(resolveOriginSnap('cone', 1, 'cell-center', false)).toBe('cell-center');
+  it('lets every shape but an emanation snap to any cell centre, corner or edge middle', () => {
+    for (const shape of ['line', 'cone', 'cube', 'sphere'] as const) expect(resolveOriginSnap(shape, 1)).toBe('any');
   });
 
-  it('flips to the other snap while Shift is held', () => {
-    expect(resolveOriginSnap('sphere', 1, 'intersection', true)).toBe('cell-center');
-    expect(resolveOriginSnap('sphere', 1, 'cell-center', true)).toBe('intersection');
-  });
-
-  it('centres an emanation on its footprint whatever the choice', () => {
-    expect(resolveOriginSnap('emanation', 1, 'intersection', true)).toBe('cell-center');
-    expect(resolveOriginSnap('emanation', 2, 'cell-center', false)).toBe('intersection');
+  it('centres an emanation on its footprint', () => {
+    expect(resolveOriginSnap('emanation', 1)).toBe('cell-center');
+    expect(resolveOriginSnap('emanation', 2)).toBe('intersection');
+    expect(resolveOriginSnap('emanation', 3)).toBe('cell-center');
   });
 });
