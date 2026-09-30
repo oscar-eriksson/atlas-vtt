@@ -9,9 +9,10 @@ import { FogToolGroup } from "./FogToolGroup"
 import { LightingToolGroup } from "./LightingToolGroup"
 import { MeasureToolGroup } from "./MeasureToolGroup"
 import { MoveToolGroup } from "./MoveToolGroup"
+import { TemplateToolGroup } from "./TemplateToolGroup"
 import { TextToolGroup } from "./TextToolGroup"
 import { ViewportToolGroup } from "./ViewportToolGroup"
-import { drawToolFace, fogToolFace, lightingToolFace, measureToolFace, moveToolFace, textToolFace, viewportToolFace, type Tool, type ToolFace } from "./toolFaces"
+import { drawToolFace, fogToolFace, lightingToolFace, measureToolFace, moveToolFace, templateToolFace, textToolFace, viewportToolFace, type Tool, type ToolFace } from "./toolFaces"
 import { buttonItem, toolGroupItem, type ToolbarItemBody } from "./toolbarItems"
 import type { ToolbarContext } from "./toolbarContext"
 import { t } from "../../../i18n"
@@ -29,6 +30,7 @@ export const TOOLBAR_CONTROL_ITEMS = {
   draw: ctx => toolGroupItem(ctx, 'draw', drawToolFace(ctx.activeTool), <DrawToolGroup {...ctx.groupControls('draw')} />),
   text: ctx => toolGroupItem(ctx, 'text', textToolFace(ctx.activeTool), <TextToolGroup {...ctx.groupControls('text')} />),
   measure: ctx => toolGroupItem(ctx, 'measure', measureToolFace(ctx.activeTool), <MeasureToolGroup {...ctx.groupControls('measure')} />),
+  template: ctx => toolGroupItem(ctx, 'template', templateToolFace(ctx.activeTool), <TemplateToolGroup {...ctx.groupControls('template')} />),
   wall: ctx => toolGroupItem(ctx, 'wall', lightingToolFace(ctx.activeTool), <LightingToolGroup {...ctx.groupControls('wall')} />),
   pin: ctx => toolButtonItem(ctx, "note-pin", MapPin, t('toolbar.notePin'), ctx.hotkeyLabel('pin')),
   audio: ctx => toolButtonItem(ctx, "audio", Volume2, t('toolbar.ambientSound'), ctx.hotkeyLabel('audio')),

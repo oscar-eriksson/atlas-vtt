@@ -3,10 +3,7 @@
  * one undo step and one map save.
  */
 
-import type { AreaTemplate } from '../types/areaTemplateTypes';
-
-/** What a new template needs; the store adds its id. */
-export type AreaTemplateInput = Omit<AreaTemplate, 'id'>;
+import type { AreaTemplate, AreaTemplateInput } from '../types/areaTemplateTypes';
 
 export interface TemplatesSlice {
   /** Adds the template, selects nothing, and returns its new id. */

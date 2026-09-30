@@ -49,6 +49,7 @@ export const toolbar = {
   'toolbar.viewportUnitCm': 'Centimetres',
   'toolbar.viewportFollow': 'Follow viewport',
   'toolbar.viewportRemove': 'Remove viewport',
+  'toolbar.templateTool': 'Area Templates',
   'toolbar.moveSelect': 'Move/Select',
   'toolbar.drawTool': 'Draw Tool',
   'toolbar.measureCircle': 'Measure Circle',

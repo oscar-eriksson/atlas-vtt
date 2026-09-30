@@ -47,6 +47,10 @@ export const TOOLBAR_CONTROLS = [
     description: t('toolbarEdit.measure.description'),
   },
   {
+    id: 'template', label: t('toolbarEdit.template.label'), hotkey: 'template', dmOnly: true, hideable: true,
+    description: t('toolbarEdit.template.description'),
+  },
+  {
     id: 'wall', label: t('toolbarEdit.wall.label'), hotkey: 'wall', dmOnly: true, hideable: true, experimental: 'dynamicLighting',
     description: t('toolbarEdit.wall.description'),
   },

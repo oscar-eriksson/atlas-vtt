@@ -1,0 +1,63 @@
+import { describe, expect, it } from 'vitest';
+import { templateFromDrag } from '../../src/app/templates/templateDrag';
+import { resolveOriginSnap } from '../../src/app/templates/templateOrigin';
+import { DEFAULT_TEMPLATE_TOOL_SETTINGS, type TemplateToolSettings } from '../../src/app/tools/templateToolSettings';
+
+const grid = { type: 'square' as const, size: 70, offsetX: 0, offsetY: 0 };
+const origin = { x: 140, y: 140 };
+const settings = (changes: Partial<TemplateToolSettings> = {}): TemplateToolSettings => ({ ...DEFAULT_TEMPLATE_TOOL_SETTINGS, ...changes });
+
+describe('templateFromDrag', () => {
+  it('points at the pointer and is as long as the drag, in whole cells', () => {
+    const template = templateFromDrag(settings({ shape: 'cone' }), grid, origin, 'intersection', { x: 140 + 3.2 * 70, y: 140 });
+    expect(template).toMatchObject({ shape: 'cone', x: 140, y: 140, snap: 'intersection', size: 3, angle: 0, visibleToPlayers: true });
+  });
+
+  it('turns with the pointer', () => {
+    const template = templateFromDrag(settings(), grid, origin, 'intersection', { x: 140, y: 140 + 140 });
+    expect(template?.angle).toBeCloseTo(Math.PI / 2);
+    expect(template?.size).toBe(2);
+  });
+
+  it('makes nothing from a click or a tiny drag', () => {
+    expect(templateFromDrag(settings(), grid, origin, 'intersection', origin)).toBeNull();
+    expect(templateFromDrag(settings(), grid, origin, 'intersection', { x: 145, y: 140 })).toBeNull();
+  });
+
+  it('is at least one cell long', () => {
+    expect(templateFromDrag(settings(), grid, origin, 'intersection', { x: 140 + 0.4 * 70, y: 140 })?.size).toBe(1);
+  });
+
+  it('gives a line its width', () => {
+    const template = templateFromDrag(settings({ shape: 'line', lineWidth: 2 }), grid, origin, 'intersection', { x: 350, y: 140 });
+    expect(template).toMatchObject({ shape: 'line', width: 2, size: 3 });
+    expect(templateFromDrag(settings({ shape: 'cone' }), grid, origin, 'intersection', { x: 350, y: 140 })).not.toHaveProperty('width');
+  });
+
+  it('measures an emanation from the edge of the creature, not its centre', () => {
+    // A 2-cell footprint: the pointer 4 cells out is 3 cells beyond the creature's edge.
+    const template = templateFromDrag(settings({ shape: 'emanation', footprint: 2 }), grid, origin, 'intersection', { x: 140 + 4 * 70, y: 140 });
+    expect(template).toMatchObject({ shape: 'emanation', footprint: 2, size: 3 });
+  });
+
+  it('keeps the visibility choice', () => {
+    expect(templateFromDrag(settings({ visibleToPlayers: false }), grid, origin, 'intersection', { x: 350, y: 140 })?.visibleToPlayers).toBe(false);
+  });
+});
+
+describe('resolveOriginSnap', () => {
+  it('starts where the GM chose', () => {
+    expect(resolveOriginSnap('cone', 1, 'intersection', false)).toBe('intersection');
+    expect(resolveOriginSnap('cone', 1, 'cell-center', false)).toBe('cell-center');
+  });
+
+  it('flips to the other snap while Shift is held', () => {
+    expect(resolveOriginSnap('sphere', 1, 'intersection', true)).toBe('cell-center');
+    expect(resolveOriginSnap('sphere', 1, 'cell-center', true)).toBe('intersection');
+  });
+
+  it('centres an emanation on its footprint whatever the choice', () => {
+    expect(resolveOriginSnap('emanation', 1, 'intersection', true)).toBe('cell-center');
+    expect(resolveOriginSnap('emanation', 2, 'cell-center', false)).toBe('intersection');
+  });
+});

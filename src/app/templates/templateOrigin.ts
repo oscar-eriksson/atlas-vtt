@@ -1,6 +1,6 @@
 import type { GridGeometry } from '../grid/gridDistance';
 import { createHexLayout, hexVertices, isHexGridType, nearestHexCenter, pixelToAxial, axialToPixel, type Point } from '../grid/hexGeometry';
-import type { TemplateOriginSnap } from '../types/areaTemplateTypes';
+import type { TemplateOriginSnap, TemplateShape } from '../types/areaTemplateTypes';
 
 /**
  * The point a template's origin lands on: the middle of the cell under
@@ -32,4 +32,20 @@ export function snapTemplateOrigin(grid: GridGeometry, point: Point, snap: Templ
  */
 export function footprintSnap(footprint: number): TemplateOriginSnap {
   return footprint % 2 === 0 ? 'intersection' : 'cell-center';
+}
+
+/**
+ * Where a template being placed starts: an emanation is centred on its
+ * footprint; every other shape starts where the GM chose, a corner where cells
+ * meet or a cell centre. `flip` (Shift held) picks the other of the two.
+ */
+export function resolveOriginSnap(
+  shape: TemplateShape,
+  footprint: number,
+  choice: TemplateOriginSnap,
+  flip: boolean,
+): TemplateOriginSnap {
+  if (shape === 'emanation') return footprintSnap(footprint);
+  if (!flip) return choice;
+  return choice === 'intersection' ? 'cell-center' : 'intersection';
 }

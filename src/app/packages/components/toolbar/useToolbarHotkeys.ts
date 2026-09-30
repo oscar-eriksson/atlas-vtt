@@ -55,6 +55,7 @@ export function useToolbarHotkeys(viewId: string | undefined, isPlayerView: bool
       if (tokenIds.length > 0) store.getState().setSelection(tokenIds)
     }),
     assets: dmOnly(toggleAssetManager),
+    template: dmOnly(() => selectTool("template")),
     pin: dmOnly(() => selectTool("note-pin")),
     wall: dmOnly(() => selectTool("wall")),
     audio: dmOnly(() => { if (AMBIENT_AUDIO_ENABLED) selectTool("audio") }),

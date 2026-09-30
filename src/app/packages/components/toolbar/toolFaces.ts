@@ -1,6 +1,6 @@
 import { t } from '../../../i18n';
 import type React from "react"
-import { Circle, Cloud, Eraser, Flashlight, Hand, Lightbulb, Pencil, Ruler, Stamp, Triangle, Tv, Type } from "lucide-react"
+import { Circle, Cloud, Eraser, Flashlight, Hand, Lightbulb, Pencil, Ruler, Shapes, Stamp, Triangle, Tv, Type } from "lucide-react"
 import type { ViewAtlasState } from "../../../storeFactory"
 
 export type Tool = ViewAtlasState["activeTool"]
@@ -76,4 +76,8 @@ export function lightingToolFace(activeTool: Tool): ToolFace {
 
 export function viewportToolFace(activeTool: Tool): ToolFace {
   return singleToolFace("viewport", Tv, t('toolbar.viewportTool'), activeTool)
+}
+
+export function templateToolFace(activeTool: Tool): ToolFace {
+  return singleToolFace("template", Shapes, t('toolbar.templateTool'), activeTool)
 }
