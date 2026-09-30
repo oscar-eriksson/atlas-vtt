@@ -16,6 +16,7 @@ import { showCoveredCells } from './templateCellsGraphics';
 import { showTemplate } from './templateGraphics';
 
 const SHAPE_NAMES: Record<TemplateShape, string> = { line: 'line', cone: 'cone', cube: 'cube', sphere: 'sphere', emanation: 'emanation' };
+/** Size of the hover marker on screen, in pixels, whatever the zoom. */
 const HOVER_MARKER_RADIUS = 5;
 /** How close, in screen pixels, a press must be to a template's origin dot to grab it. */
 const ORIGIN_GRAB_RADIUS = 12;
@@ -49,6 +50,8 @@ export class TemplateInteraction {
   private readonly onDown = (event: FederatedPointerEvent): void => this.handleDown(event);
   private readonly onMove = (event: FederatedPointerEvent): void => this.handleMove(event);
   private readonly onUp = (): void => this.handleUp();
+  private readonly onZoom = (): void => this.handleZoom();
+  private lastPointer: Point | null = null;
 
   constructor(
     private readonly viewport: Viewport,
@@ -56,6 +59,8 @@ export class TemplateInteraction {
     private readonly gridSystem: GridSystem,
     private readonly tool: TemplateTool,
   ) {
+    // A unit circle, drawn once; its position and scale follow the pointer and the zoom.
+    this.hoverMarker.circle(0, 0, 1).fill({ color: 0xffffff, alpha: 0.9 });
     for (const item of [this.cells, this.outline, this.hoverMarker, this.pill, this.label]) {
       item.eventMode = 'none';
       item.visible = false;
@@ -76,6 +81,7 @@ export class TemplateInteraction {
     this.viewport[method]('pointermove', this.onMove);
     this.viewport[method]('pointerup', this.onUp);
     this.viewport[method]('pointerupoutside', this.onUp);
+    this.viewport[method]('zoomed', this.onZoom);
     if (!enabled) this.clear();
   }
 
@@ -132,8 +138,9 @@ export class TemplateInteraction {
       return;
     }
     event.stopPropagation();
-    this.draft = templateFromDrag(this.tool.getSettings(), this.gridSystem.getOptions(), this.drag.origin, this.drag.snap, this.viewport.toWorld(event.global));
-    this.showDraft(this.viewport.toWorld(event.global));
+    this.lastPointer = this.viewport.toWorld(event.global);
+    this.draft = templateFromDrag(this.tool.getSettings(), this.gridSystem.getOptions(), this.drag.origin, this.drag.snap, this.lastPointer);
+    this.showDraft(this.lastPointer);
   }
 
   private handleUp(): void {
@@ -151,10 +158,21 @@ export class TemplateInteraction {
   }
 
   private showHoverMarker(origin: Point): void {
-    this.hoverMarker.clear();
-    this.hoverMarker.circle(origin.x, origin.y, HOVER_MARKER_RADIUS / this.viewport.scale.x);
-    this.hoverMarker.fill({ color: cssColorToHexNumber(getObsidianAccentColor()), alpha: 0.9 });
+    this.hoverMarker.position.set(origin.x, origin.y);
+    this.hoverMarker.tint = cssColorToHexNumber(getObsidianAccentColor());
+    this.scaleHoverMarker();
     this.hoverMarker.visible = true;
+  }
+
+  /** Keeps the hover marker the same size on screen after a zoom, which moves no pointer. */
+  private scaleHoverMarker(): void {
+    this.hoverMarker.scale.set(HOVER_MARKER_RADIUS / this.viewport.scale.x);
+  }
+
+  private handleZoom(): void {
+    this.scaleHoverMarker();
+    // The size label and its pill are sized for the zoom they were drawn at.
+    if (this.draft && this.lastPointer) this.showDraft(this.lastPointer);
   }
 
   private showDraft(pointer: Point): void {
@@ -178,6 +196,7 @@ export class TemplateInteraction {
     this.moving = null;
     this.drag = null;
     this.draft = null;
+    this.lastPointer = null;
     this.outlineKey = undefined;
     this.cellsKey = undefined;
     this.outline.clear();
