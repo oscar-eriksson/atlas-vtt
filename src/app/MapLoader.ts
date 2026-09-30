@@ -14,6 +14,36 @@ export interface LoadedMap {
   missingAssets?: MissingAsset[]; // Track missing assets for reporting
 }
 
+/** A map image loaded as a texture, or the placeholder that stands in for a missing or absent one. */
+export interface BackgroundTexture {
+  texture: InstanceType<typeof Texture>;
+  /** Whether this is a real image and not a placeholder. */
+  hasBackground: boolean;
+  /** URL acquired from the background texture cache; the caller releases it when the image is left. */
+  backgroundUrl: string | null;
+}
+
+/** Loads the map image at `background` (a vault path, or none) as a texture for a map whose grid cells are `gridSize` wide. */
+export async function loadBackgroundTexture(
+  app: App,
+  background: string | null,
+  gridSize: number,
+  assetValidationService = new AssetValidationService({ app }),
+): Promise<BackgroundTexture> {
+  if (!background) return { texture: createPlaceholderTexture(gridSize), hasBackground: false, backgroundUrl: null };
+
+  // Preload background image as a PIXI texture
+  const imgFile = app.vault.getAbstractFileByPath(normalizePath(background));
+  if (!(imgFile instanceof TFile)) {
+    console.error(`[MapLoader] Background image not found: ${background}`);
+    const placeholder = assetValidationService.getMissingAssetPlaceholder();
+    const texture = placeholder ? await Assets.load<Texture>(placeholder) : createPlaceholderTexture(gridSize);
+    return { texture, hasBackground: false, backgroundUrl: null };
+  }
+  const url = app.vault.adapter.getResourcePath(imgFile.path);
+  return { texture: await backgroundTextureCache.acquire(url), hasBackground: true, backgroundUrl: url };
+}
+
 /**
  * Pure helper that reads the .atlasmap JSON and preloads the background image as a PIXI texture.
  * All vault / IO logic lives here so AtlasView remains an orchestrator only.
@@ -42,34 +72,12 @@ export class MapLoader {
     // Apply migration to convert app:// URLs to relative paths
     const mapData = migrateMapFile(data);
 
-    let texture: Texture;
-    let hasBackground = false;
-    let backgroundUrl: string | null = null;
-
     const validationResult = await assetValidationService.validateMapAssets(mapData);
     if (!validationResult.valid) {
       assetValidationService.showMissingAssetsNotice(validationResult.missingAssets);
     }
     
-    if (mapData.background) {
-      // Preload background image as a PIXI texture
-      const imgFile = app.vault.getAbstractFileByPath(normalizePath(mapData.background));
-      if (!(imgFile instanceof TFile)) {
-        console.error(`[MapLoader] Background image not found: ${mapData.background}`);
-        const placeholder = assetValidationService.getMissingAssetPlaceholder();
-        texture = placeholder ? await Assets.load<Texture>(placeholder) : createPlaceholderTexture(mapData);
-        hasBackground = false;
-      } else {
-        const url = app.vault.adapter.getResourcePath(imgFile.path);
-        texture = await backgroundTextureCache.acquire(url);
-        backgroundUrl = url;
-        hasBackground = true;
-      }
-    } else {
-      // Create a placeholder texture for maps without backgrounds
-      texture = createPlaceholderTexture(mapData);
-      hasBackground = false;
-    }
+    const { texture, hasBackground, backgroundUrl } = await loadBackgroundTexture(app, mapData.background, mapData.grid?.size || 70, assetValidationService);
 
     return { 
       mapData, 
@@ -88,8 +96,7 @@ export class MapLoader {
 const placeholderTextures = new Map<number, Texture>();
 
 /** Transparent 20x20-cell texture for maps without a background image. */
-function createPlaceholderTexture(mapData: MapFile): Texture {
-  const gridSize = mapData.grid?.size || 70;
+function createPlaceholderTexture(gridSize: number): Texture {
   const cached = placeholderTextures.get(gridSize);
   if (cached && !cached.destroyed) return cached;
   const canvas = createEl('canvas');

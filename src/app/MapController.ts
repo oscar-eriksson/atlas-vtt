@@ -1,11 +1,21 @@
 import { App } from 'obsidian';
-import { Sprite } from 'pixi.js';
+import { Sprite, type Texture } from 'pixi.js';
 import { MapLoader } from './MapLoader';
 import type { MapFile } from './services/MapPersistence';
 import { PixiRendererOrchestrator } from './PixiRendererOrchestrator';
 import type { GridOptions } from './grid/GridSystem';
 import { parseGridColor } from './grid/gridContrastColor';
 import { hexNumberStyleOfGrid } from './grid/hexNumbering';
+
+/** The sprite that shows a map image, sized from its texture when that has a size. */
+export function backgroundSpriteFrom(texture: Texture): Sprite {
+  const sprite = Sprite.from(texture);
+  if (texture.width > 0 && texture.height > 0) {
+    sprite.width = texture.width;
+    sprite.height = texture.height;
+  }
+  return sprite;
+}
 
 export interface DisplayedMap {
   mapData: MapFile;
@@ -26,13 +36,7 @@ async function loadAndDisplay(
   const { mapData, texture, backgroundUrl } = await MapLoader.load(app, filePath);
 
   // Set background texture (will be placeholder if no real background)
-  const sprite = Sprite.from(texture);
-
-  // Ensure sprite dimensions are set from texture if available
-  if (texture.width > 0 && texture.height > 0) {
-    sprite.width = texture.width;
-    sprite.height = texture.height;
-  }
+  const sprite = backgroundSpriteFrom(texture);
 
   renderer.setBackgroundSprite(sprite);
 

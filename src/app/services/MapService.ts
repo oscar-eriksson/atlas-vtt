@@ -1,5 +1,6 @@
 import { App, Notice, TFile } from 'obsidian';
-import { MapController } from '../MapController';
+import { MapController, backgroundSpriteFrom } from '../MapController';
+import { loadBackgroundTexture } from '../MapLoader';
 import { EventEmitter } from 'events';
 import { RendererService } from './RendererService';
 import type { ViewAtlasState, ViewAtlasStore } from '../storeFactory';
@@ -29,8 +30,22 @@ export class MapService {
     return 'Untitled Map';
   }
   
+  /** The renderer of the loaded map, for showing another floor's image. */
+  private rendererService: RendererService | null = null;
+  /** Counts background changes, so an image that loads late never replaces a newer one. */
+  private backgroundRequest = 0;
+  private readonly stopWatchingBackground: () => void;
+
   constructor(private app: App, eventBus: EventEmitter, private store: ViewAtlasStore) {
     this.eventBus = eventBus;
+    // Once a map is loaded, a new background (another floor's, or an undo of one) is shown as it changes.
+    // While it loads, the load itself puts the image on the canvas.
+    this.stopWatchingBackground = store.subscribe(
+      (state) => state.background,
+      (background) => {
+        if (!this.store.getState().isMapLoading) void this.showBackground(background);
+      },
+    );
   }
 
   /**
@@ -51,6 +66,7 @@ export class MapService {
 
       this.currentMapFilePath = filePath;
       
+      this.rendererService = rendererService;
       // Get the actual renderer object from the service
       const renderer = rendererService.getRenderer();
       if (!renderer) {
@@ -258,6 +274,27 @@ export class MapService {
     }
   }
   
+  /**
+   * Shows `background` (a vault path, or none) as the map's image in place of the current one.
+   * The camera and the grid's settings stay as they are; the grid is anchored to the new image.
+   */
+  private async showBackground(background: string | null): Promise<void> {
+    const renderer = this.rendererService?.getRenderer();
+    if (!renderer) return;
+    const request = ++this.backgroundRequest;
+    try {
+      const { texture, backgroundUrl } = await loadBackgroundTexture(this.app, background, this.store.getState().grid?.size ?? 70);
+      if (request !== this.backgroundRequest) {
+        if (backgroundUrl) backgroundTextureCache.release(backgroundUrl);
+        return;
+      }
+      renderer.setBackgroundSprite(backgroundSpriteFrom(texture));
+      this.holdBackground(backgroundUrl);
+    } catch (error) {
+      console.error('[MapService] Could not show the background:', error);
+    }
+  }
+
   /** Swaps the held background reference, releasing the previous map's one. */
   private holdBackground(url: string | null): void {
     const previous = this.currentBackgroundUrl;
@@ -267,6 +304,8 @@ export class MapService {
 
   /** Releases resources held for the loaded map. */
   public destroy(): void {
+    this.stopWatchingBackground();
+    this.backgroundRequest++;
     this.holdBackground(null);
   }
 
