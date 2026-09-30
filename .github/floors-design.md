@@ -27,22 +27,24 @@ they live in that floor's `objects`.
 The grid, the camera, widgets, initiative and settings are not per floor.
 
 ```
-MapFile.floors: [{ id, name, background, objects }]   // the saved form
-store.activeFloorId                                   // which one `objects` and `background` are
-store.floors (without the active floor's objects)     // the others, kept as they were
+floors: [{ id, name }]                        // every floor in order, the active one included
+activeFloorId                                 // which floor `objects` and `background` are
+floorData: { [id]: { background, objects } }  // the floors that are not active
 ```
+
+The map file stores exactly this next to the usual top-level `objects` and `background`, which are the active floor's.
 
 A map file from before floors opens as one floor, "Floor 1".
 
 ## Decisions to make
 
 1. **Undo across floors.** Undo restores whole `objects` snapshots, so undo after a switch would put another floor's
-   objects on this floor. Recommended: a separate undo history per floor, swapped with the floor.
-2. **Backgrounds of different sizes.** Recommended for now: every floor's image starts at the same corner as the
+   objects on this floor. Decided: a separate undo history per floor, swapped with the floor.
+2. **Backgrounds of different sizes.** Decided for now: every floor's image starts at the same corner as the
    grid; a per-floor image offset and scale comes later if needed.
-3. **Moving a token to another floor.** Recommended: a context menu action "Move to floor", and later a stairs
+3. **Moving a token to another floor.** Decided: a context menu action "Move to floor", and later a stairs
    pin that does it on click.
-4. **What players see by default.** Recommended: they follow the DM's floor, and the DM can pin them to a floor.
+4. **What players see by default.** Decided: a follow mode (they see the DM's floor) and a select mode (the DM pins them to a floor).
 
 ## The players' floor
 

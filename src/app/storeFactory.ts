@@ -15,6 +15,7 @@ import { DEFAULT_SCENE_LIGHTING, type LightChanges, type LightInput, type LightZ
 import type { ViewportRect, ViewportInput } from './types/viewportTypes';
 import type { AreaTemplate } from './types/areaTemplateTypes';
 import { createTemplatesActions, type TemplatesSlice } from './stores/templatesSlice';
+import { createFloorsActions, initialFloors, type FloorsSlice } from './stores/floorsSlice';
 import type { AudioSource, AudioInput } from './types/audioTypes';
 import type { AnyWidget, WidgetSettings } from './types/widgetTypes';
 import type { InitiativeEntry, InitiativeConfig } from './types/initiativeTypes';
@@ -216,6 +217,16 @@ export interface ViewAtlasState extends ViewState {
   removeMapObjects: MapObjectsSlice['removeMapObjects'];
   placeOffMapToken: MapObjectsSlice['placeOffMapToken'];
 
+  // Floors (from floorsSlice.ts): `objects` and `background` are the active floor's
+  floors: FloorsSlice['floors'];
+  activeFloorId: FloorsSlice['activeFloorId'];
+  floorData: FloorsSlice['floorData'];
+  addFloor: FloorsSlice['addFloor'];
+  renameFloor: FloorsSlice['renameFloor'];
+  removeFloor: FloorsSlice['removeFloor'];
+  moveFloor: FloorsSlice['moveFloor'];
+  switchFloor: FloorsSlice['switchFloor'];
+
   // Area templates (from templatesSlice.ts)
   addTemplate: TemplatesSlice['addTemplate'];
   updateTemplate: TemplatesSlice['updateTemplate'];
@@ -298,7 +309,7 @@ export const DEFAULT_TOKEN_SETTINGS: Readonly<ViewAtlasState['tokenSettings']> =
   tokenRingSize: 1,
 };
 
-const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapPath' | 'background' | 'grid' | 'objects' | 'camera' | 'persistenceEnabled' | 'widgetSettings' | 'widgetValues' | 'dmNotePath' | 'followViewport' | 'tokenSettings' | 'initiative' | 'diceLog' | 'pinnedNotePreviews' | 'lootRoller' | 'lighting' | 'exploredMask' | 'exploredEdits' | 'partyValues'> => ({
+const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapPath' | 'background' | 'grid' | 'objects' | 'floors' | 'activeFloorId' | 'floorData' | 'camera' | 'persistenceEnabled' | 'widgetSettings' | 'widgetValues' | 'dmNotePath' | 'followViewport' | 'tokenSettings' | 'initiative' | 'diceLog' | 'pinnedNotePreviews' | 'lootRoller' | 'lighting' | 'exploredMask' | 'exploredEdits' | 'partyValues'> => ({
   lighting: { ...DEFAULT_SCENE_LIGHTING },
   exploredMask: null,
   exploredEdits: 0,
@@ -337,6 +348,7 @@ const createInitialState = (): Pick<ViewAtlasState, 'schema' | 'version' | 'mapP
   widgetValues: {}, // Widget values stored separately
   dmNotePath: null, // DM note linking
   followViewport: false, // TV viewport camera follow
+  ...initialFloors(),
   tokenSettings: {
     showNameplates: false,
     hiddenResources: [],
@@ -848,6 +860,9 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
 
           // --- Area templates (from templatesSlice.ts) ---
           ...createTemplatesActions(set),
+
+          // --- Floors (from floorsSlice.ts) ---
+          ...createFloorsActions(set),
 
           deleteMapObject: (type: 'token' | 'fog' | 'pin' | 'text' | 'drawing' | 'wall' | 'light' | 'audio' | 'viewport', id: string) => set((draft) => {
             switch (type) {
@@ -1363,6 +1378,7 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
             draft.selectedIds = [];
             draft.dmNotePath = null;
             draft.followViewport = false;
+            Object.assign(draft, initialFloors());
             // Maps without saved widgets must not inherit the previous map's
             draft.widgetSettings = createDefaultWidgets();
             draft.widgetValues = {};
@@ -1521,6 +1537,9 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
               background: state.background,
               grid: state.grid,
               objects: state.objects,
+              floors: state.floors,
+              activeFloorId: state.activeFloorId,
+              floorData: state.floorData,
               camera: state.camera,
               widgetValues: sceneWidgets.widgetValues,
               widgetSettings: { ...state.widgetSettings, widgets: sceneWidgets.widgets },
