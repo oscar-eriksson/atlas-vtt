@@ -40,6 +40,11 @@ describe('templateFromDrag', () => {
     expect(template).toMatchObject({ shape: 'emanation', footprint: 2, size: 3 });
   });
 
+  it('carries the chosen colour, and none when the theme colour is used', () => {
+    expect(templateFromDrag(settings({ color: '#3e63dd' }), grid, origin, 'intersection', { x: 350, y: 140 })?.color).toBe('#3e63dd');
+    expect(templateFromDrag(settings(), grid, origin, 'intersection', { x: 350, y: 140 })).not.toHaveProperty('color');
+  });
+
   it('keeps the visibility choice', () => {
     expect(templateFromDrag(settings({ visibleToPlayers: false }), grid, origin, 'intersection', { x: 350, y: 140 })?.visibleToPlayers).toBe(false);
   });

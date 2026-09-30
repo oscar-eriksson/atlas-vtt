@@ -1,0 +1,23 @@
+// Colour swatches in the area template menu. Uses design tokens from _tokens.scss
+@use '../../../../../styles/tokens' as *;
+
+.atlas-template-swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $spacing-s;
+  padding: $spacing-s;
+}
+
+.atlas-template-swatch {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--swatch, var(--interactive-accent));
+  cursor: pointer;
+
+  &[aria-pressed='true'] {
+    border-color: var(--text-normal);
+  }
+}
