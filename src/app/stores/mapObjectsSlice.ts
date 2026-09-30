@@ -4,6 +4,7 @@
  */
 
 import type { GridState } from '../types/gridTypes';
+import type { AreaTemplate } from '../types/areaTemplateTypes';
 import { isPinLabelKind, nextPinLabel } from '../tools/pinLabels';
 import { collectMapObjects, countMapObjects, type CopyableCollections, type MapObjectContent } from '../clipboard/mapObjectContent';
 import { duplicateStep, placeMapObjects } from '../clipboard/mapObjectPlacement';
@@ -26,14 +27,14 @@ export interface MapObjectsSlice {
   insertMapObjects: (content: MapObjectContent) => string[];
   /** Copies the objects one grid cell down and to the right, selects the copies and returns their ids. */
   duplicateMapObjects: (ids: string[]) => string[];
-  /** Removes tokens, drawings, texts, pins and stairs with the given ids; other ids stay selected. */
+  /** Removes tokens, drawings, texts, pins, area templates and stairs with the given ids; other ids stay selected. */
   removeMapObjects: (ids: string[]) => void;
   /** Puts a token kept beside the map (`offMap`) on it at (x, y), on top of every other token, and selects it. */
   placeOffMapToken: (id: string, x: number, y: number) => void;
 }
 
 interface MapObjectsStoreState {
-  objects: CopyableCollections;
+  objects: CopyableCollections & { templates: Record<string, AreaTemplate> };
   grid: GridState | null;
   selectedIds: string[];
   _audioDirty: boolean;
@@ -133,9 +134,9 @@ export function createMapObjectsActions(set: ImmerSet, get: () => MapObjectsStor
     }),
 
     removeMapObjects: (ids) => set((draft) => {
-      const { tokens, drawings, texts, pins, levelLinks } = draft.objects;
+      const { tokens, drawings, texts, pins, templates, levelLinks } = draft.objects;
       const links = isRecord(levelLinks) ? levelLinks : {};
-      const removed = new Set(ids.filter((id) => tokens[id] || drawings[id] || texts[id] || pins[id] || links[id]));
+      const removed = new Set(ids.filter((id) => tokens[id] || drawings[id] || texts[id] || pins[id] || templates[id] || links[id]));
       const removedToken = [...removed].some((id) => tokens[id]);
       for (const id of removed) {
         delete tokens[id];
@@ -143,6 +144,7 @@ export function createMapObjectsActions(set: ImmerSet, get: () => MapObjectsStor
         delete texts[id];
         delete pins[id];
         delete links[id];
+        delete templates[id];
       }
       if (draft.levelLinkPopover !== null && removed.has(draft.levelLinkPopover)) draft.levelLinkPopover = null;
       draft.selectedIds = draft.selectedIds.filter((id) => !removed.has(id));
