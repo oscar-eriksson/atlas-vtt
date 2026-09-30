@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { templateFromDrag } from '../../src/app/templates/templateDrag';
-import { resolveOriginSnap } from '../../src/app/templates/templateOrigin';
+import { DEFAULT_TEMPLATE_SNAP_RULES, resolveOriginSnap, type TemplateSnapRules } from '../../src/app/templates/templateSnapRules';
 import { DEFAULT_TEMPLATE_TOOL_SETTINGS, type TemplateToolSettings } from '../../src/app/tools/templateToolSettings';
 
 const grid = { type: 'square' as const, size: 70, offsetX: 0, offsetY: 0 };
@@ -62,13 +62,29 @@ describe('templateFromDrag', () => {
 });
 
 describe('resolveOriginSnap', () => {
-  it('lets every shape but an emanation snap to any cell centre, corner or edge middle', () => {
-    for (const shape of ['line', 'cone', 'cube', 'sphere'] as const) expect(resolveOriginSnap(shape, 1)).toBe('any');
+  it('puts a sphere and a cube on a corner where cells meet', () => {
+    expect(resolveOriginSnap('sphere', 1)).toBe('intersection');
+    expect(resolveOriginSnap('cube', 1)).toBe('intersection');
   });
 
-  it('centres an emanation on its footprint', () => {
+  it('lets a line and a cone start from an edge middle or a corner, but not a cell centre', () => {
+    expect(resolveOriginSnap('line', 1)).toBe('edge-or-corner');
+    expect(resolveOriginSnap('cone', 1)).toBe('edge-or-corner');
+  });
+
+  it('centres an emanation on its footprint: a cell centre for an odd size, a corner for an even one', () => {
     expect(resolveOriginSnap('emanation', 1)).toBe('cell-center');
     expect(resolveOriginSnap('emanation', 2)).toBe('intersection');
     expect(resolveOriginSnap('emanation', 3)).toBe('cell-center');
+    expect(resolveOriginSnap('emanation', 4)).toBe('intersection');
+  });
+
+  it('follows the rules of another game system for each shape', () => {
+    const rules: TemplateSnapRules = { ...DEFAULT_TEMPLATE_SNAP_RULES, cone: 'cell-center', sphere: 'any', emanation: 'intersection' };
+    expect(resolveOriginSnap('cone', 1, rules)).toBe('cell-center');
+    expect(resolveOriginSnap('sphere', 1, rules)).toBe('any');
+    expect(resolveOriginSnap('emanation', 1, rules)).toBe('intersection');
+    // A shape the system leaves alone keeps its default.
+    expect(resolveOriginSnap('cube', 1, rules)).toBe('intersection');
   });
 });
