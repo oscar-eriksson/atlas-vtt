@@ -3,10 +3,10 @@ export type TemplateShape = 'line' | 'cone' | 'cube' | 'sphere' | 'emanation';
 
 /**
  * Which grid points a template's origin may sit on: any of a cell's centre,
- * corners and edge middles, or only its centre or only its corners. An emanation
- * uses the last two to line its footprint up with whole cells.
+ * corners and edge middles (`any`); only its corners and edge middles
+ * (`edge-or-corner`); only its centre; or only its corners (`intersection`).
  */
-export type TemplateOriginSnap = 'any' | 'cell-center' | 'intersection';
+export type TemplateOriginSnap = 'any' | 'edge-or-corner' | 'cell-center' | 'intersection';
 
 /**
  * Which grid cells a template highlights besides its exact outline:

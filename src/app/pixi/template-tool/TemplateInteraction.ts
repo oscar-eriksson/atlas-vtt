@@ -5,7 +5,8 @@ import { formatDistance, resolveMeasurementSettings, type MeasurementSettings } 
 import type { ViewAtlasStore } from '../../storeFactory';
 import { templateFromDrag } from '../../templates/templateDrag';
 import { templateContainsPoint } from '../../templates/templateGeometry';
-import { resolveOriginSnap, snapTemplateOrigin } from '../../templates/templateOrigin';
+import { snapTemplateOrigin } from '../../templates/templateOrigin';
+import { DEFAULT_TEMPLATE_SNAP_RULES, resolveOriginSnap, type TemplateSnapRules } from '../../templates/templateSnapRules';
 import { beginHistoryTransaction, endHistoryTransaction } from '../../stores/history';
 import type { TemplateTool } from '../../tools/TemplateTool';
 import type { AreaTemplate, AreaTemplateInput, TemplateOriginSnap, TemplateShape } from '../../types/areaTemplateTypes';
@@ -33,6 +34,8 @@ interface Point { x: number; y: number }
 export class TemplateInteraction {
   /** Measurement settings of the current map, for the size label. */
   measurementSettingsProvider: (() => MeasurementSettings) | null = null;
+  /** Where each shape may start, from the current map's game system; without one, the 5th edition rules. */
+  snapRulesProvider: (() => Readonly<TemplateSnapRules>) | null = null;
 
   private readonly outline = new Graphics();
   private readonly cells = new Graphics();
@@ -87,7 +90,7 @@ export class TemplateInteraction {
 
   private snapAt(event: FederatedPointerEvent): { origin: Point; snap: TemplateOriginSnap; pressedAt: Point } {
     const settings = this.tool.getSettings();
-    const snap = resolveOriginSnap(settings.shape, settings.footprint);
+    const snap = resolveOriginSnap(settings.shape, settings.footprint, this.snapRulesProvider?.() ?? DEFAULT_TEMPLATE_SNAP_RULES);
     const world = this.viewport.toWorld(event.global);
     return { origin: snapTemplateOrigin(this.gridSystem.getOptions(), world, snap), snap, pressedAt: world };
   }
