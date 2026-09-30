@@ -13,6 +13,7 @@ import { isAtlasToolAvailable } from "../../tools/toolAvailability"
 import { ResponsiveToolbar } from "./toolbar/ResponsiveToolbar"
 import { useToolbarHotkeys } from "./toolbar/useToolbarHotkeys"
 import type { Tool } from "./toolbar/toolFaces"
+import { switchFloorWithHistory } from "../../stores/floorsSlice"
 import { toolbarItems } from "./toolbar/toolbarRegistry"
 import type { ToolbarContext, ToolMenu } from "./toolbar/toolbarContext"
 import type { ToolGroupControls } from "./toolbar/ToolGroup"
@@ -115,6 +116,11 @@ export const MainToolbar = forwardRef<HTMLDivElement, MainToolbarProps>(({ viewI
     hotkeyLabel,
     openMenu,
     groupControls,
+    nextFloor: () => {
+      const { floors, activeFloorId } = store.getState()
+      const next = floors[(floors.findIndex(floor => floor.id === activeFloorId) + 1) % floors.length]
+      if (next) switchFloorWithHistory(store, next.id)
+    },
     dice: { open: isDiceTrayOpen, toggle: toggleDiceTray, tool: diceTool, buttonRef: diceButtonRef },
     loot: { open: lootRollerOpen, setOpen: setLootRollerOpen },
     assets: { open: isAssetManagerOpen, openManager: handleAssetManagerClick },

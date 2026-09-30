@@ -5,7 +5,7 @@ import type { Tool } from "./toolFaces"
 import type { ToolGroupControls } from "./ToolGroup"
 
 /** Tool groups whose options menu is open; only one at a time. */
-export type ToolMenu = 'move' | 'fog' | 'draw' | 'text' | 'measure' | 'wall' | 'viewport' | 'template'
+export type ToolMenu = 'move' | 'fog' | 'draw' | 'text' | 'measure' | 'wall' | 'viewport' | 'template' | 'floors'
 
 /** What MainToolbar hands every control definition to build its toolbar item from. */
 export interface ToolbarContext {
@@ -14,6 +14,8 @@ export interface ToolbarContext {
   hotkeyLabel: (id: MapHotkeyId) => string
   openMenu: ToolMenu | null
   groupControls: (menu: ToolMenu) => ToolGroupControls
+  /** Makes the next floor of the scene the active one, after the last going back to the first. */
+  nextFloor: () => void
   dice: { open: boolean; toggle: () => void; tool: DiceDropdownMenuProps["diceTool"] | null; buttonRef: React.RefObject<HTMLDivElement | null> }
   loot: { open: boolean; setOpen: (open: boolean) => void }
   assets: { open: boolean; openManager: () => void }

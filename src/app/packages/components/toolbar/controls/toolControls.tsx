@@ -1,8 +1,9 @@
 import React from "react"
-import { MapPin, Volume2 } from "lucide-react"
+import { Layers, MapPin, Volume2 } from "lucide-react"
 import { AMBIENT_AUDIO_ENABLED, TV_VIEWPORT_ENABLED, WALLS_AND_LIGHTING_ENABLED } from "../../../../featureFlags"
 import { isAtlasToolAvailable } from "../../../../tools/toolAvailability"
 import { DrawToolGroup } from "../DrawToolGroup"
+import { FloorToolGroup } from "../FloorToolGroup"
 import { FogToolGroup } from "../FogToolGroup"
 import { MeasureToolGroup } from "../MeasureToolGroup"
 import { MoveToolGroup } from "../MoveToolGroup"
@@ -39,6 +40,14 @@ export const TOOL_CONTROLS: ToolbarControl[] = [
   {
     id: 'template', priority: 88, dmOnly: true, available: true,
     item: ctx => toolGroupItem(ctx, 'template', templateToolFace(ctx.activeTool), <TemplateToolGroup {...ctx.groupControls('template')} />),
+  },
+  {
+    id: 'floors', priority: 60, dmOnly: true, available: true,
+    item: ctx => {
+      const item = toolGroupItem(ctx, 'floors', { icon: Layers, label: "Floors", tool: ctx.activeTool, isActive: false }, <FloorToolGroup {...ctx.groupControls('floors')} />)
+      // In the overflow menu a floor is not chosen from a list: the entry goes to the next one.
+      return { ...item, menuEntry: { ...item.menuEntry, onSelect: ctx.nextFloor } }
+    },
   },
   {
     id: 'pin', priority: 70, dmOnly: true, available: true,

@@ -34,6 +34,8 @@ const storeState = {
   setInitiativeTrackerOpen,
   objects: { tokens: {}, templates: {} },
   selectedIds: [] as string[],
+  floors: [{ id: 'floor-1', name: 'Floor 1' }],
+  activeFloorId: 'floor-1',
   setSelection,
   openAssetManager,
   closeAssetManager,

@@ -141,6 +141,7 @@ export class TFolder extends TAbstractFile {
 export class Notice {
   // Keep a signature close to Obsidian's constructor.
   constructor(_message: string, _timeout?: number) {}
+  hide(): void {}
 }
 
 export interface RequestUrlParam {
@@ -260,6 +261,14 @@ export class Modal {
   close(): void {}
   onOpen(): void {}
   onClose(): void {}
+}
+
+/** Enough of Obsidian's `FuzzySuggestModal` to subclass it; nothing is listed or chosen in tests. */
+export class FuzzySuggestModal<T> extends Modal {
+  setPlaceholder(_placeholder: string): this { return this; }
+  getItems(): T[] { return []; }
+  getItemText(_item: T): string { return ''; }
+  onChooseItem(_item: T, _evt?: unknown): void {}
 }
 
 export const Platform = {

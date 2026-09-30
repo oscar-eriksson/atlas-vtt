@@ -11,6 +11,7 @@ export const TOOLBAR_CONTROLS = [
   { id: 'text', label: 'Text tool', desc: 'Write labels on the map.', hideable: true, shownByDefault: true },
   { id: 'measure', label: 'Measure tools', desc: 'Line, circle and cone measurements.', hideable: false, shownByDefault: true },
   { id: 'template', label: 'Area templates', desc: 'Place lines, cones, cubes, spheres and emanations that stay on the map.', hideable: true, shownByDefault: true },
+  { id: 'floors', label: 'Floors', desc: 'Switch between the floors of a scene, and add, rename and delete them.', hideable: true, shownByDefault: true },
   { id: 'pin', label: 'Note pin', desc: 'Pin notes and scene links to the map.', hideable: true, shownByDefault: true },
   { id: 'viewport', label: 'TV viewport', desc: 'For a TV lying flat under physical miniatures. Calibrates the player window and follows the viewport you place.', hideable: true, shownByDefault: false },
   { id: 'dice', label: 'Dice tray', desc: 'Roll dice.', hideable: false, shownByDefault: true },

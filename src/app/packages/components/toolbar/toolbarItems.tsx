@@ -4,6 +4,11 @@ import type { ToolFace } from "./toolFaces"
 import type { ToolbarItemBody } from "./toolbarControl"
 import type { ToolbarContext, ToolMenu } from "./toolbarContext"
 
+/** Menus that are a tool group with a hotkey; the floors have none. */
+function hasHotkey(menu: ToolMenu): menu is Exclude<ToolMenu, 'floors'> {
+  return menu !== 'floors'
+}
+
 /** A tool group: pinned while its tool is active or its options are open. */
 export function toolGroupItem(
   ctx: ToolbarContext,
@@ -14,7 +19,7 @@ export function toolGroupItem(
   return {
     pinned: face.isActive || ctx.openMenu === menu,
     element,
-    menuEntry: { icon: face.icon, label: face.label, shortcut: ctx.hotkeyLabel(menu), isActive: face.isActive, onSelect: () => ctx.selectTool(face.tool) },
+    menuEntry: { icon: face.icon, label: face.label, ...(hasHotkey(menu) && { shortcut: ctx.hotkeyLabel(menu) }), isActive: face.isActive, onSelect: () => ctx.selectTool(face.tool) },
   }
 }
 
