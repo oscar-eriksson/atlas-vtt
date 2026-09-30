@@ -5,7 +5,7 @@ import type { Tool } from "./toolFaces"
 import type { ToolGroupControls } from "./ToolGroup"
 
 /** Tool groups whose options menu is open; only one at a time. */
-export type ToolMenu = 'move' | 'fog' | 'draw' | 'text' | 'measure' | 'wall' | 'viewport'
+export type ToolMenu = 'move' | 'fog' | 'draw' | 'text' | 'measure' | 'wall' | 'viewport' | 'template'
 
 /** What MainToolbar hands every control definition to build its toolbar item from. */
 export interface ToolbarContext {

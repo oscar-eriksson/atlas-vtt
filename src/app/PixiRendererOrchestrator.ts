@@ -25,6 +25,9 @@ import type { PlayerCameraState } from "./local-player-view";
 import { SelectionManager } from "./pixi/SelectionManager"; // Import SelectionManager
 import { FogOfWarRenderer } from "./pixi/fog/FogOfWarRenderer";
 import { MeasureRenderer } from "./pixi/MeasureRenderer"; // Import MeasureRenderer
+import { TemplateRenderer } from "./pixi/template-tool/TemplateRenderer";
+import { TemplateInteraction } from "./pixi/template-tool/TemplateInteraction";
+import { TemplateTool } from "./tools/TemplateTool";
 import { LaserPointerRenderer } from "./pixi/LaserPointerRenderer"; // Import LaserPointerRenderer
 import { DrawingRenderer } from "./pixi/DrawingRenderer"; // Import DrawingRenderer
 import { DrawingInteraction } from "./pixi/DrawingInteraction";
@@ -65,6 +68,9 @@ export class PixiRendererOrchestrator { // Renamed class
   private selectionManager?: SelectionManager; // Add SelectionManager instance
   private fogRenderer?: FogOfWarRenderer; // Add FogRenderer instance
   private measureRenderer?: MeasureRenderer; // Add MeasureRenderer instance
+  private templateRenderer?: TemplateRenderer;
+  private templateInteraction?: TemplateInteraction;
+  private templateTool?: TemplateTool;
   private laserPointerRenderer?: LaserPointerRenderer; // Add LaserPointerRenderer instance
   private drawingRenderer?: DrawingRenderer; // Add DrawingRenderer instance
   private drawingInteraction?: DrawingInteraction;
@@ -461,6 +467,7 @@ export class PixiRendererOrchestrator { // Renamed class
       this.measureRenderer = new MeasureRenderer(viewport, this.eventBus, this.store, this.gridSystem);
       this.wireMeasureRendererProvider();
     }
+    this.ensureTemplateRenderer(viewport);
     
     // Initialize LaserPointerRenderer (self-manages activation via store subscription)
     this.laserPointerRenderer = new LaserPointerRenderer(
@@ -614,6 +621,7 @@ export class PixiRendererOrchestrator { // Renamed class
       this.measureRenderer = new MeasureRenderer(currentViewport, this.eventBus, this.store, this.gridSystem);
       this.wireMeasureRendererProvider();
     }
+    if (currentViewport) this.ensureTemplateRenderer(currentViewport);
     
     // Initialize TextRenderer if it doesn't exist yet
     const isPlayerView = this.store.getState().isPlayerView || false;
@@ -776,6 +784,7 @@ export class PixiRendererOrchestrator { // Renamed class
     layers.push(...(this.selectionManager?.getPlayerViewLayers() ?? []));
     for (const overlay of this.dmScreenOverlays) layers.push({ layer: overlay, visible: false });
     if (this.viewportRectRenderer) layers.push({ layer: this.viewportRectRenderer.container, visible: false });
+    if (this.templateRenderer) layers.push({ layer: this.templateRenderer.gmContainer, visible: false });
     const viewport = this.pixiAppManager.getViewport();
     const playerCamera = camera && viewport ? { target: viewport, camera } : undefined;
     captureWithLayerVisibility(layers, () => app.renderer.render(app.stage), capture, playerCamera);
@@ -1001,6 +1010,16 @@ export class PixiRendererOrchestrator { // Renamed class
         return this.viewportInteraction?.cursorAt(worldX, worldY) ?? 'crosshair';
       });
     }
+  }
+
+  /** Draws the map's area templates once the grid exists. */
+  private ensureTemplateRenderer(viewport: Viewport): void {
+    if (this.templateRenderer || !this.gridSystem) return;
+    this.templateRenderer = new TemplateRenderer(viewport, this.store, this.gridSystem);
+    this.templateTool = new TemplateTool(this.eventBus);
+    this.templateInteraction = new TemplateInteraction(viewport, this.store, this.gridSystem, this.templateTool);
+    const assetService = AssetService.getInstance(this.obsApp);
+    this.templateInteraction.measurementSettingsProvider = () => mapMeasurementSettings(assetService, this.store.getState());
   }
 
   /** Lets MeasureRenderer read the current map's measurement settings. */
@@ -1497,6 +1516,9 @@ export class PixiRendererOrchestrator { // Renamed class
     this.hexLinkRenderer?.destroy();
     this.fogRenderer?.destroy(); // Destroy FogRenderer
     this.measureRenderer?.destroy(); // Destroy MeasureRenderer
+    this.templateInteraction?.destroy();
+    this.templateTool?.destroy();
+    this.templateRenderer?.destroy();
     this.laserPointerRenderer?.destroy(); // Destroy LaserPointerRenderer
     this.drawingRenderer?.destroy(); // Destroy DrawingRenderer
     this.drawingInteraction?.destroy();

@@ -6,11 +6,12 @@ import { DrawToolGroup } from "../DrawToolGroup"
 import { FogToolGroup } from "../FogToolGroup"
 import { MeasureToolGroup } from "../MeasureToolGroup"
 import { MoveToolGroup } from "../MoveToolGroup"
+import { TemplateToolGroup } from "../TemplateToolGroup"
 import { TextToolGroup } from "../TextToolGroup"
 import { ViewportToolGroup } from "../ViewportToolGroup"
 import { WallToolGroup } from "../WallToolGroup"
 import { buttonItem, toolGroupItem } from "../toolbarItems"
-import { drawToolFace, fogToolFace, measureToolFace, moveToolFace, textToolFace, viewportToolFace, wallToolFace } from "../toolFaces"
+import { drawToolFace, fogToolFace, measureToolFace, moveToolFace, templateToolFace, textToolFace, viewportToolFace, wallToolFace } from "../toolFaces"
 import type { ToolbarControl } from "../toolbarControl"
 
 /** The map tools, from the ones a GM reaches for during play down to setup and reference tools. */
@@ -34,6 +35,10 @@ export const TOOL_CONTROLS: ToolbarControl[] = [
   {
     id: 'measure', priority: 90, dmOnly: false, available: true,
     item: ctx => toolGroupItem(ctx, 'measure', measureToolFace(ctx.activeTool), <MeasureToolGroup {...ctx.groupControls('measure')} />),
+  },
+  {
+    id: 'template', priority: 88, dmOnly: true, available: true,
+    item: ctx => toolGroupItem(ctx, 'template', templateToolFace(ctx.activeTool), <TemplateToolGroup {...ctx.groupControls('template')} />),
   },
   {
     id: 'pin', priority: 70, dmOnly: true, available: true,

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { createViewAtlasStore } from '../../src/app/storeFactory';
 import { getHistoryStore } from '../../src/app/stores/history';
 import { ATLAS_VERSION, migrateMapFile } from '../../src/app/services/MapPersistence';
-import type { AreaTemplateInput } from '../../src/app/stores/templatesSlice';
+import type { AreaTemplateInput } from '../../src/app/types/areaTemplateTypes';
 import { createInMemoryApp } from '../mocks/inMemoryVault';
 
 const cone: AreaTemplateInput = { shape: 'cone', x: 100, y: 100, snap: 'intersection', size: 3, angle: 0, visibleToPlayers: true };

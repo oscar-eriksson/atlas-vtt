@@ -166,6 +166,7 @@ export type ToolMode =
   | 'draw-rectangle'
   | 'draw-circle'
   | 'audio'
-  | 'viewport';
+  | 'viewport'
+  | 'template';
 
  

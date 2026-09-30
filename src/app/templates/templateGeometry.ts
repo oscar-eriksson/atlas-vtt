@@ -1,11 +1,21 @@
 import type { Point } from '../grid/hexGeometry';
-import type { AreaTemplate } from '../types/areaTemplateTypes';
+import type { AreaTemplate, TemplateShape } from '../types/areaTemplateTypes';
 
 /** A template's exact outline in map coordinates, ready to draw. */
 export type TemplateOutline =
   | { kind: 'polygon'; points: Point[] }
   | { kind: 'circle'; center: Point; radius: number }
   | { kind: 'roundedRect'; x: number; y: number; width: number; height: number; radius: number };
+
+/** Shapes that point somewhere; a sphere and an emanation look the same from every side. */
+export function isDirectionalShape(shape: TemplateShape): boolean {
+  return shape === 'line' || shape === 'cone' || shape === 'cube';
+}
+
+/** The template's outline around its own origin, pointing along +x: what to draw once and then move by position and rotation. */
+export function localTemplateOutline(template: AreaTemplate, cellSize: number): TemplateOutline {
+  return templateOutline({ ...template, x: 0, y: 0, angle: 0 }, cellSize);
+}
 
 /** How wide a line of effect is when the template does not say: one cell. */
 export const DEFAULT_LINE_WIDTH_CELLS = 1;

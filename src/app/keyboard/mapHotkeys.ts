@@ -17,6 +17,7 @@ export const MAP_HOTKEYS = [
   { id: 'erase', label: 'Eraser', group: 'Tools', defaultKey: 'e', dmOnly: true },
   { id: 'text', label: 'Text tool', group: 'Tools', defaultKey: 't', dmOnly: true },
   { id: 'measure', label: 'Measure tools', group: 'Tools', defaultKey: 'm' },
+  { id: 'template', label: 'Area templates', group: 'Tools', defaultKey: 'c', dmOnly: true },
   { id: 'pin', label: 'Note pin', group: 'Tools', defaultKey: 'p', dmOnly: true },
   { id: 'wall', label: 'Walls and lighting', group: 'Tools', defaultKey: 'w', dmOnly: true, enabled: WALLS_AND_LIGHTING_ENABLED },
   { id: 'audio', label: 'Ambient audio', group: 'Tools', defaultKey: 's', dmOnly: true, enabled: AMBIENT_AUDIO_ENABLED },
