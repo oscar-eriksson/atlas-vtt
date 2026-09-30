@@ -2,6 +2,7 @@ import { App, Notice, TFile } from 'obsidian';
 import { MapController, backgroundSpriteFrom } from '../MapController';
 import { loadBackgroundTexture } from '../MapLoader';
 import { EventEmitter } from 'events';
+import type { Viewport } from 'pixi-viewport';
 import { RendererService } from './RendererService';
 import type { ViewAtlasState, ViewAtlasStore } from '../storeFactory';
 import type { MapFile } from './MapPersistence';
@@ -9,6 +10,8 @@ import { getHistoryStore } from '../stores/history';
 import { autoDetectGridOnFirstLoad } from './gridAutoDetect';
 import { backgroundTextureCache } from '../pixi/backgroundTextureCache';
 import { describeError } from '../utils/errors';
+
+declare const __ATLAS_RELEASE_BUILD__: boolean | undefined;
 
 export class MapService {
   private currentMapFilePath: string | null = null;
@@ -288,11 +291,35 @@ export class MapService {
         if (backgroundUrl) backgroundTextureCache.release(backgroundUrl);
         return;
       }
+      // Another floor's image must not move what the DM is looking at, so the camera is put back after the swap.
+      const viewport = renderer.getViewportInstance();
+      const camera = viewport ? { x: viewport.center.x, y: viewport.center.y, scale: viewport.scale.x } : null;
       renderer.setBackgroundSprite(backgroundSpriteFrom(texture));
       this.holdBackground(backgroundUrl);
+      if (viewport && camera) this.keepCamera(viewport, camera);
     } catch (error) {
       console.error('[MapService] Could not show the background:', error);
     }
+  }
+
+  /**
+   * Puts the camera back at `camera` now and for the next frames, in case the swap moves it when the grid is built
+   * a moment later. Development builds say when something had moved it.
+   */
+  private keepCamera(viewport: Viewport, camera: { x: number; y: number; scale: number }): void {
+    const restore = (when: string): void => {
+      if (viewport.destroyed) return;
+      const moved = Math.abs(viewport.center.x - camera.x) > 0.5 || Math.abs(viewport.center.y - camera.y) > 0.5 || Math.abs(viewport.scale.x - camera.scale) > 1e-6;
+      if (!moved) return;
+      if (typeof __ATLAS_RELEASE_BUILD__ !== 'undefined' && !__ATLAS_RELEASE_BUILD__) console.debug(`[Atlas] the camera moved when the floor's image was swapped (${when}); put back`);
+      viewport.moveCenter(camera.x, camera.y);
+      viewport.setZoom(camera.scale);
+    };
+    restore('at once');
+    window.requestAnimationFrame(() => {
+      restore('next frame');
+      window.requestAnimationFrame(() => restore('two frames on'));
+    });
   }
 
   /** Swaps the held background reference, releasing the previous map's one. */

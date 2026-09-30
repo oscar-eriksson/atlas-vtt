@@ -17,10 +17,17 @@ function setup(withRenderer = true) {
   const store = createViewAtlasStore(app, `map-service-${storeCount++}`);
   store.getState().setPersistenceEnabled(false);
   store.getState().setMapPath('maps/tower.atlasmap');
-  const renderer = { setBackgroundSprite: vi.fn() };
+  const viewport = {
+    destroyed: false,
+    center: { x: 3000, y: 2000 },
+    scale: { x: 0.4 },
+    moveCenter: vi.fn(function (this: any, x: number, y: number) { viewport.center = { x, y }; }),
+    setZoom: vi.fn((scale: number) => { viewport.scale = { x: scale }; }),
+  };
+  const renderer = { setBackgroundSprite: vi.fn(), getViewportInstance: () => viewport };
   const service = new MapService(app as any, new EventEmitter(), store);
   if (withRenderer) (service as any).rendererService = { getRenderer: () => renderer };
-  return { store, renderer, service };
+  return { store, renderer, service, viewport };
 }
 
 /** A promise that settles when told to, to hold an image "still loading". */
@@ -98,5 +105,52 @@ describe('MapService showing the background of another floor', () => {
     store.getState().setBackground('maps/a.webp');
     await flush();
     expect(renderer.setBackgroundSprite).not.toHaveBeenCalled();
+  });
+
+  describe('keeping the camera where the DM is looking', () => {
+    const frames: FrameRequestCallback[] = [];
+    const runFrames = (): void => { while (frames.length) frames.shift()!(0); };
+    beforeEach(() => {
+      frames.length = 0;
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => frames.push(callback));
+    });
+
+    it('leaves the camera alone when the swap does not move it', async () => {
+      const { store, viewport } = setup();
+      store.getState().setBackground('maps/a.webp');
+      await flush();
+      runFrames();
+      expect(viewport.moveCenter).not.toHaveBeenCalled();
+      expect(viewport.setZoom).not.toHaveBeenCalled();
+    });
+
+    it('puts the camera back at once when the swap recentres it', async () => {
+      const { store, renderer, viewport } = setup();
+      renderer.setBackgroundSprite.mockImplementation(() => { viewport.center = { x: 700, y: 700 }; viewport.scale = { x: 0.1 }; });
+      store.getState().setBackground('maps/a.webp');
+      await flush();
+      expect(viewport.center).toEqual({ x: 3000, y: 2000 });
+      expect(viewport.scale.x).toBeCloseTo(0.4);
+    });
+
+    it('puts the camera back when something recentres it a frame later', async () => {
+      const { store, viewport } = setup();
+      store.getState().setBackground('maps/a.webp');
+      await flush();
+      // The grid is rebuilt a moment after the swap.
+      viewport.center = { x: 700, y: 700 };
+      runFrames();
+      expect(viewport.center).toEqual({ x: 3000, y: 2000 });
+    });
+
+    it('does not touch a camera that has been destroyed with its view', async () => {
+      const { store, viewport } = setup();
+      store.getState().setBackground('maps/a.webp');
+      await flush();
+      viewport.destroyed = true;
+      viewport.center = { x: 1, y: 1 };
+      runFrames();
+      expect(viewport.moveCenter).not.toHaveBeenCalled();
+    });
   });
 });
