@@ -5,6 +5,7 @@ import type { TokenEntity, TextElement, DrawingStroke, NotePin } from '../types'
 import type { WallSegment } from '../types/wallTypes';
 import type { LightSource, LightZone } from '../types/lightingTypes';
 import type { ViewportRect } from '../types/viewportTypes';
+import type { AreaTemplate } from '../types/areaTemplateTypes';
 import type { WidgetSettings } from '../types/widgetTypes';
 import type { CellNumberFormat } from '../grid/cellNumbering';
 import type AtlasVTTPlugin from '../../../main';
@@ -26,7 +27,7 @@ export type Pin = NotePin;
 
 // Add constants for schema identification and versioning
 export const ATLAS_SCHEMA = 'atlas-vtt' as const;
-export const ATLAS_VERSION = 4;
+export const ATLAS_VERSION = 6;
 
 /**
  * Defines the structure of the persisted .atlasmap file.
@@ -50,6 +51,8 @@ export interface MapFile {
     lightZones?: Record<string, LightZone>;
     /** Absent in files from before TV viewports, and until a map has one. */
     viewports?: Record<string, ViewportRect>;
+    /** Absent in files from before area templates, and until a map has one. */
+    templates?: Record<string, AreaTemplate>;
   };
   camera: CameraState;
   followViewport?: boolean;
@@ -229,6 +232,10 @@ export function createAtlasStorage<T extends { mapPath: string | null; mapLoaded
       if (state && state.followViewport === undefined) {
         state.followViewport = false;
       }
+      // v5 → v6 migration: add area templates if missing
+      if (state?.objects && !state.objects.templates) {
+        state.objects.templates = {};
+      }
       // Files keep the token fields older versions of Atlas read; in memory tokens hold resources
       if (state) Object.assign(state, sceneFromFile(state));
       // A timer stops when its scene closes: a run in the file was cut short by a quit or crash
@@ -387,6 +394,7 @@ export function migrateMapFile(persisted: unknown): MapFile {
       walls: {},
       lights: {},
       viewports: {},
+      templates: {},
     },
     camera: { x: 0, y: 0, scale: 1 },
     followViewport: false,
@@ -421,6 +429,7 @@ export function migrateMapFile(persisted: unknown): MapFile {
       lights: isRecord(persisted.objects?.lights) ? persisted.objects.lights : {},
       ...(zones && { lightZones: zones }),
       viewports: isRecord(persisted.objects?.viewports) ? persisted.objects.viewports : {},
+      templates: isRecord(persisted.objects?.templates) ? persisted.objects.templates : {},
     },
     grid: persisted.grid ? migrateGrid(persisted.grid) : initial.grid,
     camera: persisted.camera || initial.camera

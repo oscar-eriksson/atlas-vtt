@@ -4,6 +4,7 @@ import type { WallSegment } from './wallTypes';
 import type { LightSource, LightZone, SceneLighting } from './lightingTypes';
 import type { AudioSource } from './audioTypes';
 import type { ViewportRect } from './viewportTypes';
+import type { AreaTemplate } from './areaTemplateTypes';
 import type { WidgetSettings } from './widgetTypes';
 import type { InitiativeState } from './initiativeTypes';
 import type { DiceRollResult } from './diceTypes';
@@ -56,6 +57,7 @@ export interface ViewState extends ViewUIState {
     /** Areas with ambient light of their own, in the order they were drawn; absent until the first is. Read with `lightZoneList`. */
     lightZones?: Record<string, LightZone>;
     viewports: Record<string, ViewportRect>;
+    templates: Record<string, AreaTemplate>;
   };
 
   // Camera state
