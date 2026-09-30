@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { templateFromDrag } from '../../src/app/templates/templateDrag';
+import { placeTemplate, templateFromDrag } from '../../src/app/templates/templateDrag';
 import { DEFAULT_TEMPLATE_SNAP_RULES, resolveOriginSnap, type TemplateSnapRules } from '../../src/app/templates/templateSnapRules';
 import { DEFAULT_TEMPLATE_TOOL_SETTINGS, type TemplateToolSettings } from '../../src/app/tools/templateToolSettings';
 
@@ -62,9 +62,12 @@ describe('templateFromDrag', () => {
 });
 
 describe('resolveOriginSnap', () => {
-  it('puts a sphere and a cube on a corner where cells meet', () => {
+  it('puts a sphere on a corner where cells meet', () => {
     expect(resolveOriginSnap('sphere', 1)).toBe('intersection');
-    expect(resolveOriginSnap('cube', 1)).toBe('intersection');
+  });
+
+  it('lets a cube start anywhere until it is dragged out, since its own size decides', () => {
+    expect(resolveOriginSnap('cube', 1)).toBe('any');
   });
 
   it('lets a line and a cone start from an edge middle or a corner, but not a cell centre', () => {
@@ -85,6 +88,46 @@ describe('resolveOriginSnap', () => {
     expect(resolveOriginSnap('sphere', 1, rules)).toBe('any');
     expect(resolveOriginSnap('emanation', 1, rules)).toBe('intersection');
     // A shape the system leaves alone keeps its default.
-    expect(resolveOriginSnap('cube', 1, rules)).toBe('intersection');
+    expect(resolveOriginSnap('line', 1, rules)).toBe('edge-or-corner');
+  });
+});
+
+describe('placeTemplate', () => {
+  const place = (changes: Partial<TemplateToolSettings>, press: { x: number; y: number }, pointer: { x: number; y: number }, rules = DEFAULT_TEMPLATE_SNAP_RULES) =>
+    placeTemplate(settings(changes), grid, rules, press, pointer);
+
+  it('centres an odd cube on a cell and lines its edges up with the grid', () => {
+    // Pressed on a cell centre, dragged 1.5 cells out: a 3-cell cube.
+    expect(place({ shape: 'cube' }, { x: 35, y: 35 }, { x: 140, y: 35 })).toMatchObject({ shape: 'cube', x: 35, y: 35, snap: 'cell-center', size: 3 });
+  });
+
+  it('centres an even cube on a corner', () => {
+    // Pressed on a corner, dragged one cell out: a 2-cell cube.
+    expect(place({ shape: 'cube' }, { x: 70, y: 70 }, { x: 140, y: 70 })).toMatchObject({ x: 70, y: 70, snap: 'intersection', size: 2 });
+  });
+
+  it('keeps every cube side whole and its edges on grid lines', () => {
+    for (const reach of [0.6, 1.1, 1.6, 2.4, 3.3]) {
+      const cube = place({ shape: 'cube' }, { x: 100, y: 100 }, { x: 100 + reach * 70, y: 100 });
+      expect(cube).not.toBeNull();
+      const { x, y, size } = cube!;
+      const edge = (x - (size * 70) / 2) / 70;
+      expect(Math.abs(edge - Math.round(edge))).toBeLessThan(1e-9);
+      expect(Math.abs((y - (size * 70) / 2) / 70 - Math.round((y - (size * 70) / 2) / 70))).toBeLessThan(1e-9);
+    }
+  });
+
+  it('makes nothing of a click', () => {
+    expect(place({ shape: 'cube' }, { x: 35, y: 35 }, { x: 36, y: 35 })).toBeNull();
+  });
+
+  it('starts a cone on an edge middle or a corner, not a cell centre', () => {
+    const cone = place({ shape: 'cone' }, { x: 40, y: 35 }, { x: 250, y: 35 });
+    expect(cone).toMatchObject({ snap: 'edge-or-corner', x: 70, y: 35 });
+  });
+
+  it('follows another system\'s rule for a shape', () => {
+    const rules: TemplateSnapRules = { ...DEFAULT_TEMPLATE_SNAP_RULES, cone: 'cell-center' };
+    expect(place({ shape: 'cone' }, { x: 40, y: 35 }, { x: 250, y: 35 }, rules)).toMatchObject({ snap: 'cell-center', x: 35, y: 35 });
   });
 });
