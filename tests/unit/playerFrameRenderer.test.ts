@@ -48,6 +48,13 @@ describe('PlayerFrameRenderer', () => {
     expect(viewport.position).toMatchObject({ x: 10, y: 20 });
   });
 
+  it('draws on an anti-aliased texture, so thin grid lines do not drop out', async () => {
+    const { RenderTexture } = await import('pixi.js');
+    const { app, viewport } = setup();
+    new PlayerFrameRenderer().render(app, viewport, [], { width: 1000, height: 600 }, { centerX: 0, centerY: 0, scale: 1 });
+    expect(RenderTexture.create).toHaveBeenCalledWith(expect.objectContaining({ antialias: true, resolution: 1 }));
+  });
+
   it('keeps one texture for one size and resizes it when the size changes', () => {
     const { app, viewport } = setup();
     const renderer = new PlayerFrameRenderer();
