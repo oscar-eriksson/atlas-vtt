@@ -59,6 +59,10 @@ export const TOOLBAR_CONTROLS = [
     description: t('toolbarEdit.pin.description'),
   },
   {
+    id: 'floors', label: t('toolbarEdit.floors.label'), hotkey: 'floors', dmOnly: true, hideable: true,
+    description: t('toolbarEdit.floors.description'),
+  },
+  {
     id: 'audio', label: t('toolbarEdit.audio.label'), hotkey: 'audio', dmOnly: true, hideable: true, enabled: AMBIENT_AUDIO_ENABLED,
     description: t('toolbarEdit.audio.description'),
   },

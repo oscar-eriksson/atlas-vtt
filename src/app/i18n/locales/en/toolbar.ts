@@ -50,6 +50,7 @@ export const toolbar = {
   'toolbar.viewportFollow': 'Follow viewport',
   'toolbar.viewportRemove': 'Remove viewport',
   'toolbar.templateTool': 'Area Templates',
+  'toolbar.floors': 'Floors',
   'toolbar.moveSelect': 'Move/Select',
   'toolbar.drawTool': 'Draw Tool',
   'toolbar.measureCircle': 'Measure Circle',

@@ -21,6 +21,8 @@ export const toolbarEdit: Translation = {
   'toolbarEdit.viewport.description': 'Обведите часть карты, которую показывает телевизор на столе, в таком размере, чтобы клетки совпадали с вашими миниатюрами.',
   'toolbarEdit.template.label': 'Шаблоны областей',
   'toolbarEdit.template.description': 'Размещайте линии, конусы, кубы, сферы и эманации, которые остаются на карте.',
+  'toolbarEdit.floors.label': 'Этажи',
+  'toolbarEdit.floors.description': 'Переключайтесь между этажами сцены, добавляйте, переименовывайте и удаляйте их.',
   'toolbarEdit.dice.label': 'Кубики',
   'toolbarEdit.dice.description': 'Бросайте любой набор кубиков и показывайте результат всем за столом.',
   'toolbarEdit.assets.label': 'Менеджер ресурсов',

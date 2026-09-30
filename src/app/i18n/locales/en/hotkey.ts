@@ -20,6 +20,7 @@ export const hotkey = {
   'hotkey.audio': 'Ambient audio',
   'hotkey.viewport': 'TV viewport',
   'hotkey.template': 'Area templates',
+  'hotkey.floors': 'Next floor',
   'hotkey.selectAll': 'Select all tokens',
   'hotkey.copy': 'Copy selection',
   'hotkey.cut': 'Cut selection',

@@ -1,10 +1,11 @@
 import React from "react"
-import { Command, Dices, ImageIcon, MapPin, Volume2 } from "lucide-react"
+import { Command, Dices, ImageIcon, Layers, MapPin, Volume2 } from "lucide-react"
 import { CoinIcon } from "../../../react/components/CoinIcon"
 import { DiceDropdownMenu } from "../../../react/components/dice/DiceDropdownMenu"
 import type { ToolbarControlId } from "../../../toolbar/toolbarCatalog"
 import { ToolButton } from "../primitives/ToolButton"
 import { DrawToolGroup } from "./DrawToolGroup"
+import { FloorToolGroup } from "./FloorToolGroup"
 import { FogToolGroup } from "./FogToolGroup"
 import { LightingToolGroup } from "./LightingToolGroup"
 import { MeasureToolGroup } from "./MeasureToolGroup"
@@ -32,6 +33,11 @@ export const TOOLBAR_CONTROL_ITEMS = {
   measure: ctx => toolGroupItem(ctx, 'measure', measureToolFace(ctx.activeTool), <MeasureToolGroup {...ctx.groupControls('measure')} />),
   template: ctx => toolGroupItem(ctx, 'template', templateToolFace(ctx.activeTool), <TemplateToolGroup {...ctx.groupControls('template')} />),
   wall: ctx => toolGroupItem(ctx, 'wall', lightingToolFace(ctx.activeTool), <LightingToolGroup {...ctx.groupControls('wall')} />),
+  floors: ctx => {
+    const item = toolGroupItem(ctx, 'floors', { icon: Layers, label: t('toolbar.floors'), tool: ctx.activeTool, isActive: false }, <FloorToolGroup {...ctx.groupControls('floors')} />)
+    // In the overflow menu a floor is not chosen from a list: the entry goes to the next one.
+    return { ...item, menuEntry: { ...item.menuEntry, onSelect: ctx.nextFloor } }
+  },
   pin: ctx => toolButtonItem(ctx, "note-pin", MapPin, t('toolbar.notePin'), ctx.hotkeyLabel('pin')),
   audio: ctx => toolButtonItem(ctx, "audio", Volume2, t('toolbar.ambientSound'), ctx.hotkeyLabel('audio')),
   viewport: ctx => toolGroupItem(ctx, 'viewport', viewportToolFace(ctx.activeTool), <ViewportToolGroup {...ctx.groupControls('viewport')} />),

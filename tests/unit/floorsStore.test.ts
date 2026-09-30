@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createViewAtlasStore } from '../../src/app/storeFactory';
 import { getHistoryStore } from '../../src/app/stores/history';
-import { switchFloorWithHistory } from '../../src/app/stores/floorsSlice';
+import { removeFloorWithHistory, switchFloorWithHistory } from '../../src/app/stores/floorsSlice';
 import { ATLAS_VERSION } from '../../src/app/services/MapPersistence';
 import type { AreaTemplateInput } from '../../src/app/types/areaTemplateTypes';
 import { createInMemoryApp } from '../mocks/inMemoryVault';
@@ -172,5 +172,49 @@ describe('the undo history of each floor', () => {
     expect(templateIds(store)).toEqual([groundTemplate]);
     getHistoryStore(store)!.getState().undo();
     expect(templateIds(store)).toEqual([]);
+  });
+});
+
+describe('removing a floor with its history', () => {
+  it('moves to the floor before it when the active floor is removed, with that floor\'s own undo steps', () => {
+    const store = setupStore();
+    const ground = store.getState().activeFloorId;
+    store.getState().addTemplate(template);
+    const upstairs = store.getState().addFloor();
+    switchFloorWithHistory(store, upstairs);
+    store.getState().addTemplate(template);
+
+    expect(removeFloorWithHistory(store, upstairs)).toBe(true);
+    expect(store.getState().activeFloorId).toBe(ground);
+    expect(store.getState().floors.map(floor => floor.id)).toEqual([ground]);
+    expect(store.getState().floorData).toEqual({});
+    expect(templateIds(store)).toHaveLength(1);
+    expect(undoSteps(store)).toBe(1);
+  });
+
+  it('moves to the floor after it when the first floor is removed', () => {
+    const store = setupStore();
+    const ground = store.getState().activeFloorId;
+    const upstairs = store.getState().addFloor();
+    expect(removeFloorWithHistory(store, ground)).toBe(true);
+    expect(store.getState().activeFloorId).toBe(upstairs);
+  });
+
+  it('removes a floor that is not active and leaves the active one as it is', () => {
+    const store = setupStore();
+    const ground = store.getState().activeFloorId;
+    store.getState().addTemplate(template);
+    const cellar = store.getState().addFloor();
+    expect(removeFloorWithHistory(store, cellar)).toBe(true);
+    expect(store.getState().activeFloorId).toBe(ground);
+    expect(templateIds(store)).toHaveLength(1);
+  });
+
+  it('never removes the last floor, or one that does not exist', () => {
+    const store = setupStore();
+    expect(removeFloorWithHistory(store, store.getState().activeFloorId)).toBe(false);
+    store.getState().addFloor();
+    expect(removeFloorWithHistory(store, 'missing')).toBe(false);
+    expect(store.getState().floors).toHaveLength(2);
   });
 });

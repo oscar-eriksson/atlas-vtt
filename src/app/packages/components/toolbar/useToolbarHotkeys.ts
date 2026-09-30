@@ -18,6 +18,7 @@ function cycleTool<T extends Tool>(family: readonly T[], activeTool: Tool): T {
 
 interface ToolbarHotkeyActions {
   selectTool: (tool: Tool) => void
+  nextFloor: () => void
   toggleAssetManager: () => void
   closeAssetManager: () => void
   toggleGMView: () => void
@@ -29,7 +30,7 @@ export function useToolbarHotkeys(viewId: string | undefined, isPlayerView: bool
   const store = useViewStoreHook()
   const emit = useEmitViewEvent()
   const { renderer } = useAtlasUI()
-  const { selectTool, toggleAssetManager, closeAssetManager, toggleGMView, closeMenus } = actions
+  const { selectTool, nextFloor, toggleAssetManager, closeAssetManager, toggleGMView, closeMenus } = actions
   const activeTool = (): Tool => store.getState().activeTool
   const dmOnly = (action: () => void) => (): void => {
     if (!isPlayerView) action()
@@ -56,6 +57,7 @@ export function useToolbarHotkeys(viewId: string | undefined, isPlayerView: bool
     }),
     assets: dmOnly(toggleAssetManager),
     template: dmOnly(() => selectTool("template")),
+    floors: dmOnly(nextFloor),
     pin: dmOnly(() => selectTool("note-pin")),
     wall: dmOnly(() => selectTool("wall")),
     audio: dmOnly(() => { if (AMBIENT_AUDIO_ENABLED) selectTool("audio") }),

@@ -132,6 +132,11 @@ interface FloorStore {
   getState: () => Pick<ViewAtlasState, 'activeFloorId' | 'switchFloor'>;
 }
 
+/** A view store, as far as removing a floor needs it. */
+interface FloorListStore {
+  getState: () => Pick<ViewAtlasState, 'activeFloorId' | 'floors' | 'switchFloor' | 'removeFloor'>;
+}
+
 /**
  * Makes `id` the active floor with its own undo history: the steps of the floor
  * being left are kept for when it is active again, and the new floor's steps
@@ -157,4 +162,19 @@ export function switchFloorWithHistory(store: FloorStore, id: string): void {
 /** Forgets the undo steps of a floor that was removed. */
 export function forgetFloorHistory(store: HistoryHost, id: string): void {
   floorHistories.get(store)?.delete(id);
+}
+
+/**
+ * Removes a floor with everything on it. When it is the active one, the floor
+ * before it (or after it, for the first) becomes active first. The last floor
+ * is never removed. Returns whether a floor was removed.
+ */
+export function removeFloorWithHistory(store: FloorListStore, id: string): boolean {
+  const { floors, activeFloorId } = store.getState();
+  const index = floors.findIndex(floor => floor.id === id);
+  if (index < 0 || floors.length <= 1) return false;
+  if (id === activeFloorId) switchFloorWithHistory(store, floors[index === 0 ? 1 : index - 1]!.id);
+  store.getState().removeFloor(id);
+  forgetFloorHistory(store, id);
+  return true;
 }

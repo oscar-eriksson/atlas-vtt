@@ -26,6 +26,7 @@ import { createToolbarEditStore, ToolbarEditStoreContext } from "./toolbar/edito
 import { useToolbarRowBridge } from "./toolbar/editor/toolbarRowBridge"
 import { useToolbarEditor } from "./toolbar/editor/useToolbarEditor"
 import type { Tool } from "./toolbar/toolFaces"
+import { switchFloorWithHistory } from "../../stores/floorsSlice"
 import type { ToolbarContext, ToolMenu } from "./toolbar/toolbarContext"
 import type { ResponsiveToolbarItem } from "./toolbar/toolbarTypes"
 import { t } from '../../i18n';
@@ -115,9 +116,17 @@ export const MainToolbar = forwardRef<HTMLDivElement, MainToolbarProps>(({ viewI
     setOpenMenu(null)
   }, [isDiceTrayOpen, setDiceTrayOpen])
 
+  /** Makes the next floor of the scene the active one, after the last going back to the first. */
+  const nextFloor = useCallback((): void => {
+    const { floors, activeFloorId } = store.getState()
+    const next = floors[(floors.findIndex(floor => floor.id === activeFloorId) + 1) % floors.length]
+    if (next) switchFloorWithHistory(store, next.id)
+  }, [store])
+
   useMapClipboardHotkeys(store, view, viewId);
   useToolbarHotkeys(viewId, isActualPlayerView, {
     selectTool: handleToolClick,
+    nextFloor,
     toggleAssetManager: handleAssetManagerToggle,
     closeAssetManager: handleCloseAssetManager,
     toggleGMView,
@@ -152,6 +161,7 @@ export const MainToolbar = forwardRef<HTMLDivElement, MainToolbarProps>(({ viewI
       toggleMenu: () => setOpenMenu(current => current === menu ? null : menu),
       closeMenu: closeMenus,
     }),
+    nextFloor,
     dice: { open: isDiceTrayOpen, toggle: toggleDiceTray, tool: diceTool, buttonRef: diceButtonRef },
     loot: { open: lootRollerOpen, setOpen: setLootRollerOpen },
     assets: { open: isAssetManagerOpen, toggle: handleAssetManagerToggle },

@@ -21,6 +21,8 @@ export const toolbarEdit = {
   'toolbarEdit.viewport.description': 'Frame the part of the map a table TV shows, sized so its squares match your miniatures.',
   'toolbarEdit.template.label': 'Area templates',
   'toolbarEdit.template.description': 'Place lines, cones, cubes, spheres and emanations that stay on the map.',
+  'toolbarEdit.floors.label': 'Floors',
+  'toolbarEdit.floors.description': 'Switch between the floors of a scene, and add, rename and delete them.',
   'toolbarEdit.dice.label': 'Dice',
   'toolbarEdit.dice.description': 'Roll any mix of dice and show the result to everyone at the table.',
   'toolbarEdit.assets.label': 'Asset manager',

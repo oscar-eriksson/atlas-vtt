@@ -60,6 +60,8 @@ const storeState = {
   lighting: { enabled: false, ambient: 0.1 },
   setSceneLighting: vi.fn(),
   selectedIds: [] as string[],
+  floors: [{ id: 'floor-1', name: 'Floor 1' }],
+  activeFloorId: 'floor-1',
   setSelection,
   openAssetManager,
   closeAssetManager,
