@@ -13,6 +13,12 @@ describe('templateFromDrag', () => {
     expect(template).toMatchObject({ shape: 'cone', x: 140, y: 140, snap: 'intersection', size: 3, angle: 0, visibleToPlayers: true });
   });
 
+  it('grows a cube from its centre: the side is twice the larger drag', () => {
+    // 1.5 cells right and 0.5 down: the edge follows the larger, so a 3-cell cube.
+    expect(templateFromDrag(settings({ shape: 'cube' }), grid, origin, 'intersection', { x: 140 + 1.5 * 70, y: 140 + 0.5 * 70 })).toMatchObject({ shape: 'cube', size: 3 });
+    expect(templateFromDrag(settings({ shape: 'cube' }), grid, origin, 'intersection', { x: 140 - 70, y: 140 - 2 * 70 })).toMatchObject({ size: 4 });
+  });
+
   it('turns with the pointer', () => {
     const template = templateFromDrag(settings(), grid, origin, 'intersection', { x: 140, y: 140 + 140 });
     expect(template?.angle).toBeCloseTo(Math.PI / 2);

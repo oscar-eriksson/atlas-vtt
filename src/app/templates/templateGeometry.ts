@@ -7,9 +7,9 @@ export type TemplateOutline =
   | { kind: 'circle'; center: Point; radius: number }
   | { kind: 'roundedRect'; x: number; y: number; width: number; height: number; radius: number };
 
-/** Shapes that point somewhere; a sphere and an emanation look the same from every side. */
+/** Shapes that point somewhere; a cube, a sphere and an emanation grow from their origin the same way in every direction. */
 export function isDirectionalShape(shape: TemplateShape): boolean {
-  return shape === 'line' || shape === 'cone' || shape === 'cube';
+  return shape === 'line' || shape === 'cone';
 }
 
 /** The template's outline around its own origin, pointing along +x: what to draw once and then move by position and rotation. */
@@ -72,7 +72,7 @@ function rectangleAlong(origin: Point, angle: number, length: number, width: num
  * rules describe the shape and not snapped to cells:
  * - line: a rectangle from the origin.
  * - cone: as wide as it is long at every point, so its far edge is as wide as its length.
- * - cube: a square whose near face is centred on the origin.
+ * - cube: a square centred on the origin, side `size`, along the grid.
  * - sphere: a circle around the origin.
  * - emanation: the creature's footprint grown by the radius in every direction,
  *   with rounded corners.
@@ -84,8 +84,13 @@ export function templateOutline(template: AreaTemplate, cellSize: number): Templ
   switch (template.shape) {
     case 'line':
       return { kind: 'polygon', points: rectangleAlong(origin, template.angle, length, (template.width ?? DEFAULT_LINE_WIDTH_CELLS) * cellSize) };
-    case 'cube':
-      return { kind: 'polygon', points: rectangleAlong(origin, template.angle, length, length) };
+    case 'cube': {
+      const half = length / 2;
+      return { kind: 'polygon', points: [
+        { x: origin.x - half, y: origin.y - half }, { x: origin.x + half, y: origin.y - half },
+        { x: origin.x + half, y: origin.y + half }, { x: origin.x - half, y: origin.y + half },
+      ] };
+    }
     case 'cone': {
       const [, farLeft, farRight] = rectangleAlong(origin, template.angle, length, length);
       return { kind: 'polygon', points: [origin, farLeft!, farRight!] };
