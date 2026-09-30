@@ -4,6 +4,7 @@ import type { TokenEntity, TextElement, DrawingStroke, NotePin } from '../types'
 import type { WallSegment, LightSource } from '../types/wallTypes';
 import type { ViewportRect } from '../types/viewportTypes';
 import type { AreaTemplate } from '../types/areaTemplateTypes';
+import type { FloorData, FloorInfo } from '../stores/floorsSlice';
 import type { WidgetSettings } from '../types/widgetTypes';
 import type { HexNumberFormat } from '../grid/hexNumbering';
 import type AtlasVTTPlugin from '../../../main';
@@ -55,7 +56,7 @@ export type Pin = NotePin;
 
 // Add constants for schema identification and versioning
 export const ATLAS_SCHEMA = 'atlas-vtt' as const;
-export const ATLAS_VERSION = 6;
+export const ATLAS_VERSION = 7;
 
 /**
  * Defines the structure of the persisted .atlasmap file.
@@ -80,6 +81,10 @@ export interface MapFile {
   };
   camera: CameraState;
   followViewport?: boolean;
+  /** The floors of the scene in order, which is active, and the objects of the ones that are not; `objects` and `background` are the active floor's. A map without them has one floor. */
+  floors?: FloorInfo[];
+  activeFloorId?: string;
+  floorData?: Record<string, FloorData>;
 }
 
 /** A token as found in older map files, where conditions were still called `statuses`. */
