@@ -8,9 +8,10 @@ const MIN_DRAG_CELLS = 0.25;
 
 /**
  * The template a drag from `origin` to `pointer` makes: pointing at the pointer
- * and as long as the drag, in whole cells. An emanation's size is measured from
- * the edge of the creature's footprint, not from its centre. Returns nothing
- * for a drag too short to mean anything.
+ * and as long as the drag, in whole cells. A cube grows from its centre, so its
+ * side is twice the larger of the horizontal and vertical drag; an emanation's
+ * size is measured from the edge of the creature's footprint, not from its
+ * centre. Returns nothing for a drag too short to mean anything.
  */
 export function templateFromDrag(
   settings: TemplateToolSettings,
@@ -25,7 +26,9 @@ export function templateFromDrag(
   if (cells < MIN_DRAG_CELLS) return null;
 
   const isEmanation = settings.shape === 'emanation';
-  const size = Math.max(1, Math.round(isEmanation ? cells - settings.footprint / 2 : cells));
+  const cubeSide = (2 * Math.max(Math.abs(dx), Math.abs(dy))) / grid.size;
+  const extent = settings.shape === 'cube' ? cubeSide : isEmanation ? cells - settings.footprint / 2 : cells;
+  const size = Math.max(1, Math.round(extent));
   return {
     shape: settings.shape,
     x: origin.x,
