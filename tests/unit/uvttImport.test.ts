@@ -11,7 +11,7 @@ import { sealWalls } from '../../src/app/lighting/sealWalls';
 import { prebuildMapImageAt } from '../../src/app/pixi/mapImage/prebuildMapImage';
 import { AssetService, type Asset } from '../../src/app/services/AssetService';
 import { AssetThumbnailService } from '../../src/app/services/AssetThumbnailService';
-import { createAtlasStorage, migrateMapFile, parseSceneFile } from '../../src/app/services/MapPersistence';
+import { ATLAS_VERSION, createAtlasStorage, migrateMapFile, parseSceneFile } from '../../src/app/services/MapPersistence';
 import type { GridState } from '../../src/app/types/gridTypes';
 import { createViewAtlasStore } from '../../src/app/storeFactory';
 import type { CollectionGridDefaults } from '../../src/app/types/collectionSettingsTypes';
@@ -150,7 +150,7 @@ describe('importing a Universal VTT file', () => {
 
     const storage = createAtlasStorage<{ mapPath: string }, SceneState>(b.vault.app, { getState: () => ({ mapPath: scenePath }) });
     const stored = await storage.getItem('atlas');
-    expect(stored?.version).toBe(4);
+    expect(stored?.version).toBe(ATLAS_VERSION);
     expect(stored?.state.objects.walls).toEqual(expected.walls);
     expect(stored?.state.objects.lights).toEqual(expected.lights);
     expect(readSceneLighting(stored?.state.lighting)).toEqual({ enabled: true, ambient: 0.5 });

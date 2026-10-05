@@ -57,7 +57,7 @@ export interface FloorsSlice {
   switchFloor: (id: string) => void;
 }
 
-type FloorsStoreState = Pick<ViewAtlasState, 'floors' | 'activeFloorId' | 'floorData' | 'playerFloorId' | 'objects' | 'background' | 'selectedIds' | '_visionDirty' | '_audioDirty'>;
+type FloorsStoreState = Pick<ViewAtlasState, 'floors' | 'activeFloorId' | 'floorData' | 'playerFloorId' | 'objects' | 'background' | 'selectedIds' | '_audioDirty'>;
 type ImmerSet = (fn: (draft: FloorsStoreState) => void) => void;
 
 function newFloorId(): string {
@@ -116,7 +116,7 @@ export function createFloorsActions(set: ImmerSet): Pick<FloorsSlice, 'addFloor'
       draft.activeFloorId = id;
       // What is selected is on the floor being left.
       draft.selectedIds = [];
-      draft._visionDirty = true;
+      // The lighting reads the new objects by reference, so it follows; sounds need the flag.
       draft._audioDirty = true;
     }),
   };

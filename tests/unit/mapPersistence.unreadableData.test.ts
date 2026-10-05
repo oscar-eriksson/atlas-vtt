@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { TFile } from 'obsidian';
 import { createInMemoryApp } from '../mocks/inMemoryVault';
-import { createAtlasStorage } from '../../src/app/services/MapPersistence';
+import { ATLAS_VERSION, createAtlasStorage } from '../../src/app/services/MapPersistence';
 
 const MAP_PATH = 'maps/cave.atlasmap';
 
@@ -42,8 +42,8 @@ describe('map data that cannot be loaded', () => {
   });
 
   it.each([
-    ['the file', { version: 5, state: { mapPath: MAP_PATH, objects: { tokens: {} } } }],
-    ['its state', { version: 4, state: { version: 5, mapPath: MAP_PATH, objects: { tokens: {} } } }],
+    ['the file', { version: ATLAS_VERSION + 1, state: { mapPath: MAP_PATH, objects: { tokens: {} } } }],
+    ['its state', { version: ATLAS_VERSION, state: { version: ATLAS_VERSION + 1, mapPath: MAP_PATH, objects: { tokens: {} } } }],
   ])('refuses a file of a newer Atlas by the version of %s, and leaves it alone', async (_label, saved) => {
     const content = JSON.stringify(saved);
     const { storage, files } = createStorage(content);
@@ -110,8 +110,8 @@ describe('a map saved before tokens had resources', () => {
     // Both bar switches were off, so both stay hidden on this map
     expect((loaded?.state as { tokenSettings: unknown }).tokenSettings).toEqual({ showNameplates: true, hiddenResources: ['hp', 'stress'], showInstanceBadges: true, tokenRingSize: 1 });
     // An older Atlas loads a map with a newer version empty and saves that over the file
-    expect((loaded?.state as { version: number }).version).toBe(4);
-    expect(loaded?.version).toBe(4);
+    expect((loaded?.state as { version: number }).version).toBe(ATLAS_VERSION);
+    expect(loaded?.version).toBe(ATLAS_VERSION);
     expect(backupsOf(files)).toHaveLength(0);
   });
 });

@@ -56,7 +56,8 @@ const storeState = {
   lootRoller: { open: false },
   setLootRollerOpen: vi.fn(),
   setInitiativeTrackerOpen,
-  objects: { tokens: {}, viewports: {}, templates: {} },
+  objects: { tokens: {}, templates: {} },
+  viewports: {},
   lighting: { enabled: false, ambient: 0.1 },
   setSceneLighting: vi.fn(),
   selectedIds: [] as string[],
@@ -229,7 +230,7 @@ describe('MainToolbar text tool', () => {
 
   it('shows the default layout where Atlas\' settings cannot be reached', () => {
     const { container } = render(<MainToolbar viewId="view-1" />);
-    expect(shownControls(container)).toEqual(['move', 'fog', 'draw', 'text', 'measure', 'pin', 'dice', 'loot', 'assets', 'palette']);
+    expect(shownControls(container)).toEqual(['move', 'fog', 'draw', 'text', 'measure', 'template', 'pin', 'floors', 'dice', 'loot', 'assets', 'palette']);
   });
 
   it('arranges the GM\'s bar by the stored layout and keeps hidden controls mounted', () => {
@@ -238,8 +239,8 @@ describe('MainToolbar text tool', () => {
       hidden: ['fog'],
     });
     const { container } = render(<MainToolbar viewId="view-1" />);
-    // A control the stored layout does not know yet follows the control before it in the default order.
-    expect(shownControls(container)).toEqual(['palette', 'dice', 'move', 'draw', 'text', 'measure', 'pin', 'loot', 'assets']);
+    // Controls the stored layout does not know yet follow the control before them in the default order.
+    expect(shownControls(container)).toEqual(['palette', 'dice', 'move', 'draw', 'text', 'measure', 'template', 'pin', 'floors', 'loot', 'assets']);
     expect(container.querySelector('[data-toolbar-item="fog"]')?.hasAttribute('hidden')).toBe(true);
   });
 

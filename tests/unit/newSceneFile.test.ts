@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { migrateMapFile, parseSceneFile } from '../../src/app/services/MapPersistence';
+import { ATLAS_VERSION, migrateMapFile, parseSceneFile } from '../../src/app/services/MapPersistence';
 import { newSceneTokenSettings } from '../../src/app/resources/sceneVisibility';
 import { newSceneFile } from '../../src/app/services/newSceneFile';
 import { DEFAULT_TOKEN_SETTINGS } from '../../src/app/storeFactory';
@@ -24,14 +24,14 @@ function expectedFile(background: string | null, grid: Record<string, unknown>, 
   return JSON.stringify({
     state: {
       schema: 'atlas-vtt',
-      version: 4,
+      version: ATLAS_VERSION,
       background,
       grid,
       objects: { tokens: {}, fog: {}, pins: {}, texts: {}, drawings: {} },
       camera: { x: 0, y: 0, scale: 1 },
       tokenSettings,
     },
-    version: 4,
+    version: ATLAS_VERSION,
   }, null, 2);
 }
 

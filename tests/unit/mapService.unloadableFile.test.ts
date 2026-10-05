@@ -15,10 +15,11 @@ import { readExploredMask } from '../../src/app/lighting/exploredMaskCodec';
 import { createViewAtlasStore, type ViewAtlasState, type ViewAtlasStore } from '../../src/app/storeFactory';
 import { MapService } from '../../src/app/services/MapService';
 import type { RendererService } from '../../src/app/services/RendererService';
+import { ATLAS_VERSION } from '../../src/app/services/MapPersistence';
 
 const SCENE = 'maps/tower.atlasmap';
 
-function sceneState(version = 4): Record<string, unknown> {
+function sceneState(version: number = ATLAS_VERSION): Record<string, unknown> {
   return {
     schema: 'atlas-vtt', version, mapPath: SCENE, background: null,
     grid: { enabled: true, visible: true, size: 70, offsetX: 0, offsetY: 0, opacity: 0.5 },
@@ -99,8 +100,8 @@ describe('a scene file that exists but does not load', () => {
     ['holds a version that is not a number', JSON.stringify({ version: '4', state: sceneState() }), STRUCTURE],
     ['holds no state', '{}', STRUCTURE],
     ['holds a bare map without the saved state around it', JSON.stringify(sceneState()), STRUCTURE],
-    ['was saved by a newer Atlas', JSON.stringify({ version: 5, state: sceneState(5) }), NEWER],
-    ['holds a state of a newer Atlas', JSON.stringify({ version: 4, state: sceneState(5) }), NEWER],
+    ['was saved by a newer Atlas', JSON.stringify({ version: ATLAS_VERSION + 1, state: sceneState(ATLAS_VERSION + 1) }), NEWER],
+    ['holds a state of a newer Atlas', JSON.stringify({ version: ATLAS_VERSION, state: sceneState(ATLAS_VERSION + 1) }), NEWER],
   ])('fails the load and keeps the file when it %s', async (_label, content, reason) => {
     await expectLoadRefused(setup(content), content, reason);
   });

@@ -31,9 +31,9 @@ describe('moving a bar control', () => {
   });
 
   it('steps over controls the view does not show, which keep their places', () => {
-    // Lighting sits between measure and pin but is off here: pin moving left lands before measure.
+    // Lighting sits between the area templates and pin but is off here: pin moving left lands before the templates.
     const moved = movedToolbarLayout(DEFAULT, BAR, 'pin', 'left');
-    expect(moved?.layout.order).toEqual(['move', 'fog', 'draw', 'text', 'pin', 'measure', 'wall', 'audio', 'viewport', 'dice', 'loot', 'assets', 'palette']);
+    expect(moved?.layout.order).toEqual(['move', 'fog', 'draw', 'text', 'measure', 'pin', 'template', 'wall', 'floors', 'audio', 'viewport', 'dice', 'loot', 'assets', 'palette']);
   });
 
   it('counts hidden controls nowhere', () => {

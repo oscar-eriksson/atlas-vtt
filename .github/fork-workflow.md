@@ -13,12 +13,23 @@ dropped once upstream ships its own version.
 
 The features are a stack, each branch on top of the one before:
 
-`origin/beta` → `feature/toolbar-registry` → `feature/tv-viewport` → `feature/area-templates`
-→ `feature/create-map-from-image` → `feature/player-second-render`
+`origin/beta` → `feature/tv-viewport` → `feature/area-templates` → `feature/create-map-from-image`
+→ `feature/player-second-render` → `feature/floors`
 
-`main` is the tip of the stack plus this file. A new feature branches from `main`, and once it works it is merged
+The toolbar no longer has a feature branch of its own: upstream shipped the toolbar editor in 0.6.0, and every
+control here is registered in its catalog (`src/app/toolbar/toolbarCatalog.ts`).
+
+`feature/tv-viewport-pr` is the pull request for the TV viewport: one clean commit on `origin/beta`, kept apart from
+the stack's work-in-progress copy. Once upstream merges it, drop the copy in the stack by rebasing the rest onto
+`origin/beta`.
+
+`main` is the stack up to `feature/player-second-render` plus this file; `feature/floors` is still on top of it. A new feature branches from `main`, and once it works it is merged
 back into `main`. A feature meant for upstream is moved onto `origin/beta` for its pull request:
 `git rebase --onto origin/beta <the branch below it> <the feature>`.
+
+Rebasing the whole stack: `git rebase --onto origin/beta <old base> feature/floors --update-refs` moves every branch
+that points into the stack. That includes any backup branch you made, so back up with a tag
+(`git tag backup/<name> <branch>`), which `--update-refs` leaves alone, or rely on the `fork/*` refs.
 
 ## Taking in upstream
 
