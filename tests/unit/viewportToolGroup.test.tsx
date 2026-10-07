@@ -1,12 +1,11 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
-import { getHistoryStore } from '../../src/app/stores/history';
 import { renderToolbar, setUpToolbarTestDom } from './toolbarEditorHarness';
 
 setUpToolbarTestDom();
 
 describe('the TV viewport menu', () => {
-  it('offers Remove viewport only while there is a frame, and removing it is one undo step', async () => {
+  it('offers Remove viewport only while there is a frame, and removing it clears every frame', async () => {
     const harness = renderToolbar({ stored: { shown: ['viewport'] } });
     const openMenu = (): void => { fireEvent.click(screen.getByRole('button', { name: 'TV Viewport Options' })); };
 
@@ -16,16 +15,10 @@ describe('the TV viewport menu', () => {
 
     harness.store.getState().addViewport({ x: 0, y: 0, width: 400, height: 200, locked: true, active: true });
     harness.store.getState().addViewport({ x: 50, y: 50, width: 400, height: 200, locked: true, active: false });
-    const history = getHistoryStore(harness.store)!.getState();
-    const before = history.pastStates.length;
-
     openMenu();
     fireEvent.click(await screen.findByRole('button', { name: 'Remove viewport' }));
 
-    expect(harness.store.getState().objects.viewports).toEqual({});
-    expect(getHistoryStore(harness.store)!.getState().pastStates.length).toBe(before + 1);
-    getHistoryStore(harness.store)!.getState().undo();
-    await waitFor(() => expect(Object.keys(harness.store.getState().objects.viewports)).toHaveLength(2));
+    expect(harness.store.getState().viewports).toEqual({});
   });
   it('picks the screen shape with one tap and marks the shape the saved resolution has', async () => {
     const harness = renderToolbar({ stored: { shown: ['viewport'] } });

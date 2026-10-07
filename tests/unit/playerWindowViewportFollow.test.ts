@@ -24,7 +24,7 @@ function setup(viewports: Record<string, ViewportRect>) {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ clearRect: vi.fn(), drawImage: vi.fn() } as never);
   const { app } = createInMemoryApp();
   const setFollowViewport = vi.fn();
-  const store = createStore(() => ({ objects: { viewports }, setFollowViewport })) as unknown as StoreApi<ViewAtlasState>;
+  const store = createStore(() => ({ viewports, setFollowViewport })) as unknown as StoreApi<ViewAtlasState>;
   const service = new PlayerWindowService(app, store, new SettingsService(app));
   const doc = document.implementation.createHTMLDocument();
   Object.defineProperty(doc, 'readyState', { value: 'complete' });

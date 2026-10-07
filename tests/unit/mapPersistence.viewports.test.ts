@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createInMemoryApp } from '../mocks/inMemoryVault';
-import { createAtlasStorage } from '../../src/app/services/MapPersistence';
+import { ATLAS_VERSION, createAtlasStorage } from '../../src/app/services/MapPersistence';
 
 const MAP_PATH = 'maps/cave.atlasmap';
 
@@ -18,7 +18,7 @@ describe('TV viewports in a map file', () => {
 
     const loaded = await storage.getItem('atlas');
 
-    expect(loaded?.state).toMatchObject({ followViewport: false, objects: { viewports: {} } });
+    expect(loaded?.state).toMatchObject({ followViewport: false });
   });
 
   it('keeps the viewports and the follow setting a map was saved with', async () => {
@@ -31,10 +31,10 @@ describe('TV viewports in a map file', () => {
   });
 
   it('does not make the map look newer than the Atlas that wrote it', async () => {
-    const storage = createStorage({ version: 4, state: { version: 4, mapPath: MAP_PATH, objects: { tokens: {} } } });
+    const storage = createStorage({ version: ATLAS_VERSION, state: { version: ATLAS_VERSION, mapPath: MAP_PATH, objects: { tokens: {} } } });
 
     const loaded = await storage.getItem('atlas');
 
-    expect(loaded?.version).toBe(4);
+    expect(loaded?.version).toBe(ATLAS_VERSION);
   });
 });

@@ -13,7 +13,6 @@ import type { FogOperation, FogOperationInput } from './types/fogTypes';
 import type { WallSegment, WallInput } from './types/wallTypes';
 import { DEFAULT_SCENE_LIGHTING, type LightChanges, type LightInput, type LightZoneChanges, type LightZoneInput, type SceneLightingChanges, type SceneLightingOption } from './types/lightingTypes';
 import type { ViewportRect, ViewportInput } from './types/viewportTypes';
-import type { AreaTemplate } from './types/areaTemplateTypes';
 import { createTemplatesActions, type TemplatesSlice } from './stores/templatesSlice';
 import { createFloorsActions, initialFloors, type FloorsSlice } from './stores/floorsSlice';
 import { hoistLegacyViewports } from './stores/legacyViewports';
