@@ -17,6 +17,8 @@ export const toolbarEdit = {
   'toolbarEdit.pin.description': 'Pin a note or a link to another scene onto a spot on the map.',
   'toolbarEdit.audio.label': 'Ambient sound',
   'toolbarEdit.audio.description': 'Place sounds on the map that grow louder as tokens come near.',
+  'toolbarEdit.viewport.label': 'TV viewport',
+  'toolbarEdit.viewport.description': 'Frame the part of the map a table TV shows, sized so its squares match your miniatures.',
   'toolbarEdit.dice.label': 'Dice',
   'toolbarEdit.dice.description': 'Roll any mix of dice and show the result to everyone at the table.',
   'toolbarEdit.assets.label': 'Asset manager',

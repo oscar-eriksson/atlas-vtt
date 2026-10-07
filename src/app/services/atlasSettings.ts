@@ -6,6 +6,8 @@ import type { ExperimentalFeatureId } from '../experimental/experimentalFeatures
 import { DEFAULT_DICE_LOOK, type DiceColour, type DiceFont } from '../dice3d/diceLook';
 import { readToolbarLayout, type StoredToolbarLayout } from '../toolbar/toolbarLayout';
 import type { InitiativeDock } from '../initiative/initiativeLayout';
+import type { TVCalibrationSettings } from '../types/viewportTypes';
+import { CM_PER_INCH } from '../utils/viewportPhysicalScale';
 
 /**
  * How wheel events drive the map viewport.
@@ -72,6 +74,11 @@ export interface AtlasSettings {
     /** Online play: everyone at the table sees everyone else's cursor on the shared map. */
     showCursors: boolean;
   };
+  /**
+   * The physical TV the player window is shown on, so grid squares can match real miniatures.
+   * It describes the device, not a scene, so it lives here and not in the map file.
+   */
+  tvCalibration: TVCalibrationSettings;
 }
 
 /** The input mode a device starts with: Macs mostly have a trackpad, other computers a mouse. */
@@ -108,6 +115,13 @@ export const DEFAULT_SETTINGS: AtlasSettings = {
     showDiceRolls: false,
     showCommandPalette: false, // Hide command palette
     showCursors: false,
+  },
+  tvCalibration: {
+    diagonalInches: 55,
+    resolutionWidth: 3840,
+    resolutionHeight: 2160,
+    targetSquareCm: CM_PER_INCH,
+    squareUnit: 'in',
   },
 };
 

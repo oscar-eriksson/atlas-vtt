@@ -1,7 +1,7 @@
 // Type-only: that module imports SettingsService at runtime, which imports this catalog.
 import type { ExperimentalFeatureId } from '../experimental/experimentalFeatures';
 import type { MapHotkeyId } from '../keyboard/mapHotkeys';
-import { AMBIENT_AUDIO_ENABLED } from '../featureFlags';
+import { AMBIENT_AUDIO_ENABLED, TV_VIEWPORT_ENABLED } from '../featureFlags';
 import { t } from '../i18n';
 
 /** One control of the main toolbar, as the settings and the toolbar editor know it. */
@@ -20,6 +20,8 @@ export interface ToolbarControlDefinition {
   experimental?: ExperimentalFeatureId;
   /** Every control can be hidden except the way into the editor. */
   hideable: boolean;
+  /** Starts in the editor's tray, not on the bar: for a control most tables do not use. The GM adds it from the tray. */
+  hiddenByDefault?: boolean;
 }
 
 /** The main toolbar's controls in their default order. Never rename an id: stored layouts use them. */
@@ -57,6 +59,10 @@ export const TOOLBAR_CONTROLS = [
     description: t('toolbarEdit.audio.description'),
   },
   {
+    id: 'viewport', label: t('toolbarEdit.viewport.label'), hotkey: 'viewport', dmOnly: true, hideable: true, hiddenByDefault: true, enabled: TV_VIEWPORT_ENABLED,
+    description: t('toolbarEdit.viewport.description'),
+  },
+  {
     id: 'dice', label: t('toolbarEdit.dice.label'), hotkey: 'diceTray', dmOnly: false, hideable: true,
     description: t('toolbarEdit.dice.description'),
   },
@@ -92,6 +98,11 @@ export const UNDO_BAR_ID = UNDO_BAR.id;
 export type ToolbarUnitId = ToolbarControlId | typeof UNDO_BAR_ID;
 
 export const DEFAULT_TOOLBAR_ORDER: readonly ToolbarControlId[] = TOOLBAR_CONTROLS.map(control => control.id);
+
+/** The controls that start in the tray until the GM adds them to the bar. */
+export const DEFAULT_HIDDEN_CONTROLS: readonly ToolbarControlId[] = TOOLBAR_CONTROLS
+  .filter((control: ToolbarControlDefinition) => control.hiddenByDefault === true)
+  .map(control => control.id);
 
 const CONTROLS_BY_ID = new Map<string, ToolbarControlDefinition>(TOOLBAR_CONTROLS.map(control => [control.id, control]));
 const UNITS_BY_ID = new Map<string, ToolbarControlDefinition>([...CONTROLS_BY_ID, [UNDO_BAR_ID, UNDO_BAR]]);

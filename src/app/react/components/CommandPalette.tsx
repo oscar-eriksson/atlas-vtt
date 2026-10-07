@@ -17,6 +17,7 @@ import {
   Grid,
   Settings,
   Snowflake,
+  Tv,
   MonitorUp,
   MonitorPlay,
   AppWindow,
@@ -34,6 +35,7 @@ import { useAtlasUI } from '../root/AtlasUIContext';
 import { PlayerWindowService } from '../../services/PlayerWindowService';
 import { openPlayerWindow, presentActiveTab } from '../../services/PlayerWindowPresenter';
 import { playerWindowStore } from '../../stores/playerWindowStore';
+import { TV_VIEWPORT_ENABLED } from '../../featureFlags';
 import { debounce } from '../../../utils/debounce';
 import { cn } from '../../../utils/cn';
 import { isShortcutScopeActive } from '../../utils/activeLeafGuard';
@@ -96,6 +98,7 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
   const setActiveTool = useAtlasStore(state => state.setActiveTool);
   const { app, view } = useAtlasUI();
   const isPlayerWindowFrozen = useStore(playerWindowStore, (s) => s.isFrozen);
+  const isFollowingViewport = useStore(playerWindowStore, (s) => s.isFollowingViewport);
   const isPlayerMode = view?.isInPlayerMode?.() ?? false;
   const setPlayerMode = (mode: boolean): void => view?.setPlayerMode?.(mode);
 
@@ -316,6 +319,22 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       isToggle: true,
       isActive: isPlayerWindowFrozen,
     },
+    ...(TV_VIEWPORT_ENABLED ? [{
+      id: "follow-tv-viewport",
+      icon: <Tv />,
+      label: t('palette.followTvViewport'),
+      section: "mode",
+      action: () => {
+        const service = PlayerWindowService.getInstance();
+        if (service?.isWindowOpen()) {
+          service.toggleViewportFollow();
+        } else {
+          showNotice(t('palette.noPlayerWindow'));
+        }
+      },
+      isToggle: true,
+      isActive: isFollowingViewport,
+    }] : []),
     {
       id: "open-player-window",
       icon: <AppWindow />,
