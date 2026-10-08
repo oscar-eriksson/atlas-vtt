@@ -17,6 +17,7 @@ export async function createMapFromImage(app: App, source: TFile): Promise<void>
     collections,
     defaultCollectionId: assetService.getDefaultCollectionId(),
     defaultName: source.basename,
+    previewUrl: app.vault.getResourcePath(source),
     isNameTaken: (collectionId, name) => app.vault.getAbstractFileByPath(scenePathFor(collectionId, name)) !== null,
   }).prompt();
   if (!choice) return;

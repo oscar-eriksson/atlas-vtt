@@ -1,15 +1,21 @@
+import { t } from '../i18n';
+import { parseQuarterTurn, QUARTER_TURNS } from '../imageProcessing/quarterTurns';
+import type { QuarterTurn } from '../imageProcessing/imageProcessing';
 import { Modal, Setting, type App } from 'obsidian';
 import { ATLAS_NATIVE_MODAL_CLASSES } from '../ui/nativeModal';
 
 export interface MapImageChoice {
   name: string;
   collectionId: string;
+  rotation: QuarterTurn;
 }
 
 export interface CreateMapFromImageOptions {
   collections: readonly { id: string; name: string }[];
   defaultCollectionId: string;
   defaultName: string;
+  /** Where the image can be shown from, so the turn can be previewed. */
+  previewUrl: string;
   /** Whether the collection already has a scene with this name. */
   isNameTaken: (collectionId: string, name: string) => boolean;
 }
@@ -20,6 +26,7 @@ export class CreateMapFromImageModal extends Modal {
   private resolveChoice: ((choice: MapImageChoice | null) => void) | null = null;
   private name: string;
   private collectionId: string;
+  private rotation: QuarterTurn = 0;
 
   constructor(app: App, private readonly options: CreateMapFromImageOptions) {
     super(app);
@@ -51,7 +58,7 @@ export class CreateMapFromImageModal extends Modal {
     };
     const submit = (): void => {
       if (create.disabled) return;
-      this.choice = { name: this.name.trim(), collectionId: this.collectionId };
+      this.choice = { name: this.name.trim(), collectionId: this.collectionId, rotation: this.rotation };
       this.close();
     };
 
@@ -64,6 +71,19 @@ export class CreateMapFromImageModal extends Modal {
       for (const { id, name } of options.collections) dropdown.addOption(id, name);
       dropdown.setValue(this.collectionId).onChange((value) => { this.collectionId = value; validate(); });
     });
+    new Setting(contentEl).setName(t('am.scene.rotation')).setDesc(t('am.scene.rotationHint')).addDropdown(dropdown => {
+      for (const turn of QUARTER_TURNS) dropdown.addOption(String(turn), `${turn}°`);
+      dropdown.setValue(String(this.rotation)).onChange((value) => { this.rotation = parseQuarterTurn(value); showTurn(); });
+    });
+    const preview = contentEl.createDiv({ cls: 'atlas-map-rotation-preview' });
+    const image = preview.createEl('img', { attr: { src: options.previewUrl, alt: '' } });
+    const showTurn = (): void => {
+      const sideways = this.rotation === 90 || this.rotation === 270;
+      image.style.transform = `rotate(${this.rotation}deg)`;
+      image.style.maxWidth = sideways ? '180px' : '100%';
+      image.style.maxHeight = sideways ? '100cqw' : '180px';
+    };
+    showTurn();
     problem = contentEl.createDiv({ cls: 'mod-warning' });
 
     new Setting(contentEl)
