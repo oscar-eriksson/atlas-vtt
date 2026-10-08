@@ -42,7 +42,7 @@ export class ImageDisplayService {
     this.app = app;
     ImageDisplayService.instance = this;
     this.boundHandleContextMenu = this.handleContextMenu.bind(this);
-    this.boundStoreContextMenuTarget = (e: MouseEvent): void => { this.lastContextMenuTarget = e.target as HTMLElement; };
+    this.boundStoreContextMenuTarget = (e: MouseEvent): void => this.rememberContextMenuTarget(e);
   }
 
   public static getInstance(): ImageDisplayService | null {
@@ -153,6 +153,33 @@ export class ImageDisplayService {
   }
 
   /**
+   * Remembers where the right-click landed for the editor menu. Reading view has no editor and so no
+   * editor menu: a rendered image there gets Atlas' own menu, opened before Obsidian's.
+   */
+  private rememberContextMenuTarget(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    this.lastContextMenuTarget = target;
+    const inReadingView = target.closest('.markdown-reading-view, .markdown-preview-view') && !target.closest('.markdown-source-view');
+    if (!inReadingView) return;
+    const result = this.resolveImageFromTarget(target);
+    if (!result) return;
+    this.lastContextMenuTarget = null;
+    event.preventDefault();
+    event.stopPropagation();
+    openContextMenuGlobal(this.imageMenuEntries(result.file, result.imgElement), { x: event.clientX, y: event.clientY });
+  }
+
+  /** The menu of an image shown in a view of its own or rendered in a note's reading view. */
+  private imageMenuEntries(file: TFile, imgElement: HTMLImageElement): ContextMenuEntry[] {
+    return [
+      { type: 'item', label: t('image.display'), icon: 'monitor', onClick: () => this.displayImageOnPlayerView(file) },
+      ...this.imageActions.map((action): ContextMenuEntry => ({ type: 'item', label: action.title, icon: action.icon, onClick: () => action.run(file) })),
+      { type: 'item', label: t('image.copy'), icon: 'copy', onClick: () => this.copyImageToClipboard(imgElement) },
+      { type: 'item', label: t('image.openDefaultMenu'), icon: 'external-link', onClick: () => this.app.openWithDefaultApp(file.path) },
+    ];
+  }
+
+  /**
    * Fallback handler for direct image views (non-editor contexts like viewing an image file).
    * Rendered image embeds in markdown are handled by the editor-menu handler instead.
    */
@@ -198,13 +225,7 @@ export class ImageDisplayService {
       event.preventDefault();
       event.stopPropagation();
 
-      const file = imageFile;
-      const entries: ContextMenuEntry[] = [
-        { type: 'item', label: t('image.display'), icon: 'monitor', onClick: () => this.displayImageOnPlayerView(file) },
-        ...this.imageActions.map((action): ContextMenuEntry => ({ type: 'item', label: action.title, icon: action.icon, onClick: () => action.run(file) })),
-        { type: 'item', label: t('image.copy'), icon: 'copy', onClick: () => this.copyImageToClipboard(imgElement) },
-        { type: 'item', label: t('image.openDefaultMenu'), icon: 'external-link', onClick: () => this.app.openWithDefaultApp(file.path) },
-      ];
+      const entries = this.imageMenuEntries(imageFile, imgElement);
 
       openContextMenuGlobal(entries, { x: event.clientX, y: event.clientY });
     }
