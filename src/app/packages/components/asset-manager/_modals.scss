@@ -135,6 +135,23 @@
   @include atlas-flex-col($gap: $spacing-s);
 }
 
+/* The map as it will be turned: the picture is turned by CSS, so its sides swap for a quarter turn. */
+.atlas-map-rotation-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 180px;
+  overflow: hidden;
+  container-type: inline-size;
+  background: var(--background-secondary);
+  border-radius: $radius-l;
+
+  img {
+    transition: transform 0.2s ease;
+    object-fit: contain;
+  }
+}
+
 .atlas-create-scene-label {
   @include atlas-field-label;
 }

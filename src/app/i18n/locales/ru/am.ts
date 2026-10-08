@@ -113,6 +113,8 @@ export const am: Translation = {
   'am.scene.nameTaken': 'Сцена «{name}» уже есть',
   'am.scene.createFailed': 'Не удалось создать сцену: {error}',
   'am.scene.new': 'Новая сцена',
+  'am.scene.rotation': 'Поворот карты',
+  'am.scene.rotationHint': 'Повернуть карту по часовой стрелке, чтобы она лучше подходила к экрану игроков. Исходное изображение не меняется.',
   'am.scene.name': 'Название сцены',
   'am.scene.namePlaceholder': 'Введите название сцены',
   'am.scene.create': 'Создать сцену',

@@ -121,6 +121,8 @@ export const am = {
   'am.scene.nameTaken': 'A scene named "{name}" already exists',
   'am.scene.createFailed': 'Could not create scene: {error}',
   'am.scene.new': 'New scene',
+  'am.scene.rotation': 'Rotate map',
+  'am.scene.rotationHint': 'Turn the map clockwise so it fits the screen your players look at. The original image is not changed.',
   'am.scene.name': 'Scene Name',
   'am.scene.namePlaceholder': 'Enter scene name',
   'am.scene.create': 'Create scene',
