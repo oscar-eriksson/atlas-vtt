@@ -27,6 +27,11 @@ interface ImageDisplay {
   imageUrl: string;
 }
 
+import { IMAGE_EXTENSIONS } from '../mapFromImage/imageExtensions';
+
+/** Atlas' own views and panels: their images are no vault images to offer a menu for. */
+const ATLAS_OWN_SURFACES = '.atlas-vtt-root, .atlas-vtt-plugin, .atlas-vtt, [data-type="atlas-vtt"]';
+
 export class ImageDisplayService {
   private app: App;
   private static instance: ImageDisplayService | null = null;
@@ -124,7 +129,7 @@ export class ImageDisplayService {
     if (target.closest('.modal-container')) return null;
     // Atlas' own UI keeps its images to itself, but a statblock's pictures are content.
     let imgElement = statblockImageAt(target);
-    if (!imgElement && target.closest('[class*="atlas-"]')) return null;
+    if (!imgElement && target.closest(ATLAS_OWN_SURFACES)) return null;
 
     if (target.tagName === 'IMG') {
       imgElement = target as HTMLImageElement;
@@ -144,7 +149,11 @@ export class ImageDisplayService {
       if (file instanceof TFile && this.isImageFile(file)) return { file, imgElement };
     }
 
-    // Method 2: Resolve from embed's src/data-src attribute via metadata cache
+    // Method 2: the vault image whose path ends the decoded src, wherever the vault lies on disk
+    const byTail = this.imageFileEndingTheSrc(imgElement.src);
+    if (byTail) return { file: byTail, imgElement };
+
+    // Method 3: Resolve from embed's src/data-src attribute via metadata cache
     if (imageEmbed) {
       const dataSrc = imageEmbed.getAttribute('src') || imageEmbed.getAttribute('data-src');
       if (dataSrc) {
@@ -414,8 +423,23 @@ export class ImageDisplayService {
    * Check if file is an image
    */
   private isImageFile(file: TFile): boolean {
-    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp'];
-    return imageExtensions.includes(file.extension.toLowerCase());
+    return IMAGE_EXTENSIONS.includes(file.extension.toLowerCase());
+  }
+
+  /** The longest-pathed vault image that the src's own path ends with. */
+  private imageFileEndingTheSrc(src: string): TFile | null {
+    let path: string;
+    try {
+      path = decodeURIComponent((src.split(/[?#]/)[0] ?? src).replace(/^[a-z-]+:\/\/[^/]*/i, ''));
+    } catch {
+      return null;
+    }
+    let best: TFile | null = null;
+    for (const file of this.app.vault.getFiles()) {
+      if (!this.isImageFile(file) || !path.endsWith('/' + file.path)) continue;
+      if (!best || file.path.length > best.path.length) best = file;
+    }
+    return best;
   }
 
   /**
@@ -425,8 +449,8 @@ export class ImageDisplayService {
     try {
       // Handle app://local URLs
       if (src.startsWith('app://')) {
-        // Remove query parameters first
-        const cleanSrc = src.split('?')[0] ?? src;
+        // Remove the query and the #subpath a link may carry (![](image.webp#gallery))
+        const cleanSrc = src.split(/[?#]/)[0] ?? src;
         
         // Extract everything after app://[hash]/
         const appMatch = cleanSrc.match(/app:\/\/[^/]+\/(.+)/);
