@@ -21,6 +21,7 @@ interface ImageDisplay {
   imageUrl: string;
 }
 
+import { augmentImageMenus } from './imageMenuAugment';
 import { IMAGE_EXTENSIONS } from '../mapFromImage/imageExtensions';
 
 /** Atlas' own views and panels: their images are no vault images to offer a menu for. */
@@ -41,13 +42,15 @@ export class ImageDisplayService {
   private lastContextMenuTarget: HTMLElement | null = null;
   private contextMenuEventRefs: EventRef[] = [];
   private contextMenuRegistered = false;
+  private readonly menusWithItems = new WeakSet<Menu>();
+  private restoreMenus: (() => void) | null = null;
   private readonly imageActions: ImageMenuAction[] = [];
 
   constructor(app: App) {
     this.app = app;
     ImageDisplayService.instance = this;
     this.boundHandleContextMenu = this.handleContextMenu.bind(this);
-    this.boundStoreContextMenuTarget = (e: MouseEvent): void => this.rememberContextMenuTarget(e);
+    this.boundStoreContextMenuTarget = (e: MouseEvent): void => { this.lastContextMenuTarget = e.target as HTMLElement; };
   }
 
   public static getInstance(): ImageDisplayService | null {
@@ -85,6 +88,13 @@ export class ImageDisplayService {
       }
     });
     this.contextMenuEventRefs.push(linkMenuRef);
+
+    // Menus other plugins show for an image on their own get Atlas' items too
+    this.restoreMenus = augmentImageMenus({
+      imageAt: (target) => (target.closest('.markdown-preview-view, .markdown-source-view') ? this.resolveImageFromTarget(target)?.file ?? null : null),
+      addItems: (menu, file) => this.addImageMenuItems(menu, file),
+      hasItems: (menu) => this.menusWithItems.has(menu),
+    });
 
     // Capture-phase listener to track right-click target (runs before Obsidian's handlers)
     document.addEventListener('contextmenu', this.boundStoreContextMenuTarget, true);
@@ -161,24 +171,7 @@ export class ImageDisplayService {
     return null;
   }
 
-  /**
-   * Remembers where the right-click landed for the editor menu. Reading view has no editor and so no
-   * editor menu: a rendered image there gets Atlas' own menu, opened before Obsidian's.
-   */
-  private rememberContextMenuTarget(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    this.lastContextMenuTarget = target;
-    const inReadingView = target.closest('.markdown-reading-view, .markdown-preview-view') && !target.closest('.markdown-source-view');
-    if (!inReadingView) return;
-    const result = this.resolveImageFromTarget(target);
-    if (!result) return;
-    this.lastContextMenuTarget = null;
-    event.preventDefault();
-    event.stopPropagation();
-    openContextMenuGlobal(this.imageMenuEntries(result.file, result.imgElement), { x: event.clientX, y: event.clientY });
-  }
-
-  /** The menu of an image shown in a view of its own or rendered in a note's reading view. */
+  /** The menu of an image shown in a view of its own. */
   private imageMenuEntries(file: TFile, imgElement: HTMLImageElement): ContextMenuEntry[] {
     return [
       { type: 'item', label: t('image.display'), icon: 'monitor', onClick: () => this.displayImageOnPlayerView(file) },
@@ -278,6 +271,7 @@ export class ImageDisplayService {
 
   /** Adds the image's menu items: display on the player view, then the actions other parts of Atlas registered. */
   private addImageMenuItems(menu: Menu, file: TFile): void {
+    this.menusWithItems.add(menu);
     menu.addItem((item) => {
       item
         .setTitle(t('image.display'))
@@ -495,6 +489,8 @@ export class ImageDisplayService {
       this.app.workspace.offref(eventRef);
     });
     this.contextMenuEventRefs = [];
+    this.restoreMenus?.();
+    this.restoreMenus = null;
     this.contextMenuRegistered = false;
 
     ImageDisplayService.instance = null;
