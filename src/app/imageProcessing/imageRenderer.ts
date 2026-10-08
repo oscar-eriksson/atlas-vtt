@@ -1,8 +1,8 @@
-import type { ImageJob, ImageJobResult, ImageLayout, ThumbnailSpec } from './imageJob';
+import type { ImageJob, ImageJobResult, ImageLayout, QuarterTurn, ThumbnailSpec } from './imageJob';
 import { bandDecoderFor } from './band/bandDecoders';
 import { reducedSize } from './band/bandTypes';
 import { decodable, WEBP_MAX_SIDE } from './decodeLimits';
-import { fitSize, frameImageRect, frameSize, scaleDown, type Size } from './imageLayout';
+import { fitSize, frameImageRect, frameSize, rotatedSize, scaleDown, type Size } from './imageLayout';
 import { imageHeader, type ImageFormat } from './imageDimensions';
 
 const KEPT_FORMATS: ReadonlySet<ImageFormat> = new Set(['png', 'jpeg', 'webp']);
@@ -102,10 +102,16 @@ function freeIntermediate(drawable: Drawable, source: Drawable): void {
   }
 }
 
-function renderFit(source: Drawable, size: Size): OffscreenCanvas {
+/** `source` scaled to the output `size` of a canvas, turned clockwise by `turn` about its centre. */
+function renderFit(source: Drawable, size: Size, turn: QuarterTurn = 0): OffscreenCanvas {
   const canvas = new OffscreenCanvas(size.width, size.height);
-  const scaled = reduced(source, size);
-  context(canvas).drawImage(scaled, 0, 0, size.width, size.height);
+  // The picture is drawn in its own orientation, so for a quarter turn that is the output with its sides swapped.
+  const drawn = rotatedSize(size, turn);
+  const scaled = reduced(source, drawn);
+  const ctx = context(canvas);
+  ctx.translate(size.width / 2, size.height / 2);
+  ctx.rotate((turn * Math.PI) / 180);
+  ctx.drawImage(scaled, -drawn.width / 2, -drawn.height / 2, drawn.width, drawn.height);
   freeIntermediate(scaled, source);
   return canvas;
 }
@@ -167,8 +173,8 @@ function shownSource(bitmap: ImageBitmap, scaledDecode: ImageJob['scaledDecode']
 }
 
 /** A fit is sized from the natural source, so a JPEG decoded at a smaller scale comes out as a whole decode would. */
-function render(bitmap: ImageBitmap, source: Size, layout: ImageLayout): OffscreenCanvas {
-  return layout.kind === 'fit' ? renderFit(bitmap, fitSize(source, layout)) : renderFrame(bitmap, layout);
+function render(bitmap: ImageBitmap, source: Size, layout: ImageLayout, turn: QuarterTurn): OffscreenCanvas {
+  return layout.kind === 'fit' ? renderFit(bitmap, fitSize(rotatedSize(source, turn), layout), turn) : renderFrame(bitmap, layout);
 }
 
 /**
@@ -227,11 +233,12 @@ export async function renderImageJob(job: ImageJob): Promise<ImageJobResult> {
     if (job.source instanceof ImageBitmap && fitsAsItIs(bitmap, job.layout)) return await encodeAsItIs(bitmap, job);
     const source = shownSource(bitmap, job.scaledDecode);
     const sourcePreview = await renderCopy(bitmap, job.sourcePreview);
-    if (job.source instanceof Blob && !job.scaledDecode && await keepsSource(job, job.source, bitmap)) {
+    const turn = job.layout.kind === 'fit' ? job.rotation ?? 0 : 0;
+    if (turn === 0 && job.source instanceof Blob && !job.scaledDecode && await keepsSource(job, job.source, bitmap)) {
       return { image: job.source, sourcePreview, ...await renderCopies(bitmap, job) };
     }
-    const canvas = render(bitmap, source, job.layout);
-    const scaledDown = scaleDown(job.layout, source, canvas);
+    const canvas = render(bitmap, source, job.layout, turn);
+    const scaledDown = scaleDown(job.layout, rotatedSize(source, turn), canvas);
     // The output no longer needs the decoded source; free it before the slow encode.
     bitmap.close();
     return { image: await encode(canvas, job.quality), sourcePreview, ...await renderCopies(canvas, job), scaledDown };
