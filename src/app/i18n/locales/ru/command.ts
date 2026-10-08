@@ -14,5 +14,7 @@ export const command: Translation = {
   'command.toggleDiceLog': 'Показать/скрыть журнал бросков',
   'command.toggleInitiativeTracker': 'Показать/скрыть трекер инициативы',
   'command.toggleLootRoller': 'Показать/скрыть случайные таблицы',
+  'command.createMapFromImage': 'Создать карту Atlas из изображения…',
+  'command.pickImage': 'Выберите изображение из хранилища',
   'command.viewChangelog': 'Открыть список изменений',
 };

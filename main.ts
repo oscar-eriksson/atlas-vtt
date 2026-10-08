@@ -40,6 +40,7 @@ import { addStarterTokens } from './src/app/services/starterTokens';
 import { migratePlayerResourceVisibility } from './src/app/resources/playerVisibilityMigration';
 import { storeLegacyCollectionResources } from './src/app/services/collectionScenes';
 import type { WidgetSyncService } from './src/app/services/WidgetSyncService';
+import { ImageFilePicker } from './src/app/mapFromImage/ImageFilePicker';
 import { createMapFromImage } from './src/app/mapFromImage/createMapFromImage';
 import { AtlasSettingTab } from './src/app/settings/AtlasSettingTab';
 import { changelogSettingsSection } from './src/app/settings/changelogSettingsSection';
@@ -197,6 +198,11 @@ export default class AtlasVTTPlugin extends Plugin {
 
     this.globalAssetManager = new GlobalAssetManagerService(this.app);
     this.imageDisplayService = new ImageDisplayService(this.app);
+    this.addCommand({
+      id: 'create-map-from-image',
+      name: t('command.createMapFromImage'),
+      callback: () => void new ImageFilePicker(this.app).prompt().then((file) => { if (file) return createMapFromImage(this.app, file); }),
+    });
     this.imageDisplayService.registerImageAction({ title: 'Create Atlas map…', icon: 'map', run: (file) => void createMapFromImage(this.app, file) });
 
     const onlinePlay = registerOnlinePlay(this, this.settingsService);

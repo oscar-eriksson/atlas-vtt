@@ -15,5 +15,7 @@ export const command = {
   'command.toggleDiceLog': 'Toggle dice log',
   'command.toggleInitiativeTracker': 'Toggle initiative tracker',
   'command.toggleLootRoller': 'Toggle random tables',
+  'command.createMapFromImage': 'Create Atlas map from an image…',
+  'command.pickImage': 'Pick an image from the vault',
   'command.viewChangelog': 'View changelog',
 } as const satisfies Record<string, Message>;
