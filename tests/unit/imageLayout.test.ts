@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { WEBP_MAX_SIDE } from '../../src/app/imageProcessing/decodeLimits';
 import { IMAGE_PRESETS } from '../../src/app/imageProcessing/imageProcessing';
-import { fitSize, fitWithin, frameImageRect, frameSize, scaleDown, vectorRasterSize } from '../../src/app/imageProcessing/imageLayout';
+import { fitSize, fitWithin, frameImageRect, frameSize, rotatedSize, scaleDown, vectorRasterSize } from '../../src/app/imageProcessing/imageLayout';
 import { renderedImageRect, TOKEN_CROP_FRACTION, tokenCropPlacement } from '../../src/app/packages/components/asset-manager/token-creator/cropMath';
 
 describe('fitWithin', () => {
@@ -112,5 +112,23 @@ describe('token frames', () => {
     expect(actual.top).toBeCloseTo((well.top - origin) * pixelsPerUnit, 9);
     expect(actual.width).toBeCloseTo(well.width * pixelsPerUnit, 9);
     expect(actual.height).toBeCloseTo(well.height * pixelsPerUnit, 9);
+  });
+});
+
+describe('rotatedSize', () => {
+  const wide = { width: 3000, height: 1000 };
+
+  it('swaps the sides for a quarter and three quarter turn', () => {
+    expect(rotatedSize(wide, 90)).toEqual({ width: 1000, height: 3000 });
+    expect(rotatedSize(wide, 270)).toEqual({ width: 1000, height: 3000 });
+  });
+
+  it('keeps the sides for no turn and a half turn', () => {
+    expect(rotatedSize(wide, 0)).toEqual(wide);
+    expect(rotatedSize(wide, 180)).toEqual(wide);
+  });
+
+  it('fits a turned map within the bounds by its turned sides', () => {
+    expect(fitWithin(rotatedSize({ width: 16000, height: 8000 }, 90), 8192, 8192)).toEqual({ width: 4096, height: 8192 });
   });
 });

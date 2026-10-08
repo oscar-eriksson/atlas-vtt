@@ -1,4 +1,4 @@
-import type { ScaleDown } from '../../../../imageProcessing/imageJob';
+import type { QuarterTurn, ScaleDown } from '../../../../imageProcessing/imageJob';
 
 export type CreatorMode = 'token' | 'map';
 
@@ -45,6 +45,8 @@ export interface TokenPreview {
   file: File | null;
   /** Percentage by which the background conversion shrank the upload. */
   compressionRatio?: number;
+  /** Turn a map is saved with, clockwise; unset is none. */
+  rotation?: QuarterTurn | undefined;
   /** Pixels the conversion took from an upload larger than Atlas keeps. */
   scaledDown?: ScaleDown | undefined;
   previewUrl: string;
@@ -55,7 +57,7 @@ export interface TokenPreview {
   isOptimizing: boolean;
 }
 
-export type TokenPreviewPatch = Partial<Pick<TokenPreview, 'name' | 'imageScale' | 'imagePosition' | 'showRing' | 'size' | 'tags'>>;
+export type TokenPreviewPatch = Partial<Pick<TokenPreview, 'name' | 'imageScale' | 'imagePosition' | 'showRing' | 'size' | 'tags' | 'rotation'>>;
 
 export const ZOOM_MIN = 0.5;
 export const ZOOM_MAX = 3;

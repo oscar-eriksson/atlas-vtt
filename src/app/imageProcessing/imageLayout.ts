@@ -1,5 +1,5 @@
 import { WEBP_MAX_SIDE } from './decodeLimits';
-import type { FramePlacement, ImageLayout, ScaleDown, Size } from './imageJob';
+import type { FramePlacement, ImageLayout, QuarterTurn, ScaleDown, Size } from './imageJob';
 
 export type { Size } from './imageJob';
 
@@ -17,6 +17,11 @@ function scaled(size: Size, scale: number): Size {
     width: Math.max(1, Math.round(size.width * scale)),
     height: Math.max(1, Math.round(size.height * scale)),
   };
+}
+
+/** The size of a picture of `size` once it is turned by `turn`: a quarter or three quarters swap the sides. */
+export function rotatedSize(size: Size, turn: QuarterTurn): Size {
+  return turn === 90 || turn === 270 ? { width: size.height, height: size.width } : { width: size.width, height: size.height };
 }
 
 type FitLayout = Extract<ImageLayout, { kind: 'fit' }>;

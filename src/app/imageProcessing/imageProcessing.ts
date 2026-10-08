@@ -1,13 +1,13 @@
 import { t } from '../i18n';
 import { DECODER_MAX_BYTES, DECODER_MAX_SIDE, decodable, scaledJpegDecodeSize } from './decodeLimits';
-import type { FramePlacement, ImageJob, ImageJobResult, ImageLayout, ThumbnailSpec } from './imageJob';
+import type { FramePlacement, ImageJob, ImageJobResult, ImageLayout, QuarterTurn, ThumbnailSpec } from './imageJob';
 import { imageHeader, type ImageHeader } from './imageDimensions';
 import { withDecodedImage } from './imageElement';
-import { fitSize, vectorRasterSize, type Size } from './imageLayout';
+import { fitSize, rotatedSize, vectorRasterSize, type Size } from './imageLayout';
 import { ImageDecodeError, ImageWorkerPool, type ImageJobOptions } from './ImageWorkerPool';
 import ImageWorker from './imageWorker?worker&inline';
 
-export type { FramePlacement, ThumbnailSpec, ImageJobResult as ProcessedImage } from './imageJob';
+export type { FramePlacement, QuarterTurn, ThumbnailSpec, ImageJobResult as ProcessedImage } from './imageJob';
 
 /**
  * Image conversion for imports: decoding, scaling and WebP encoding run in a
@@ -40,6 +40,8 @@ export interface ProcessOptions {
   thumbnail?: ThumbnailSpec | undefined;
   preview?: ThumbnailSpec | undefined;
   sourcePreview?: ThumbnailSpec | undefined;
+  /** Turns the picture clockwise; only `optimizeImage` (a fit) honours it. */
+  rotation?: QuarterTurn | undefined;
   /** Work nobody waits for yet, such as preview conversions; jobs someone waits for run first. */
   background?: boolean;
   /** The result is stored under a WebP name: a PNG or JPEG that fits is encoded too instead of kept. */
@@ -131,17 +133,18 @@ export class ImageTooLargeError extends Error {
 }
 
 /** A JPEG larger than a fit keeps is decoded at the smallest eighth of its size that still has every pixel the fit keeps. */
-function scaledDecodeOf(header: ImageHeader | null, layout: ImageLayout): ImageJob['scaledDecode'] {
+function scaledDecodeOf(header: ImageHeader | null, layout: ImageLayout, turn: QuarterTurn): ImageJob['scaledDecode'] {
   if (header?.format !== 'jpeg' || layout.kind !== 'fit') return undefined;
   const source = { width: header.width, height: header.height };
-  const decoded = scaledJpegDecodeSize(source, fitSize(source, layout));
+  // The fit is of the turned picture; the JPEG is decoded in its own orientation, so the target is turned back
+  const decoded = scaledJpegDecodeSize(source, rotatedSize(fitSize(rotatedSize(source, turn), layout), turn));
   return decoded ? { source, decoded } : undefined;
 }
 
 async function process(source: Blob, job: Omit<ImageJob, 'source'>, options: ProcessOptions): Promise<ImageJobResult> {
   const header = await imageHeader(source);
   if (header && !decodable(header)) throw new ImageTooLargeError(header);
-  const scaledDecode = scaledDecodeOf(header, job.layout);
+  const scaledDecode = scaledDecodeOf(header, job.layout, job.rotation ?? 0);
   const run: ImageJobOptions = { signal: options.signal, background: options.background ?? false, cost: jobCost(scaledDecode?.decoded ?? header) };
   const withCopies = { ...job, thumbnail: options.thumbnail, preview: options.preview, sourcePreview: options.sourcePreview, webpOnly: options.webpOnly };
   // One pool for both attempts: after unload it refuses the fallback and frees its bitmap
@@ -161,7 +164,7 @@ async function process(source: Blob, job: Omit<ImageJob, 'source'>, options: Pro
 /** `source` scaled down to fit the preset and encoded as WebP; a PNG, JPEG or WebP that fits is kept as it is (see `webpOnly`). */
 export function optimizeImage(source: Blob, preset: ImagePreset, options: ProcessOptions = {}): Promise<ImageJobResult> {
   const { maxWidth, maxHeight, maxPixels, quality } = preset;
-  return process(source, { layout: { kind: 'fit', maxWidth, maxHeight, maxPixels }, quality }, options);
+  return process(source, { layout: { kind: 'fit', maxWidth, maxHeight, maxPixels }, quality, rotation: options.rotation }, options);
 }
 
 export interface FrameOptions extends ProcessOptions {

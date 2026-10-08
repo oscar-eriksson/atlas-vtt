@@ -37,12 +37,17 @@ export interface ThumbnailSpec {
   quality: number;
 }
 
+/** A clockwise turn of the picture, in degrees. */
+export type QuarterTurn = 0 | 90 | 180 | 270;
+
 export interface ImageJob {
   /** Encoded image bytes, or a bitmap the main thread decoded for formats workers cannot read (SVG). */
   source: Blob | ImageBitmap;
   layout: ImageLayout;
   /** WebP quality, 0–1. */
   quality: number;
+  /** Turns a `fit` result clockwise before it is fitted and encoded; unset or 0 leaves the picture as it is. */
+  rotation?: QuarterTurn | undefined;
   /** Also render a thumbnail of the result, sparing a second decode later. */
   thumbnail?: ThumbnailSpec | undefined;
   /** Also render a copy to show on screen while the result is too large to display cheaply. */

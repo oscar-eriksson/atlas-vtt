@@ -17,8 +17,9 @@ function isUntouchedCrop(preview: TokenPreview): boolean {
 
 /**
  * The image a preview saves: a framed token cropped as the card shows it, a map
- * or unframed token whole. The background conversion is reused when it made
- * exactly that (an untouched crop, the whole image), so the upload is decoded
+ * or unframed token whole, a map turned as the card shows it. The background
+ * conversion is reused when it made exactly that (an untouched crop, the whole
+ * image, no turn), so the upload is decoded
  * once; otherwise the image is converted now.
  */
 export async function prepareSaveImage(file: File, preview: TokenPreview, context: SaveImageContext, signal?: AbortSignal): Promise<ProcessedImage> {
@@ -26,7 +27,9 @@ export async function prepareSaveImage(file: File, preview: TokenPreview, contex
     const background = isUntouchedCrop(preview) ? await context.waitForOptimized(preview.id, 'default-crop') : undefined;
     return background ?? cropTokenImage(file, preview.imageScale, preview.imagePosition, signal);
   }
-  return (await context.waitForOptimized(preview.id, 'whole')) ?? optimizeUpload(file, context.mode, { signal, thumbnail: true });
+  // The background conversion keeps the upload as it is, so a turned map is converted again
+  const background = preview.rotation ? undefined : await context.waitForOptimized(preview.id, 'whole');
+  return background ?? optimizeUpload(file, context.mode, { signal, thumbnail: true, rotation: preview.rotation });
 }
 
 /**

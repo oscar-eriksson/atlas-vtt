@@ -2,7 +2,7 @@ import { TokenRingToggle } from './TokenRingToggle';
 import { TokenSizeSelect } from './TokenSizeSelect';
 import tokenRingImageUrl from '../../../../assets/token-ring.webp';
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { Check, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
+import { Check, RotateCw, Trash2, ZoomIn, ZoomOut } from 'lucide-react';
 import { cn } from '../../../../../utils/cn';
 import { Button } from '../../primitives/button';
 import { Slider } from '../../primitives/slider';
@@ -12,6 +12,7 @@ import { clampImagePosition, cropReset } from './cropMath';
 import type { ImageAspect } from './cropMath';
 import { clampZoom, ZOOM_MAX, ZOOM_MIN, ZOOM_STEP } from './types';
 import type { CreatorMode, ImagePosition, TokenPreview, TokenPreviewPatch } from './types';
+import { nextQuarterTurn } from '../../../../imageProcessing/quarterTurns';
 import { t } from '../../../../i18n';
 
 interface TokenPreviewCardProps {
@@ -167,7 +168,10 @@ export const TokenPreviewCard = React.memo(function TokenPreviewCard({ preview, 
         backgroundPosition: `calc(50% + ${preview.imagePosition.x * wellSize}px) calc(50% + ${preview.imagePosition.y * wellSize}px)`,
       }
     : { backgroundSize: 'contain', backgroundPosition: 'center' };
-  const imageStyle: React.CSSProperties = preview.previewUrl ? { backgroundImage: `url(${preview.previewUrl})`, ...placement } : {};
+  const rotation = preview.rotation ?? 0;
+  // The well is square, so a quarter turn of the whole picture still fits it
+  const turn: React.CSSProperties = mode === 'map' && rotation ? { transform: `rotate(${rotation}deg)` } : {};
+  const imageStyle: React.CSSProperties = preview.previewUrl ? { backgroundImage: `url(${preview.previewUrl})`, ...placement, ...turn } : {};
 
   const zoomPercent = Math.round(preview.imageScale * 100);
 
@@ -197,6 +201,18 @@ export const TokenPreviewCard = React.memo(function TokenPreviewCard({ preview, 
           <Check />
         </button>
       </LabelTooltip>
+      {mode === 'map' && (
+        <LabelTooltip label={t('creator.rotate', { degrees: rotation })}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn('atlas-token-card__rotate', rotation !== 0 && 'atlas-turned')}
+            onClick={(e) => { e.stopPropagation(); onChange({ rotation: nextQuarterTurn(rotation) }); }}
+          >
+            <RotateCw />
+          </Button>
+        </LabelTooltip>
+      )}
       <LabelTooltip label={t('common.remove')}>
         <Button
           variant="ghost"

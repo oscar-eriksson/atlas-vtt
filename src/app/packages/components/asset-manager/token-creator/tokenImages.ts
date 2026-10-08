@@ -1,4 +1,4 @@
-import { IMAGE_PRESETS, optimizeImage, renderFramedImage, type ProcessedImage, type ThumbnailSpec } from '../../../../imageProcessing/imageProcessing';
+import { IMAGE_PRESETS, optimizeImage, renderFramedImage, type ProcessedImage, type QuarterTurn, type ThumbnailSpec } from '../../../../imageProcessing/imageProcessing';
 import { THUMBNAIL_SPEC } from '../../../../services/AssetThumbnailService';
 import { cropReset, tokenCropPlacement } from './cropMath';
 import type { CreatorMode, ImagePosition } from './types';
@@ -51,6 +51,8 @@ export interface UploadOptions {
   thumbnail: boolean;
   /** A conversion started ahead of time, which jobs someone waits for may overtake. */
   background?: boolean;
+  /** Turns a map clockwise as it is converted. */
+  rotation?: QuarterTurn | undefined;
 }
 
 /**
@@ -58,11 +60,12 @@ export interface UploadOptions {
  * card-sized copy: painting a full map in a preview card stalls the window.
  */
 export function optimizeUpload(file: File, mode: CreatorMode, options: UploadOptions): Promise<ProcessedImage> {
-  return shared(file, `fit:${mode}:${options.thumbnail}`, options.signal, (signal) => optimizeImage(file, IMAGE_PRESETS[mode], {
+  return shared(file, `fit:${mode}:${options.thumbnail}:${options.rotation ?? 0}`, options.signal, (signal) => optimizeImage(file, IMAGE_PRESETS[mode], {
     signal,
     thumbnail: options.thumbnail ? THUMBNAIL_SPEC : undefined,
     preview: mode === 'map' ? MAP_CARD_PREVIEW : undefined,
     background: options.background ?? false,
+    rotation: options.rotation,
   }));
 }
 
