@@ -31,6 +31,8 @@ interface ImageDisplay {
   imageUrl: string;
 }
 
+import { IMAGE_EXTENSIONS } from '../mapFromImage/imageExtensions';
+
 /** Atlas' own elements; the document's root and body carry Atlas classes too (hidden chrome, a preview shown), and are none. */
 const ATLAS_UI = ':not(body):not(html)[class*="atlas-"]';
 const NOTE_CONTENT = '.markdown-rendered, .markdown-source-view, .markdown-preview-view';
@@ -163,7 +165,11 @@ export class ImageDisplayService {
       if (file instanceof TFile && this.isImageFile(file)) return { file, imgElement };
     }
 
-    // Method 2: Resolve from embed's src/data-src attribute via metadata cache
+    // Method 2: the vault image whose path ends the decoded src, wherever the vault lies on disk
+    const byTail = this.imageFileEndingTheSrc(imgElement.src);
+    if (byTail) return { file: byTail, imgElement };
+
+    // Method 3: Resolve from embed's src/data-src attribute via metadata cache
     if (imageEmbed) {
       const dataSrc = imageEmbed.getAttribute('src') || imageEmbed.getAttribute('data-src');
       if (dataSrc) {
@@ -451,8 +457,23 @@ export class ImageDisplayService {
    * Check if file is an image
    */
   private isImageFile(file: TFile): boolean {
-    const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'svg', 'webp'];
-    return imageExtensions.includes(file.extension.toLowerCase());
+    return IMAGE_EXTENSIONS.includes(file.extension.toLowerCase());
+  }
+
+  /** The longest-pathed vault image that the src's own path ends with. */
+  private imageFileEndingTheSrc(src: string): TFile | null {
+    let path: string;
+    try {
+      path = decodeURIComponent((src.split(/[?#]/)[0] ?? src).replace(/^[a-z-]+:\/\/[^/]*/i, ''));
+    } catch {
+      return null;
+    }
+    let best: TFile | null = null;
+    for (const file of this.app.vault.getFiles()) {
+      if (!this.isImageFile(file) || !path.endsWith('/' + file.path)) continue;
+      if (!best || file.path.length > best.path.length) best = file;
+    }
+    return best;
   }
 
   /**
@@ -462,7 +483,8 @@ export class ImageDisplayService {
     try {
       // A resource URL: the file's place in the vault, else its path on disk
       if (isResourceUrl(src)) {
-        return resourceUrlToVaultPath(src, vaultBasePath(this.app.vault.adapter)) ?? resourceUrlToFilePath(src);
+        const bare = src.split('#', 1)[0] ?? src;
+        return resourceUrlToVaultPath(bare, vaultBasePath(this.app.vault.adapter)) ?? resourceUrlToFilePath(bare);
       }
 
       // Handle vault:// URLs
