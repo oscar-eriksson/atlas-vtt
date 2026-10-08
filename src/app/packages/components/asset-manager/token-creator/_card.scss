@@ -26,7 +26,8 @@
     background: var(--background-modifier-hover);
 
     .atlas-token-card__check,
-    .atlas-token-card__remove {
+    .atlas-token-card__remove,
+    .atlas-token-card__rotate {
       opacity: 1;
     }
   }
@@ -106,7 +107,8 @@
 // ── Overlaid controls ───────────────────────────────────────────────────────
 
 .atlas-token-card__check,
-.atlas-token-card__remove {
+.atlas-token-card__remove,
+.atlas-token-card__rotate {
   position: absolute;
   top: $spacing-s;
   z-index: 2;
@@ -154,6 +156,36 @@
     background: var(--interactive-accent);
     box-shadow: none;
     color: var(--text-on-accent);
+  }
+}
+
+.atlas-token-card__rotate {
+  right: $spacing-s;
+  top: calc(#{$spacing-s} * 2 + 22px);
+
+  // A map that is turned says so without the pointer over it
+  &.atlas-turned {
+    opacity: 1;
+  }
+
+  &.btn,
+  &.btn--icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: color-mix(in oklch, var(--mono-0) 55%, transparent);
+    color: color-mix(in oklch, var(--mono-100) 70%, transparent);
+  }
+
+  &.atlas-turned.btn,
+  &.atlas-turned.btn--icon {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent);
+  }
+
+  svg {
+    width: $icon-xs;
+    height: $icon-xs;
   }
 }
 
