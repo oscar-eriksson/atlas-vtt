@@ -15,7 +15,7 @@ import { EventEmitter } from 'events';
 import { PixiAppManager } from "./pixi/PixiAppManager"; // Import the new manager
 import { TokenRenderer } from "./pixi/token-renderer"; // Import TokenRenderer
 // Import color utils
-import { PinRenderer } from "./pixi/PinRenderer"; // Import PinRenderer
+import { PinRenderer, type PinTitleSetting } from "./pixi/PinRenderer"; // Import PinRenderer
 import { HexLinkRenderer } from "./pixi/hexLinks/HexLinkRenderer";
 import { HexLinkInteraction } from "./pixi/hexLinks/HexLinkInteraction";
 import type { MapRect } from "./grid/cellNumbering";
@@ -381,7 +381,7 @@ export class PixiRendererOrchestrator { // Renamed class
     // Initialize PinRenderer first
     // Check if this is a player view through the store
     const isPlayerView = this.store.getState().isPlayerView || false;
-    this.pinRenderer = new PinRenderer(viewport, this.eventBus, this.store, isPlayerView);
+    this.pinRenderer = new PinRenderer(viewport, this.eventBus, this.store, isPlayerView, this.pinTitleSetting());
 
     this.hexLinkRenderer = new HexLinkRenderer({
       viewport,
@@ -850,6 +850,12 @@ export class PixiRendererOrchestrator { // Renamed class
    */
   private gmViewLayers(): LayerVisibility[] {
     return [...(this.tokenRenderer?.getGmViewLayers() ?? []), ...(this.fogRenderer?.getGmViewLayers() ?? []), ...(this.measureRenderer?.getGmViewLayers() ?? [])];
+  }
+
+  /** The GM's setting for note titles under pins, read from Atlas' settings. */
+  private pinTitleSetting(): PinTitleSetting {
+    const settings = SettingsService.forApp(this.obsApp);
+    return { isOn: () => settings?.getShowPinTitles() ?? false, size: () => settings?.getPinTitleSize() ?? 1, subscribe: (listener) => settings?.onChange(listener) ?? (() => undefined) };
   }
 
   getViewportInstance(): Viewport | null { return this.pixiAppManager.getViewport(); }

@@ -62,3 +62,42 @@ describe('SettingsService toolbar layout', () => {
     expect(settings.getToolbarLayout()).toEqual({});
   });
 });
+
+describe('SettingsService pin titles', () => {
+  beforeEach(() => { vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('shows no titles unless the file says true, and does not rewrite the file for it', async () => {
+    const { settings, write } = await settingsFrom({ showPinTitles: 'yes' });
+    expect(settings.getShowPinTitles()).toBe(false);
+    expect((await settingsFrom({})).settings.getShowPinTitles()).toBe(false);
+    await vi.runAllTimersAsync();
+    expect(write).not.toHaveBeenCalled();
+  });
+
+  it('stores the choice once and tells every listener', async () => {
+    const { settings, write } = await settingsFrom({});
+    const listener = vi.fn();
+    settings.onChange(listener);
+
+    settings.setShowPinTitles(true);
+    settings.setShowPinTitles(true);
+
+    expect(settings.getShowPinTitles()).toBe(true);
+    expect(listener).toHaveBeenCalledOnce();
+    await vi.runAllTimersAsync();
+    expect(write).toHaveBeenCalledWith(expect.objectContaining({ showPinTitles: true }));
+  });
+
+  it('reads a damaged size as the normal one and keeps a stored size within bounds', async () => {
+    expect((await settingsFrom({ pinTitleSize: 'huge' })).settings.getPinTitleSize()).toBe(1);
+    expect((await settingsFrom({ pinTitleSize: 40 })).settings.getPinTitleSize()).toBe(2);
+    const { settings } = await settingsFrom({});
+    const listener = vi.fn();
+    settings.onChange(listener);
+    settings.setPinTitleSize(1.5);
+    settings.setPinTitleSize(1.5);
+    expect(settings.getPinTitleSize()).toBe(1.5);
+    expect(listener).toHaveBeenCalledOnce();
+  });
+});

@@ -41,6 +41,10 @@ export interface AtlasSettings {
   diceDisplay: DiceDisplay;
   /** Whether a new scene looks for the grid of its map. Off for tables that play without one. Read with `detectsGridOnNewScenes`. */
   detectGridOnNewScenes: boolean;
+  /** Whether pins show the name of their note under them. Read with `getShowPinTitles`. */
+  showPinTitles: boolean;
+  /** How large those titles are, as a share of their normal size. Read with `getPinTitleSize`. */
+  pinTitleSize: number;
   /** Colour of the dice: card stock, dark or the accent colour. Read with `getDiceLook`. */
   diceColour: DiceColour;
   /** Face of the dice numerals and roll totals. Read with `getDiceLook`. */
@@ -95,6 +99,8 @@ export const DEFAULT_SETTINGS: AtlasSettings = {
   laserPointer: DEFAULT_LASER_POINTER_SETTINGS,
   diceDisplay: 'full',
   detectGridOnNewScenes: true,
+  showPinTitles: false,
+  pinTitleSize: 1,
   diceColour: DEFAULT_DICE_LOOK.colour,
   diceFont: DEFAULT_DICE_LOOK.font,
   initiativeNames: false,

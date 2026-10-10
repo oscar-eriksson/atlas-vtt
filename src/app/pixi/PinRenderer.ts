@@ -11,6 +11,7 @@ import { beginHistoryTransaction, endHistoryTransaction } from '../stores/histor
 import { openContextMenuGlobal } from '../react/root/ContextMenuContext';
 import { pinSize } from '../styles/designTokens';
 import { isPinLabelKind, nextPinLabel } from '../tools/pinLabels';
+import { pinTitleOf } from '../tools/pinTitle';
 import { getPinIconDefinition, resolvePinIcon, type PinIconId } from '../types/pinIcons';
 import { canvasBadgeColors, isDarkTheme } from './utils/canvasBadgeColors';
 import { dispatchPinAction } from './utils/pinActions';
@@ -29,6 +30,20 @@ function differsBeyondPosition(pin: NotePin, prev: NotePin | undefined): boolean
   }
   return false;
 }
+
+/** Whether pins show the name of their note, and how to hear that it changed. */
+export interface PinTitleSetting {
+  isOn(): boolean;
+  /** Size of the title text as a share of its normal size. */
+  size(): number;
+  /** Calls `listener` whenever the setting may have changed; returns the function that stops it. */
+  subscribe(listener: () => void): () => void;
+}
+
+/** Pixels of the gap between a pin's badge and the title under it, in the pin's own units. */
+const TITLE_GAP = 3;
+const TITLE_FONT_SIZE = 9;
+const TITLE_PADDING = 3;
 
 export class PinRenderer {
   private viewport: Viewport;
@@ -51,11 +66,18 @@ export class PinRenderer {
   private pinPreviewUpdateHandler: ((data: { x: number; y: number; icon: string }) => void) | null = null;
   private pinPreviewUpdateIconHandler: ((data: { icon: string }) => void) | null = null;
   
-  constructor(viewport: Viewport, eventBus: EventEmitter, store: ViewAtlasStore, isPlayerView: boolean = false) {
+  private readonly titles: PinTitleSetting | undefined;
+  private showTitles = false;
+  private titleSize = 1;
+
+  constructor(viewport: Viewport, eventBus: EventEmitter, store: ViewAtlasStore, isPlayerView: boolean = false, titles?: PinTitleSetting) {
     this.viewport = viewport;
     this.eventBus = eventBus;
     this.store = store;
     this.isPlayerView = isPlayerView;
+    this.titles = titles;
+    this.showTitles = titles?.isOn() ?? false;
+    this.titleSize = titles?.size() ?? 1;
     
     this.pinContainer = new Container();
     this.pinContainer.label = 'pins';
@@ -80,7 +102,17 @@ export class PinRenderer {
       () => { this.pinContainer.visible = !this.arePinsHidden(); },
       { fireImmediately: true }
     );
+    // Titles come and go with the GM's setting: pins are drawn again with or without them
+    const unsubscribeTitles = this.titles?.subscribe(() => {
+      const show = this.titles?.isOn() ?? false;
+      const size = this.titles?.size() ?? 1;
+      if (show === this.showTitles && (!show || size === this.titleSize)) return;
+      this.showTitles = show;
+      this.titleSize = size;
+      this.redrawAllPins();
+    });
     this._unsubscribeFromStore = () => {
+      unsubscribeTitles?.();
       unsubscribePins();
       unsubscribeHexGrid();
       unsubscribeGMView();
@@ -391,9 +423,31 @@ export class PinRenderer {
     }
     if (pin.readable === true) container.addChild(createReadableMark(badgeRadius, colors));
 
+    if (this.showTitles) this.addTitle(container, pinTitleOf(pin.notePath), badgeRadius);
+
     return container;
   }
-  
+
+  /** The name of a pin's note on a pill under its badge; none for a pin without a note. */
+  private addTitle(container: Container, title: string, badgeRadius: number): void {
+    if (!title) return;
+    const colors = canvasBadgeColors();
+    const text = new Text({
+      text: title,
+      style: new TextStyle({ fill: colors.stroke, fontSize: TITLE_FONT_SIZE * this.titleSize, fontWeight: 'bold', fontFamily: 'Arial, sans-serif' }),
+      resolution: 8,
+    });
+    text.anchor.set(0.5, 0);
+    const pill = new Graphics();
+    const width = text.width + TITLE_PADDING * 2 * this.titleSize;
+    const height = text.height + TITLE_PADDING * this.titleSize;
+    const top = badgeRadius + TITLE_GAP;
+    pill.roundRect(-width / 2, top, width, height, height / 2);
+    pill.fill({ color: colors.background, alpha: 0.9 });
+    pill.stroke({ width: 0.5, color: colors.stroke, alpha: isDarkTheme() ? 0.4 : 0.3 });
+    text.position.set(0, top + (TITLE_PADDING * this.titleSize) / 2);
+    container.addChild(pill, text);
+  }
 
   private showPinContextMenu(pin: NotePin, pos: { x: number; y: number }): void {
     openContextMenuGlobal(

@@ -3,6 +3,7 @@ import type { App, Plugin } from 'obsidian';
 import { availableHotkeys, canShareHotkey, type MapHotkeyId, type MapHotkeys } from '../keyboard/mapHotkeys';
 import { hotkeyOrigin, resolveHotkeys, withHotkey, type HotkeyOrigin } from '../keyboard/hotkeyOverrides';
 import { resolveLaserPointerSettings, type LaserPointerSettings } from '../tools/laserPointerSettings';
+import { clampPinTitleSize } from '../tools/pinTitle';
 import { isDiceDisplay, type DiceDisplay } from '../dice3d/diceDisplay';
 import type { ExperimentalFeatureId } from '../experimental/experimentalFeatures';
 import { DEFAULT_DICE_LOOK, isDiceColour, isDiceFont, type DiceLook } from '../dice3d/diceLook';
@@ -309,6 +310,29 @@ export class SettingsService {
   setDetectGridOnNewScenes(on: boolean): void {
     if (this.detectsGridOnNewScenes() === on) return;
     this.settings.detectGridOnNewScenes = on;
+    this.commit();
+  }
+
+  /** Whether pins show their note's name under them: off unless the file says `true`. */
+  getShowPinTitles(): boolean {
+    return this.settings.showPinTitles === true;
+  }
+
+  /** Size of the titles under pins as a share of their normal size, kept within `PIN_TITLE_SIZES`. */
+  getPinTitleSize(): number {
+    return clampPinTitleSize(this.settings.pinTitleSize);
+  }
+
+  setPinTitleSize(size: number): void {
+    const clamped = clampPinTitleSize(size);
+    if (this.getPinTitleSize() === clamped) return;
+    this.settings.pinTitleSize = clamped;
+    this.commit();
+  }
+
+  setShowPinTitles(show: boolean): void {
+    if (this.getShowPinTitles() === show) return;
+    this.settings.showPinTitles = show;
     this.commit();
   }
 

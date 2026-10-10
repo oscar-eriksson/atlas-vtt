@@ -50,6 +50,7 @@ import { TokenSettingsPanel } from './command-palette/TokenSettingsPanel';
 import { WidgetSettingsPanel } from './command-palette/WidgetSettingsPanel';
 import { LocalPlayerViewSettingsPanel } from './command-palette/LocalPlayerViewSettingsPanel';
 import { DiceSettingsPanel } from './command-palette/DiceSettingsPanel';
+import { PinSettingsPanel } from './command-palette/PinSettingsPanel';
 import { ExperimentalFeaturesPanel } from './command-palette/ExperimentalFeaturesPanel';
 import { SceneSnapshotsPanel } from './command-palette/SceneSnapshotsPanel';
 import { placePalette, type PalettePosition } from './command-palette/palettePlacement';
@@ -89,6 +90,7 @@ const SETTINGS_PANEL_META: Record<SettingsPanelId, { title: string; icon: React.
   'widget-settings': { title: t('palette.panel.widgets'), icon: <Palette /> },
   'local-player-view-settings': { title: t('palette.panel.localPlayerView'), icon: <MonitorUp /> },
   'dice-settings': { title: t('diceSettings.title'), icon: <Dices /> },
+  'pin-settings': { title: t('palette.panel.pins'), icon: <MapPin /> },
   'experimental-features': { title: 'Experimental Features', icon: <FlaskConical /> },
 };
 
@@ -436,6 +438,23 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
           icon: null,
           label: t('diceSettings.display'),
           section: "dice",
+          hasSubmenu: false,
+        },
+      ],
+    },
+    {
+      id: "pin-settings",
+      icon: <MapPin />,
+      label: t('palette.panel.pins'),
+      keywords: ["note pin", "title", "name", "label", "text size"],
+      section: "settings",
+      hasSubmenu: true,
+      submenu: [
+        {
+          id: "pin-all-settings",
+          icon: null,
+          label: t('palette.pins.showTitles'),
+          section: "pins",
           hasSubmenu: false,
         },
       ],
@@ -855,6 +874,8 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
         return <LocalPlayerViewSettingsPanel />;
       case 'dice-settings':
         return <DiceSettingsPanel />;
+      case 'pin-settings':
+        return <PinSettingsPanel />;
       case 'experimental-features':
         return <ExperimentalFeaturesPanel />;
     }
