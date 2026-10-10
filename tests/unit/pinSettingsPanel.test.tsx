@@ -2,7 +2,7 @@ import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const titles = vi.hoisted(() => ({ on: false, size: 1, setOn: null as null | ((show: boolean) => void) }));
+const titles = vi.hoisted(() => ({ on: false, size: 1, headingOnly: false, setOn: null as null | ((show: boolean) => void), setHeadingOnly: null as null | ((on: boolean) => void) }));
 
 vi.mock('../../src/app/keyboard/useMapHotkeys', () => ({
   useAtlasSettings: () => ({
@@ -10,6 +10,8 @@ vi.mock('../../src/app/keyboard/useMapHotkeys', () => ({
     setShowPinTitles: (show: boolean) => { titles.setOn?.(show); },
     getPinTitleSize: () => titles.size,
     setPinTitleSize: vi.fn(),
+    getPinTitleHeadingOnly: () => titles.headingOnly,
+    setPinTitleHeadingOnly: (on: boolean) => { titles.setHeadingOnly?.(on); },
   }),
 }));
 
@@ -19,7 +21,9 @@ afterEach(() => {
   cleanup();
   titles.on = false;
   titles.size = 1;
+  titles.headingOnly = false;
   titles.setOn = null;
+  titles.setHeadingOnly = null;
 });
 
 describe('PinSettingsPanel', () => {
@@ -42,5 +46,17 @@ describe('PinSettingsPanel', () => {
     rerender(<PinSettingsPanel />);
     expect(screen.getByText('Title size')).toBeTruthy();
     expect(screen.getByText('150%')).toBeTruthy();
+  });
+
+  it('offers cutting titles at the heading only while titles are shown', () => {
+    const setHeadingOnly = vi.fn();
+    titles.setHeadingOnly = setHeadingOnly;
+    const { rerender } = render(<PinSettingsPanel />);
+    expect(screen.queryByRole('switch', { name: 'Show only the heading' })).toBeNull();
+
+    titles.on = true;
+    rerender(<PinSettingsPanel />);
+    fireEvent.click(screen.getByRole('switch', { name: 'Show only the heading' }));
+    expect(setHeadingOnly).toHaveBeenCalledWith(true);
   });
 });

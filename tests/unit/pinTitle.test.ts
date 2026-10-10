@@ -24,6 +24,32 @@ describe('pinTitleOf', () => {
   });
 });
 
+describe('pinTitleOf with a heading', () => {
+  const path = '10 - Kallor/Neverwinter.md#Mute Lute';
+
+  it('shows the note and the heading, without the extension between them', () => {
+    expect(pinTitleOf(path)).toBe('Neverwinter#Mute Lute');
+  });
+
+  it('shows only what follows the last # when asked', () => {
+    expect(pinTitleOf(path, true)).toBe('Mute Lute');
+    expect(pinTitleOf('Neverwinter.md#Docks#The Salty Mermaid', true)).toBe('The Salty Mermaid');
+  });
+
+  it('shows the note where there is no heading to show', () => {
+    expect(pinTitleOf('Neverwinter.md', true)).toBe('Neverwinter');
+    expect(pinTitleOf('Neverwinter.md#', true)).toBe('Neverwinter');
+    expect(pinTitleOf('Neverwinter.md#^a1b2c3', true)).toBe('Neverwinter');
+    expect(pinTitleOf('Neverwinter.md#^a1b2c3')).toBe('Neverwinter');
+  });
+
+  it('shortens a long heading', () => {
+    const title = pinTitleOf(`Note.md#${'h'.repeat(60)}`, true);
+    expect(title.length).toBe(MAX_PIN_TITLE);
+    expect(title.endsWith('…')).toBe(true);
+  });
+});
+
 describe('clampPinTitleSize', () => {
   it('keeps a size within what titles can take, in tenths', () => {
     expect(clampPinTitleSize(0.1)).toBe(PIN_TITLE_SIZES.min);

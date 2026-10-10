@@ -28,6 +28,8 @@ export const palette = {
   'palette.panel.pins': 'Pin Settings',
   'palette.pins.showTitles': 'Show pin titles',
   'palette.pins.showTitlesHint': "Show the name of each pin's note under it, so you see what is where without clicking a pin or holding Ctrl over it. Players never see pins.",
+  'palette.pins.headingOnly': 'Show only the heading',
+  'palette.pins.headingOnlyHint': 'A pin that links to a heading of a note, such as Neverwinter#Mute Lute, shows just the heading: what follows the last #.',
   'palette.pins.titleSize': 'Title size',
   'palette.panel.localPlayerView': 'Local Player View Settings',
   'palette.panel.snapshots': 'Scene Snapshots',

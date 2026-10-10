@@ -16,15 +16,18 @@ let cleanup: (() => void) | null = null;
 let restoreGraphics: (() => void) | null = null;
 
 /** A setting the test switches by hand. */
-function titleSetting(initial: boolean): PinTitleSetting & { set(on: boolean): void; resize(size: number): void } {
+function titleSetting(initial: boolean): PinTitleSetting & { set(on: boolean): void; resize(size: number): void; cut(on: boolean): void } {
   let on = initial;
+  let headingOnly = false;
   let size = 1;
   const listeners = new Set<() => void>();
   return {
     isOn: () => on,
     size: () => size,
+    headingOnly: () => headingOnly,
     subscribe: (listener) => { listeners.add(listener); return () => listeners.delete(listener); },
     set: (value) => { on = value; listeners.forEach((listener) => listener()); },
+    cut: (value) => { headingOnly = value; listeners.forEach((listener) => listener()); },
     resize: (value) => { size = value; listeners.forEach((listener) => listener()); },
   };
 }
@@ -103,5 +106,15 @@ describe('PinRenderer titles', () => {
 
     setting.resize(0.6);
     expect(Number(titleTexts(renderer)[0]?.style.fontSize)).toBeCloseTo(normal * 0.6);
+  });
+
+  it('shows only the heading a pin links to when that is set, and draws the pins again when it changes', () => {
+    const setting = titleSetting(true);
+    const { renderer, store } = setup(setting);
+    store.getState().addNotePin(10, 20, 'Places/Conyberry.md#Mute Lute');
+    expect(titlesOf(renderer)).toEqual(['Conyberry#Mute Lute']);
+
+    setting.cut(true);
+    expect(titlesOf(renderer)).toEqual(['Mute Lute']);
   });
 });

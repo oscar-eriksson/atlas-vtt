@@ -100,4 +100,15 @@ describe('SettingsService pin titles', () => {
     expect(settings.getPinTitleSize()).toBe(1.5);
     expect(listener).toHaveBeenCalledOnce();
   });
+
+  it('cuts a pin title at its heading only where the file says true, and tells listeners once', async () => {
+    expect((await settingsFrom({ pinTitleHeadingOnly: 'yes' })).settings.getPinTitleHeadingOnly()).toBe(false);
+    const { settings } = await settingsFrom({});
+    const listener = vi.fn();
+    settings.onChange(listener);
+    settings.setPinTitleHeadingOnly(true);
+    settings.setPinTitleHeadingOnly(true);
+    expect(settings.getPinTitleHeadingOnly()).toBe(true);
+    expect(listener).toHaveBeenCalledOnce();
+  });
 });

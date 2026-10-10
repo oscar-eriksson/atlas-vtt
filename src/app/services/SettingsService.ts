@@ -330,6 +330,17 @@ export class SettingsService {
     this.commit();
   }
 
+  /** Whether a pin that links to a heading shows only the heading: off unless the file says `true`. */
+  getPinTitleHeadingOnly(): boolean {
+    return this.settings.pinTitleHeadingOnly === true;
+  }
+
+  setPinTitleHeadingOnly(on: boolean): void {
+    if (this.getPinTitleHeadingOnly() === on) return;
+    this.settings.pinTitleHeadingOnly = on;
+    this.commit();
+  }
+
   setShowPinTitles(show: boolean): void {
     if (this.getShowPinTitles() === show) return;
     this.settings.showPinTitles = show;

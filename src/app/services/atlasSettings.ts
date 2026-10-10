@@ -45,6 +45,8 @@ export interface AtlasSettings {
   showPinTitles: boolean;
   /** How large those titles are, as a share of their normal size. Read with `getPinTitleSize`. */
   pinTitleSize: number;
+  /** Whether a pin that links to a heading shows only the heading. Read with `getPinTitleHeadingOnly`. */
+  pinTitleHeadingOnly: boolean;
   /** Colour of the dice: card stock, dark or the accent colour. Read with `getDiceLook`. */
   diceColour: DiceColour;
   /** Face of the dice numerals and roll totals. Read with `getDiceLook`. */
@@ -101,6 +103,7 @@ export const DEFAULT_SETTINGS: AtlasSettings = {
   detectGridOnNewScenes: true,
   showPinTitles: false,
   pinTitleSize: 1,
+  pinTitleHeadingOnly: false,
   diceColour: DEFAULT_DICE_LOOK.colour,
   diceFont: DEFAULT_DICE_LOOK.font,
   initiativeNames: false,

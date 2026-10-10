@@ -855,7 +855,7 @@ export class PixiRendererOrchestrator { // Renamed class
   /** The GM's setting for note titles under pins, read from Atlas' settings. */
   private pinTitleSetting(): PinTitleSetting {
     const settings = SettingsService.forApp(this.obsApp);
-    return { isOn: () => settings?.getShowPinTitles() ?? false, size: () => settings?.getPinTitleSize() ?? 1, subscribe: (listener) => settings?.onChange(listener) ?? (() => undefined) };
+    return { isOn: () => settings?.getShowPinTitles() ?? false, size: () => settings?.getPinTitleSize() ?? 1, headingOnly: () => settings?.getPinTitleHeadingOnly() ?? false, subscribe: (listener) => settings?.onChange(listener) ?? (() => undefined) };
   }
 
   getViewportInstance(): Viewport | null { return this.pixiAppManager.getViewport(); }
