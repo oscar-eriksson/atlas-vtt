@@ -3,6 +3,10 @@ import type { Message } from '../../types';
 export const sbImport = {
   'sbImport.status.ready': 'Ready',
   'sbImport.status.imported': 'Already imported',
+  'sbImport.filterByStatus': 'Filter by status',
+  'sbImport.group.ready': '{count} ready',
+  'sbImport.group.imported': '{count} already imported',
+  'sbImport.group.attention': '{count} need attention',
   'sbImport.status.missingImage': 'Missing image',
   'sbImport.status.remoteImage': 'Remote image',
   'sbImport.status.conflict': 'Conflict',

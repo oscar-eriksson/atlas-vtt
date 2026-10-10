@@ -10,6 +10,7 @@ import { StatblockTokenImportService } from '../../../../services/StatblockToken
 import { statblockPreviewImages } from '../token-creator/statblockPreviewImages';
 import type { PreviewImage } from '../token-creator/types';
 import type { StatblockImportCandidate } from '../../../../services/statblockImportCandidates';
+import { importGroupCounts, importGroupOf, STATBLOCK_IMPORT_GROUPS, type StatblockImportGroup } from '../../../../services/statblockImportGroups';
 import { StatblockList } from './StatblockList';
 import { Skeleton, SkeletonGroup, skeletonTextWidth } from '../../primitives/Skeleton';
 import { t } from '../../../../i18n';
@@ -48,6 +49,8 @@ export function StatblockImportContent({ app, queuedPaths, onAdd, onClose, contr
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [query, setQuery] = useState('');
   const [layout, setLayout] = useState('');
+  /** The group of the summary the list is narrowed to, or none for all. */
+  const [group, setGroup] = useState<StatblockImportGroup | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState('');
@@ -78,8 +81,8 @@ export function StatblockImportContent({ app, queuedPaths, onAdd, onClose, contr
 
   const scopedRows = rows.filter(row => !layout || (row.layoutName ?? t('sbImport.unspecified')) === layout);
   const selectedRows = scopedRows.filter(row => selected.has(row.path) && !queued.has(row.path));
-  const filtered = scopedRows.filter(row => `${row.name} ${row.path}`.toLowerCase().includes(query.toLowerCase()));
-  const ready = scopedRows.filter(row => row.status === 'ready');
+  const filtered = scopedRows.filter(row => (!group || importGroupOf(row.status) === group) && `${row.name} ${row.path}`.toLowerCase().includes(query.toLowerCase()));
+  const counts = importGroupCounts(scopedRows);
   const disabled = loading || running;
   const toggle = (path: string): void => {
     setSelected(current => { const next = new Set(current); if (next.has(path)) next.delete(path); else next.add(path); return next; });
@@ -112,8 +115,18 @@ export function StatblockImportContent({ app, queuedPaths, onAdd, onClose, contr
           </>
         ) : (
           <>
-            <div className="atlas-statblock-import__summary" role="status">
-              <strong>{ready.length} ready</strong><span>{scopedRows.filter(r => r.status === 'imported').length} already imported</span><span>{scopedRows.length - ready.length - scopedRows.filter(r => r.status === 'imported').length} need attention</span>
+            <div className="atlas-statblock-import__summary" role="group" aria-label={t('sbImport.filterByStatus')}>
+              {STATBLOCK_IMPORT_GROUPS.map(name => (
+                <button
+                  key={name}
+                  type="button"
+                  className={`atlas-statblock-import__count${group === name ? ' atlas-active' : ''}`}
+                  aria-pressed={group === name}
+                  onClick={() => setGroup(current => (current === name ? null : name))}
+                >
+                  {t(`sbImport.group.${name}`, { count: counts[name] })}
+                </button>
+              ))}
             </div>
             <div className="atlas-statblock-import__controls">
               <label htmlFor={layoutId}>{t('sbImport.layout')}</label>
@@ -139,7 +152,7 @@ export function StatblockImportContent({ app, queuedPaths, onAdd, onClose, contr
             </div>
             {filtered.length > 0
               ? <StatblockList app={app} rows={filtered} selected={selected} queued={queued} disabled={disabled} scrollElement={scrollElement} onToggle={toggle} />
-              : <p>{query ? t('sbImport.noMatch') : t('sbImport.noneFoundInVault')}</p>}
+              : <p>{query || group ? t('sbImport.noMatch') : t('sbImport.noneFoundInVault')}</p>}
           </>
         )}
       </div>

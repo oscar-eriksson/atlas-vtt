@@ -66,3 +66,30 @@ it('mounts only the rows in view of a large bestiary', async () => {
   expect(mounted.length).toBeGreaterThan(0);
   expect(mounted.length).toBeLessThan(50);
 });
+it('narrows the list to a group when its count is pressed, and shows all again when it is pressed once more', async () => {
+  setup();
+  await screen.findByRole('button', { name: 'Add 2 to import' });
+  const attention = screen.getByRole('button', { name: '1 need attention' });
+  expect(attention.getAttribute('aria-pressed')).toBe('false');
+
+  fireEvent.click(attention);
+  expect(attention.getAttribute('aria-pressed')).toBe('true');
+  expect(screen.getByRole('checkbox', { name: 'Select Dragon' })).toBeTruthy();
+  expect(screen.queryByRole('checkbox', { name: 'Select Goblin' })).toBeNull();
+  expect(screen.queryByRole('checkbox', { name: 'Select Rat' })).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: '1 already imported' }));
+  expect(screen.getByRole('checkbox', { name: 'Select Rat' })).toBeTruthy();
+  expect(screen.queryByRole('checkbox', { name: 'Select Dragon' })).toBeNull();
+
+  fireEvent.click(screen.getByRole('button', { name: '1 already imported' }));
+  expect(screen.getByRole('checkbox', { name: 'Select Goblin' })).toBeTruthy();
+  expect(screen.getByRole('checkbox', { name: 'Select Dragon' })).toBeTruthy();
+});
+it('keeps what was selected while a group of other rows is shown', async () => {
+  setup();
+  await screen.findByRole('button', { name: 'Add 2 to import' });
+  fireEvent.click(screen.getByRole('button', { name: '1 need attention' }));
+  expect(screen.getByRole('button', { name: 'Add 2 to import' })).toBeTruthy();
+  fireEvent.click(screen.getByRole('button', { name: '1 need attention' }));
+});
