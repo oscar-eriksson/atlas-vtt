@@ -8,6 +8,7 @@ import { t } from '../../../i18n';
 export function PinSettingsPanel(): React.ReactElement {
   const settings = useAtlasSettings();
   const showTitles = settings?.getShowPinTitles() ?? false;
+  const headingOnly = settings?.getPinTitleHeadingOnly() ?? false;
   const size = settings?.getPinTitleSize() ?? PIN_TITLE_SIZES.normal;
 
   return (
@@ -20,6 +21,14 @@ export function PinSettingsPanel(): React.ReactElement {
           value={showTitles}
           onToggle={() => settings?.setShowPinTitles(!showTitles)}
         />
+        {showTitles && (
+          <SettingToggleRow
+            label={t('palette.pins.headingOnly')}
+            hint={t('palette.pins.headingOnlyHint')}
+            value={headingOnly}
+            onToggle={() => settings?.setPinTitleHeadingOnly(!headingOnly)}
+          />
+        )}
         {showTitles && (
           <SettingSliderRow
             label={t('palette.pins.titleSize')}

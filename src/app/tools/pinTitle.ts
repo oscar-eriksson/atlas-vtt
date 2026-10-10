@@ -2,13 +2,19 @@
 export const MAX_PIN_TITLE = 28;
 
 /**
- * The text under a pin: the name of the note it opens, without folders or the `.md` extension.
- * A pin without a note has none.
+ * The text under a pin: the name of the note it opens, without folders or the `.md` extension, and
+ * the heading the link points at after a `#` ("Neverwinter#Mute Lute"). With `headingOnly` a pin that
+ * links to a heading shows just that heading (what follows the last `#`). A pin without a note has none.
  */
-export function pinTitleOf(notePath: string | undefined): string {
+export function pinTitleOf(notePath: string | undefined, headingOnly = false): string {
   if (!notePath) return '';
-  const name = notePath.slice(notePath.lastIndexOf('/') + 1).replace(/\.md$/i, '').trim();
-  return name.length > MAX_PIN_TITLE ? `${name.slice(0, MAX_PIN_TITLE - 1).trimEnd()}…` : name;
+  const hash = notePath.indexOf('#');
+  const file = hash === -1 ? notePath : notePath.slice(0, hash);
+  const name = file.slice(file.lastIndexOf('/') + 1).replace(/\.md$/i, '').trim();
+  // A block reference (`#^id`) names no heading to show
+  const heading = hash === -1 ? '' : notePath.slice(notePath.lastIndexOf('#') + 1).trim();
+  const shown = !heading || heading.startsWith('^') ? name : headingOnly ? heading : `${name}#${heading}`;
+  return shown.length > MAX_PIN_TITLE ? `${shown.slice(0, MAX_PIN_TITLE - 1).trimEnd()}…` : shown;
 }
 
 /** The sizes titles can take, as a share of their normal size. */

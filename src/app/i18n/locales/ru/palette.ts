@@ -27,6 +27,8 @@ export const palette: Translation = {
   'palette.panel.pins': 'Настройки пинов',
   'palette.pins.showTitles': 'Показывать названия пинов',
   'palette.pins.showTitlesHint': "Показывать название заметки под каждым пином. Игроки пины не видят.",
+  'palette.pins.headingOnly': 'Показывать только заголовок',
+  'palette.pins.headingOnlyHint': 'Пин со ссылкой на заголовок заметки, например Neverwinter#Mute Lute, показывает только заголовок: то, что идёт после последнего #.',
   'palette.pins.titleSize': 'Размер названий',
   'palette.panel.localPlayerView': 'Настройки локального экрана игроков',
   'palette.panel.snapshots': 'Снимки сцены',

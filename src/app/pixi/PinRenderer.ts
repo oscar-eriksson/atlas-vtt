@@ -40,6 +40,8 @@ export interface PinTitleSetting {
   isOn(): boolean;
   /** Size of the title text as a share of its normal size. */
   size(): number;
+  /** Whether a pin that links to a heading shows only the heading. */
+  headingOnly(): boolean;
   /** Calls `listener` whenever the setting may have changed; returns the function that stops it. */
   subscribe(listener: () => void): () => void;
 }
@@ -74,6 +76,7 @@ export class PinRenderer {
   private readonly titles: PinTitleSetting | undefined;
   private showTitles = false;
   private titleSize = 1;
+  private titleHeadingOnly = false;
 
   constructor(viewport: Viewport, eventBus: EventEmitter, store: ViewAtlasStore, isPlayerView: boolean = false, titles?: PinTitleSetting) {
     this.viewport = viewport;
@@ -83,6 +86,7 @@ export class PinRenderer {
     this.titles = titles;
     this.showTitles = titles?.isOn() ?? false;
     this.titleSize = titles?.size() ?? 1;
+    this.titleHeadingOnly = titles?.headingOnly() ?? false;
     
     this.pinContainer = new Container();
     this.pinContainer.label = 'pins';
@@ -111,9 +115,11 @@ export class PinRenderer {
     const unsubscribeTitles = this.titles?.subscribe(() => {
       const show = this.titles?.isOn() ?? false;
       const size = this.titles?.size() ?? 1;
-      if (show === this.showTitles && (!show || size === this.titleSize)) return;
+      const headingOnly = this.titles?.headingOnly() ?? false;
+      if (show === this.showTitles && (!show || (size === this.titleSize && headingOnly === this.titleHeadingOnly))) return;
       this.showTitles = show;
       this.titleSize = size;
+      this.titleHeadingOnly = headingOnly;
       this.redrawAllPins();
     });
     this._unsubscribeFromStore = () => {
@@ -429,7 +435,7 @@ export class PinRenderer {
     if (isEncounterFolderLink(pin.notePath)) container.addChild(createRollMark(badgeRadius, colors));
     else if (pin.readable === true) container.addChild(createReadableMark(badgeRadius, colors));
 
-    if (this.showTitles) this.addTitle(container, pinTitleOf(pin.notePath), badgeRadius);
+    if (this.showTitles) this.addTitle(container, pinTitleOf(pin.notePath, this.titleHeadingOnly), badgeRadius);
 
     return container;
   }
