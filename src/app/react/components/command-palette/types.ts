@@ -23,6 +23,7 @@ export const SETTINGS_PANEL_IDS = [
   'widget-settings',
   'local-player-view-settings',
   'dice-settings',
+  'pin-settings',
   'experimental-features',
   'graphics-settings',
 ] as const;
