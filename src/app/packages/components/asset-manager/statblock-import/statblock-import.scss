@@ -15,7 +15,19 @@
     flex-wrap: wrap;
     gap: $spacing-s;
   }
-  &__summary { color: var(--text-muted); gap: $spacing-l; strong { color: var(--text-normal); } }
+  &__summary { gap: $spacing-s; }
+  // A count that narrows the list to its rows; pressing it again shows all
+  &__count {
+    padding: $spacing-xs $spacing-s;
+    border-radius: $radius-l;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted);
+    cursor: pointer;
+
+    &:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+    &.atlas-active { color: var(--text-on-accent); background: var(--interactive-accent); }
+  }
   &__search {
     flex: 1;
     display: flex;

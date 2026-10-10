@@ -3,6 +3,10 @@ import type { Translation } from '../../types';
 export const sbImport: Translation = {
   'sbImport.status.ready': 'Готов',
   'sbImport.status.imported': 'Уже импортирован',
+  'sbImport.filterByStatus': 'Фильтр по статусу',
+  'sbImport.group.ready': 'Готово: {count}',
+  'sbImport.group.imported': 'Уже импортировано: {count}',
+  'sbImport.group.attention': 'Требуют внимания: {count}',
   'sbImport.status.missingImage': 'Нет изображения',
   'sbImport.status.remoteImage': 'Внешнее изображение',
   'sbImport.status.conflict': 'Конфликт',
