@@ -13,6 +13,7 @@ import type { ProcessedImage } from '../../../../imageProcessing/imageProcessing
 import type { SavedToken } from './tokenStatblocks';
 import { prebuildMapImageAt } from '../../../../pixi/mapImage/prebuildMapImage';
 import { showNotice } from '../../../../ui/notice';
+import { namedGridOfUpload } from '../../../../services/namedGridOfUpload';
 
 export interface SaveTokenPreviewsOptions extends SaveImageContext {
   app: App;
@@ -117,8 +118,9 @@ async function savePreviews(options: SaveTokenPreviewsOptions): Promise<number> 
       imagePath = await writeAssetImage(app, preview.name, await image.arrayBuffer());
       thumbnailPath = await thumbnails.tryThumbnailForImage(imagePath, thumbnail);
       const metadata = { collection: destination.id, tags: preview.tags ?? tags, ...(thumbnailPath && { thumbnailPath }) };
+      const namedGrid = mode === 'map' && preview.file ? await namedGridOfUpload(preview.file, image) : null;
       const asset: NewAsset = mode === 'map'
-        ? { type: 'map', name: preview.name, mapFilePath: imagePath, ...metadata }
+        ? { type: 'map', name: preview.name, mapFilePath: imagePath, ...metadata, ...(namedGrid && { namedGrid }) }
         : {
           type: 'token', showRing: preview.showRing !== false, name: preview.name, imagePath,
           ...(preview.size !== undefined && { size: preview.size }),

@@ -8,3 +8,4 @@
 
 - Maps can be turned 90, 180 or 270 degrees as they are imported: each map card in the map creator has a rotate button that previews the turn and saves the map turned.
 - In the Fantasy Statblocks token import, the counts above the list (ready, already imported, need attention) narrow it to those creatures when pressed, so you can find the ones that need attention
+- A map whose file name states its grid, as map makers name them (`Tavern_55x42.jpg` for columns by rows, `Cave_140pps.png` for pixels per cell), starts its scenes with that grid instead of looking for one. The name of the file you upload counts, not the name you give the map.

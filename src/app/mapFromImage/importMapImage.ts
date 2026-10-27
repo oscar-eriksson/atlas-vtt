@@ -3,6 +3,7 @@ import { optimizeUpload } from '../packages/components/asset-manager/token-creat
 import { AssetRegistrationUncertainError } from '../services/assetRegistrationRecovery';
 import { discardAssetFiles, writeAssetImage } from '../services/assetImageFiles';
 import { AssetThumbnailService } from '../services/AssetThumbnailService';
+import { namedGridOfUpload } from '../services/namedGridOfUpload';
 import type { QuarterTurn } from '../imageProcessing/imageProcessing';
 import type { AssetService, MapAsset } from '../services/AssetService';
 
@@ -34,6 +35,7 @@ export async function importMapImage(app: App, assetService: AssetService, sourc
   try {
     imagePath = await writeAssetImage(app, options.name, await image.arrayBuffer());
     thumbnailPath = await AssetThumbnailService.getInstance(app, assetService).tryThumbnailForImage(imagePath, thumbnail);
+    const namedGrid = await namedGridOfUpload(file, image);
     const asset = await assetService.addAsset({
       type: 'map',
       name: options.name,
@@ -41,6 +43,7 @@ export async function importMapImage(app: App, assetService: AssetService, sourc
       collection: options.collectionId,
       tags: options.tags ?? [],
       ...(thumbnailPath && { thumbnailPath }),
+      ...(namedGrid && { namedGrid }),
     });
     if (asset.type !== 'map') throw new Error('The asset library did not return the map it was given.');
     return asset;
