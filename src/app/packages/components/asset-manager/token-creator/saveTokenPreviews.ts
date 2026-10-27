@@ -14,6 +14,7 @@ import type { ProcessedImage } from '../../../../imageProcessing/imageProcessing
 import type { SavedToken } from './tokenStatblocks';
 import { prebuildMosaicCanvasAt } from '../../../../pixi/mosaicCanvas/prebuildMosaicCanvas';
 import { showNotice } from '../../../../ui/notice';
+import { namedGridOfUpload } from '../../../../services/namedGridOfUpload';
 
 export interface SaveTokenPreviewsOptions extends SaveImageContext {
   app: App;
@@ -122,8 +123,9 @@ async function savePreviews(options: SaveTokenPreviewsOptions): Promise<number> 
       // A video without one is left to the background pass: reading it again now would only wait.
       if (thumbnail || !video) thumbnailPath = await thumbnails.tryThumbnailForImage(imagePath, thumbnail);
       const metadata = { collection: destination.id, tags: preview.tags ?? tags, ...(thumbnailPath && { thumbnailPath }) };
+      const namedGrid = mode === 'map' && preview.file ? await namedGridOfUpload(preview.file, image) : null;
       const asset: NewAsset = mode === 'map'
-        ? { type: 'map', name: preview.name, mapFilePath: imagePath, ...metadata }
+        ? { type: 'map', name: preview.name, mapFilePath: imagePath, ...metadata, ...(namedGrid && { namedGrid }) }
         : {
           type: 'token', showRing: preview.showRing !== false, name: preview.name, imagePath,
           ...(preview.size !== undefined && { size: preview.size }),
