@@ -69,6 +69,16 @@ describe('the file of a new scene', () => {
     expect(grid).not.toHaveProperty('autoDetect');
   });
 
+  it('takes the grid its map\'s file name stated as it is, from the image\'s corner, and looks for none', () => {
+    const named = { cellSize: 140, mapStretch: { x: 1, y: 1.02 } };
+    const { grid } = newSceneFile({ conditions: [] }, 'atlas-vtt/assets/keep.webp', true, named).state;
+
+    expect(grid).toMatchObject({ visible: true, snapToGrid: true, size: 140, offsetX: 0, offsetY: 0, mapStretch: { x: 1, y: 1.02 } });
+    expect(grid).not.toHaveProperty('autoDetect');
+    // A table that plays without a grid has none, whatever the name says.
+    expect(newSceneFile({ conditions: [] }, 'atlas-vtt/assets/keep.webp', false, named).state.grid).toMatchObject({ visible: false, size: 70 });
+  });
+
   it('loads as an empty scene', () => {
     const loaded = migrateMapFile(parseSceneFile(JSON.stringify(newSceneFile({ conditions: [] }, 'atlas-vtt/assets/keep.webp'))).state);
 

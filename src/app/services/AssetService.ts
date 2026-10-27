@@ -1,4 +1,5 @@
 import { parseResourceDefinitions } from '../resources/resourceDefinitions';
+import type { NamedGrid } from '../grid/namedGrid';
 import { wasTokenRegistrationSaved } from './assetRegistrationRecovery';
 import { SettingsService } from './SettingsService';
 import { App, TFile, TFolder } from 'obsidian';
@@ -62,6 +63,8 @@ export interface MapAsset extends BaseAsset {
   type: 'map';
   mapFilePath: string;
   thumbnailPath?: string;
+  /** The grid the original file's name stated, in the image's pixels: new scenes on the map start with it. Read with `readNamedGrid`. */
+  namedGrid?: NamedGrid;
 }
 
 export interface NoteAsset extends BaseAsset {
