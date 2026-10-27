@@ -19,22 +19,25 @@ import { DetectedGridPreview } from './DetectedGridPreview';
 import { GridTypePicker } from './GridTypePicker';
 import { IntersectionsTab } from './IntersectionsTab';
 import { FreehandTab } from './FreehandTab';
+import { SizeTab } from './SizeTab';
 import { CloseButton } from '../../packages/components/primitives/CloseButton';
 import { t } from '../../i18n';
 import { showNotice } from '../../ui/notice';
 
-type AlignmentTab = 'intersections' | 'freehand';
+type AlignmentTab = 'intersections' | 'freehand' | 'size';
 /** What the choice of a manual way holds while none is chosen. */
 const NO_TAB = 'none';
 
 const ALIGNMENT_TABS: readonly SegmentedOption<AlignmentTab | typeof NO_TAB>[] = [
   { value: 'intersections', label: t('align.tab.intersections') },
   { value: 'freehand', label: t('align.tab.freehand') },
+  { value: 'size', label: t('align.tab.size') },
 ];
 
 const TAB_COMPONENTS: Record<AlignmentTab, (props: AlignmentTabProps) => React.ReactElement | null> = {
   intersections: IntersectionsTab,
   freehand: FreehandTab,
+  size: SizeTab,
 };
 
 interface GridAlignmentOverlayProps {

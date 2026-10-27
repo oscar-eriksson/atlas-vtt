@@ -125,6 +125,29 @@
     color: var(--text-normal);
   }
 
+  // A grid by numbers: pixels per cell, or columns by rows.
+  .atlas-grid-alignment-size {
+    @include atlas-flex-col($spacing-s);
+    flex: 1;
+    min-width: 0;
+  }
+
+  .atlas-grid-alignment-size-row {
+    @include atlas-flex-row($spacing-s);
+    font-size: 0.8125rem;
+    color: var(--text-normal);
+
+    > span:first-child {
+      flex: 1;
+    }
+
+    input {
+      @include atlas-text-input;
+      width: 64px;
+      text-align: end;
+    }
+  }
+
   // Measurements taken, once one was not enough.
   .atlas-grid-alignment-dots {
     display: flex;
