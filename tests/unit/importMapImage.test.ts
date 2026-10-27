@@ -8,6 +8,7 @@ const optimizeUpload = vi.fn();
 const writeAssetImage = vi.fn();
 const discardAssetFiles = vi.fn();
 const tryThumbnailForImage = vi.fn();
+const namedGridOfUpload = vi.fn();
 
 vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImages', () => ({
   optimizeUpload: (...args: unknown[]) => optimizeUpload(...args),
@@ -15,6 +16,9 @@ vi.mock('../../src/app/packages/components/asset-manager/token-creator/tokenImag
 vi.mock('../../src/app/services/assetImageFiles', () => ({
   writeAssetImage: (...args: unknown[]) => writeAssetImage(...args),
   discardAssetFiles: (...args: unknown[]) => discardAssetFiles(...args),
+}));
+vi.mock('../../src/app/services/namedGridOfUpload', () => ({
+  namedGridOfUpload: (...args: unknown[]) => namedGridOfUpload(...args),
 }));
 vi.mock('../../src/app/services/AssetThumbnailService', () => ({
   AssetThumbnailService: { getInstance: () => ({ tryThumbnailForImage: (...args: unknown[]) => tryThumbnailForImage(...args) }) },
@@ -34,9 +38,17 @@ beforeEach(() => {
   writeAssetImage.mockResolvedValue('atlas-vtt/assets/Axeholm_1_a.webp');
   tryThumbnailForImage.mockResolvedValue('atlas-vtt/assets/thumbnails/Axeholm.webp');
   addAsset = vi.fn(async (asset) => ({ ...asset, id: 'map-1' }));
+  namedGridOfUpload.mockResolvedValue(null);
 });
 
 describe('importMapImage', () => {
+  it('keeps the grid the original file name states, read from the source file', async () => {
+    namedGridOfUpload.mockResolvedValue({ cellSize: 140 });
+    await importMapImage(app, assets(), source, options);
+    expect(namedGridOfUpload).toHaveBeenCalledWith(expect.objectContaining({ name: 'axeholm.png' }), expect.anything());
+    expect(addAsset).toHaveBeenCalledWith(expect.objectContaining({ namedGrid: { cellSize: 140 } }));
+  });
+
   it('has the converter turn the map when asked to', async () => {
     await importMapImage(app, assets(), source, { ...options, rotation: 90 });
     expect(optimizeUpload).toHaveBeenCalledWith(expect.any(File), 'map', expect.objectContaining({ rotation: 90 }));

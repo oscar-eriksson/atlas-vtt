@@ -1,6 +1,7 @@
 import { normalizePath, type App, type TFile } from 'obsidian';
 import { ensureFolder } from '../plugin/vaultFolders';
 import { normalizeImagePath } from '../utils/pathUtils';
+import { readNamedGrid, type NamedGrid } from '../grid/namedGrid';
 import type { Asset, AssetService } from './AssetService';
 import { newSceneFile } from './newSceneFile';
 import { SettingsService } from './SettingsService';
@@ -31,6 +32,17 @@ export function freeSceneName(app: App, collectionId: string, name: string): str
   return candidate;
 }
 
+/** The grid the file name of the map on `background` stated, from the first map of the library on that image that kept one. */
+async function namedGridOfBackground(assetService: AssetService, background: string): Promise<NamedGrid | null> {
+  const maps = await assetService.getAssets(undefined, 'map');
+  for (const map of maps) {
+    if (map.type !== 'map' || normalizeImagePath(map.mapFilePath) !== background) continue;
+    const grid = readNamedGrid(map.namedGrid);
+    if (grid) return grid;
+  }
+  return null;
+}
+
 /**
  * Makes an empty scene on a draft's image: its map file and its record, written as one step, so the
  * vault check never finds the new map without a scene and adds a second one. Throws for a collection
@@ -40,10 +52,12 @@ export async function createScene(app: App, assetService: AssetService, draft: S
   const collection = await assetService.getCollection(draft.collectionId);
   if (!collection) throw new Error(`Collection "${draft.collectionId}" no longer exists. Select another collection and try again.`);
   const name = draft.name.trim();
+  const background = draft.background ? normalizeImagePath(draft.background) : null;
   const mapData = newSceneFile(
     assetService.getCollectionSettings(collection.id),
-    draft.background ? normalizeImagePath(draft.background) : null,
+    background,
     SettingsService.forApp(app)?.detectsGridOnNewScenes() ?? true,
+    background ? await namedGridOfBackground(assetService, background) : null,
   );
   const scenePath = scenePathFor(collection.id, name);
   if (app.vault.getAbstractFileByPath(scenePath)) throw new SceneNameTakenError(name);
