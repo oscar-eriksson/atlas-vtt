@@ -3,7 +3,7 @@
 - Note pins can show the name of their note under them, so you see what is where without clicking a pin or holding Ctrl over it. Switch it on, choose how large the text is, and for pins that link to a heading show only the heading, in Pin Settings in the command palette; it is a setting for you as the GM, and players never see pins or their titles.
 - Area templates: a toolbar tool that places lines, cones, cubes, spheres and emanations on the map, highlights the grid cells they cover, and lets you select, move, recolour and delete them.
 - Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.
-- Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows where the other levels lie, and centres it on the level next to it.
+- Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows the levels next to it as faint ghosts, and centres it on the level next to it.
 - Toggle TrueScale with a shortcut (K) or from the command palette.
 
 ## Improved
