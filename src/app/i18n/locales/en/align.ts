@@ -15,6 +15,10 @@ export const align = {
   'align.hexCornerNext': 'Now a neighbouring corner of the same hex.',
   'align.measureCount': 'Measurement {done} of {total}',
   'align.measureMore': 'The map\'s lines did not settle it. Measure one more cell.',
+  'align.levelsKept': {
+    one: 'One other level has a map of another size and stays as it was drawn. Fit it with Grid Alignment on that level.',
+    other: '{count} other levels have maps of another size and stay as they were drawn. Fit them with Grid Alignment on each level.',
+  },
   'align.move.centre': 'Centre on {level}',
   'align.move.hint': 'Drag the map to place this level. It moves by whole cells, so its grid keeps lying on the scene\'s. The dashed lines show the other levels.',
   'align.move.noNeighbour': 'No other level with a map',
