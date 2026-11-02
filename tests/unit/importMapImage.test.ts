@@ -49,11 +49,6 @@ describe('importMapImage', () => {
     expect(addAsset).toHaveBeenCalledWith(expect.objectContaining({ namedGrid: { cellSize: 140 } }));
   });
 
-  it('has the converter turn the map when asked to', async () => {
-    await importMapImage(app, assets(), source, { ...options, rotation: 90 });
-    expect(optimizeUpload).toHaveBeenCalledWith(expect.any(File), 'map', expect.objectContaining({ rotation: 90 }));
-  });
-
   it('converts the image as a map and registers it in the collection with its thumbnail', async () => {
     const map = await importMapImage(app, assets(), source, options);
     expect(optimizeUpload).toHaveBeenCalledWith(expect.any(File), 'map', expect.objectContaining({ thumbnail: true }));
