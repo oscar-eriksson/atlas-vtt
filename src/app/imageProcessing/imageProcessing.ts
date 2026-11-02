@@ -2,14 +2,14 @@ import { t } from '../i18n';
 import { BAND_FORMATS, BAND_MAX_PIXELS, bandDecodable, DECODED_MAX_PIXELS, DECODER_MAX_SIDE, decodable, scaledJpegDecodeSize } from './decodeLimits';
 import type { BandUnsupportedReason } from './band/bandTypes';
 import { unsupportedMessage } from './band/unsupportedMessage';
-import type { FramePlacement, ImageJob, ImageJobResult, ImageLayout, QuarterTurn, ThumbnailSpec } from './imageJob';
+import type { FramePlacement, ImageJob, ImageJobResult, ImageLayout, ThumbnailSpec } from './imageJob';
 import { imageHeader, type ImageHeader } from './imageDimensions';
 import { withDecodedImage } from './imageElement';
-import { fitSize, rotatedSize, vectorRasterSize, type Size } from './imageLayout';
+import { fitSize, vectorRasterSize, type Size } from './imageLayout';
 import { BandRefusedError, ImageDecodeError, ImageWorkerPool, type ImageJobOptions } from './ImageWorkerPool';
 import ImageWorker from './imageWorker?worker&inline';
 
-export type { FramePlacement, QuarterTurn, ThumbnailSpec, ImageJobResult as ProcessedImage } from './imageJob';
+export type { FramePlacement, ThumbnailSpec, ImageJobResult as ProcessedImage } from './imageJob';
 
 /**
  * Image conversion for imports: decoding, scaling and WebP encoding run in a
@@ -54,8 +54,6 @@ export interface ProcessOptions {
   thumbnail?: ThumbnailSpec | undefined;
   preview?: ThumbnailSpec | undefined;
   sourcePreview?: ThumbnailSpec | undefined;
-  /** Turns the picture clockwise; only `optimizeImage` (a fit) honours it. */
-  rotation?: QuarterTurn | undefined;
   /** Work nobody waits for yet, such as preview conversions; jobs someone waits for run first. */
   background?: boolean;
   /** The result is stored under a WebP name: a PNG or JPEG that fits is encoded too instead of kept. */
@@ -168,21 +166,18 @@ function bandJobOf(header: ImageHeader | null, layout: ImageLayout): ImageJob['b
 }
 
 /** A JPEG larger than a fit keeps is decoded at the smallest eighth of its size that still has every pixel the fit keeps. */
-function scaledDecodeOf(header: ImageHeader | null, layout: ImageLayout, turn: QuarterTurn): ImageJob['scaledDecode'] {
+function scaledDecodeOf(header: ImageHeader | null, layout: ImageLayout): ImageJob['scaledDecode'] {
   if (header?.format !== 'jpeg' || layout.kind !== 'fit') return undefined;
   const source = { width: header.width, height: header.height };
-  // The fit is of the turned picture; the JPEG is decoded in its own orientation, so the target is turned back
-  const decoded = scaledJpegDecodeSize(source, rotatedSize(fitSize(rotatedSize(source, turn), layout), turn));
+  const decoded = scaledJpegDecodeSize(source, fitSize(source, layout));
   return decoded ? { source, decoded } : undefined;
 }
 
 async function process(source: Blob, job: Omit<ImageJob, 'source'>, options: ProcessOptions): Promise<ImageJobResult> {
   const header = await imageHeader(source);
-  const turn = job.rotation ?? 0;
-  // A band decode keeps the picture as it is, so a turned one goes the ordinary way
-  const band = turn === 0 ? bandJobOf(header, job.layout) : undefined;
+  const band = bandJobOf(header, job.layout);
   if (header && !decodable(header) && !band) throw new ImageTooLargeError(header, header.format);
-  const scaledDecode = band ? undefined : scaledDecodeOf(header, job.layout, turn);
+  const scaledDecode = band ? undefined : scaledDecodeOf(header, job.layout);
   // A band decode holds the file's bytes, an eighth of the image and the decoder's rows: far less than a decode.
   const cost = band ? source.size + (jobCost({ width: Math.ceil(header!.width / 8), height: Math.ceil(header!.height / 8) }) ?? 0) : jobCost(scaledDecode?.decoded ?? header);
   const run: ImageJobOptions = { signal: options.signal, background: options.background ?? false, cost };
@@ -205,7 +200,7 @@ async function process(source: Blob, job: Omit<ImageJob, 'source'>, options: Pro
 /** `source` scaled down to fit the preset and encoded as WebP; a PNG, JPEG or WebP that fits is kept as it is (see `webpOnly`). */
 export function optimizeImage(source: Blob, preset: ImagePreset, options: ProcessOptions = {}): Promise<ImageJobResult> {
   const { maxWidth, maxHeight, maxPixels, quality } = preset;
-  return process(source, { layout: { kind: 'fit', maxWidth, maxHeight, maxPixels }, quality, rotation: options.rotation }, options);
+  return process(source, { layout: { kind: 'fit', maxWidth, maxHeight, maxPixels }, quality }, options);
 }
 
 /**
