@@ -148,6 +148,19 @@
     }
   }
 
+  // Moving a level's image: what to do, and the button that centres it.
+  .atlas-grid-alignment-move {
+    @include atlas-flex-col($spacing-s);
+    flex: 1;
+    min-width: 0;
+
+    p {
+      margin: 0;
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+    }
+  }
+
   // Measurements taken, once one was not enough.
   .atlas-grid-alignment-dots {
     display: flex;

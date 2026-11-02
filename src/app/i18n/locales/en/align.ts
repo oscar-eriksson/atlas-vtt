@@ -15,6 +15,9 @@ export const align = {
   'align.hexCornerNext': 'Now a neighbouring corner of the same hex.',
   'align.measureCount': 'Measurement {done} of {total}',
   'align.measureMore': 'The map\'s lines did not settle it. Measure one more cell.',
+  'align.move.centre': 'Centre on {level}',
+  'align.move.hint': 'Drag the map to place this level. It moves by whole cells, so its grid keeps lying on the scene\'s. The dashed lines show the other levels.',
+  'align.move.noNeighbour': 'No other level with a map',
   'align.noGrid': 'No grid found in the map image. Align manually instead.',
   'align.orByHand': 'Or align it yourself',
   'align.pointy': 'Pointy',
@@ -29,6 +32,7 @@ export const align = {
   'align.squares': 'squares',
   'align.tab.freehand': 'Freehand',
   'align.tab.intersections': 'Measure',
+  'align.tab.move': 'Move',
   'align.tab.size': 'Size',
   'align.title': 'Grid Alignment',
 } as const satisfies Record<string, Message>;

@@ -10,6 +10,8 @@ import type { MosaicCanvasSource } from '../../../src/app/pixi/mosaicCanvas/mosa
 import { movedWithMap, worldToImage } from '../../../src/app/grid/mapStretch';
 import { levelImagePlacement } from '../../../src/app/levels/levelAlignment';
 import { levelObjects } from '../../../src/app/levels/levelObjects';
+import { applyLevelPlacement } from '../../../src/app/react/components/levels/levelImageAlignment';
+import { placedAlignment } from '../../../src/app/levels/levelPlacement';
 import { watchLevelsToRefit } from '../../../src/app/react/components/levels/levelRefitNotice';
 import { Notice } from 'obsidian';
 
@@ -265,6 +267,23 @@ describe('the alignment of a level', () => {
     expect(after.objects.tokens.mage).toMatchObject({ x: 185, y: 150 });
     expect(after.objects.walls.stairs?.p2).toEqual({ x: 110, y: 0 });
 
+    (harness.store as unknown as { temporal: { getState(): { undo(): void } } }).temporal.getState().undo();
+    expect(harness.store.getState().levelAlignments).toBeUndefined();
+    expect(harness.store.getState().objects.tokens.mage).toMatchObject({ x: 100, y: 100 });
+  });
+
+  it('moves a level\'s image by whole cells with what stands on it, and leaves the others', async () => {
+    const harness = await loaded();
+    const before = harness.store.getState();
+    const alignment = placedAlignment(before.grid ?? {}, undefined, { x: 70, y: 140 });
+
+    applyLevelPlacement(harness.store, 'upper', alignment, SIZE);
+
+    const after = harness.store.getState();
+    expect(levelImagePlacement(after, 'upper')).toEqual({ x: 1, y: 1, offset: { x: 70, y: 140 } });
+    expect(levelImagePlacement(after, 'ground')).toEqual(levelImagePlacement(before, 'ground'));
+    expect(after.objects.tokens.mage).toMatchObject({ x: 170, y: 240 });
+    expect(after.objects.tokens.guard).toBe(before.objects.tokens.guard);
     (harness.store as unknown as { temporal: { getState(): { undo(): void } } }).temporal.getState().undo();
     expect(harness.store.getState().levelAlignments).toBeUndefined();
     expect(harness.store.getState().objects.tokens.mage).toMatchObject({ x: 100, y: 100 });

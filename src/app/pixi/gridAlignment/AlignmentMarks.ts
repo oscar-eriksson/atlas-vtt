@@ -64,6 +64,7 @@ export class AlignmentMarks {
   private lines: (MeasurementLine | null)[] = [];
   private quadrantOverlay: Graphics | null = null;
   private cursor: Graphics | null = null;
+  private outlines: { g: Graphics; rects: readonly MapBounds[] } | null = null;
 
   constructor(private readonly viewport: Viewport) {
     this.viewport.on('zoomed', this.fitToZoom);
@@ -121,6 +122,19 @@ export class AlignmentMarks {
     this.quadrantOverlay = g;
   }
 
+  /** Outlines `rects` with a dashed line, as large on screen at any zoom: where the other levels' images lie. */
+  showOutlines(rects: readonly MapBounds[]): void {
+    this.clearOutlines();
+    if (rects.length === 0) return;
+    this.outlines = { g: this.mark(), rects };
+    this.drawOutlines(this.outlines);
+  }
+
+  clearOutlines(): void {
+    if (this.outlines) destroyTree(this.outlines.g);
+    this.outlines = null;
+  }
+
   clearDimming(): void {
     if (this.quadrantOverlay) destroyTree(this.quadrantOverlay);
     this.quadrantOverlay = null;
@@ -137,6 +151,7 @@ export class AlignmentMarks {
   clear(): void {
     this.clearMeasurements();
     this.clearDimming();
+    this.clearOutlines();
     this.hideCursor();
   }
 
@@ -155,6 +170,7 @@ export class AlignmentMarks {
     const pixel = this.pixelSize();
     for (const g of [...this.crosshairs, this.cursor]) g?.scale.set(pixel);
     for (const line of this.lines) if (line) this.drawLine(line);
+    if (this.outlines) this.drawOutlines(this.outlines);
   };
 
   /** A crosshair drawn in pixels of the screen around its own origin; the zoom scales it back (`fitToZoom`). */
@@ -183,6 +199,30 @@ export class AlignmentMarks {
         const end = Math.min(travelled + DASH_LENGTH * pixel, length);
         g.moveTo(a.x + ux * travelled, a.y + uy * travelled);
         g.lineTo(a.x + ux * end, a.y + uy * end);
+      }
+      g.stroke({ width: width * pixel, color, alpha });
+    }
+  }
+
+  /** The sides of every rect in dashes of one length on screen, drawn anew when the zoom changes. */
+  private drawOutlines({ g, rects }: { g: Graphics; rects: readonly MapBounds[] }): void {
+    const pixel = this.pixelSize();
+    g.clear();
+    for (const { width, color, alpha } of markStrokes()) {
+      for (const { x, y, width: w, height: h } of rects) {
+        const corners = [{ x, y }, { x: x + w, y }, { x: x + w, y: y + h }, { x, y: y + h }];
+        corners.forEach((from, index) => {
+          const to = corners[(index + 1) % corners.length]!;
+          const length = Math.hypot(to.x - from.x, to.y - from.y);
+          if (length === 0) return;
+          const ux = (to.x - from.x) / length;
+          const uy = (to.y - from.y) / length;
+          for (let travelled = 0; travelled < length; travelled += (DASH_LENGTH + GAP_LENGTH) * pixel) {
+            const end = Math.min(travelled + DASH_LENGTH * pixel, length);
+            g.moveTo(from.x + ux * travelled, from.y + uy * travelled);
+            g.lineTo(from.x + ux * end, from.y + uy * end);
+          }
+        });
       }
       g.stroke({ width: width * pixel, color, alpha });
     }
