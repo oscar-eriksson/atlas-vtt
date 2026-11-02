@@ -23,7 +23,7 @@ vi.mock('../../src/app/services/playerWindowDisplay', () => ({
 vi.mock('../../src/app/resources/useMapResources', () => ({ useMapResources: () => [] }));
 vi.mock('../../src/app/react/ViewStoreContext', () => ({ useAtlasStore: (selector: (state: { mapPath: null }) => unknown) => selector({ mapPath: null }) }));
 vi.mock('../../src/app/react/root/AtlasUIContext', async (original) => ({ ...(await original<object>()), useAtlasUI: () => ({ app: {} }) }));
-vi.mock('../../src/app/keyboard/useMapHotkeys', () => ({ useAtlasSettings: () => context.settings }));
+vi.mock('../../src/app/keyboard/useMapHotkeys', () => ({ useAtlasSettings: () => context.settings, useMapHotkeys: () => undefined }));
 
 const { PlayerWindowBar } = await import('../../src/app/packages/components/player-window-bar/PlayerWindowBar');
 const { PlayerLootDisplay } = await import('../../src/app/services/PlayerLootDisplay');
