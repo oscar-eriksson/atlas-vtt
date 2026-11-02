@@ -1,3 +1,8 @@
+## New
+
+- Area templates: a toolbar tool that places lines, cones, cubes, spheres and emanations on the map, highlights the grid cells they cover, and lets you select, move, recolour and delete them.
+- Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.
+
 ## Improved
 
 - Maps can be turned 90, 180 or 270 degrees as they are imported: each map card in the map creator has a rotate button that previews the turn and saves the map turned.

@@ -1,4 +1,4 @@
-import { FederatedPointerEvent, Graphics, Text } from 'pixi.js';
+import { FederatedPointerEvent, Graphics } from 'pixi.js';
 import type { Viewport } from 'pixi-viewport';
 import type { GridSystem } from '../../grid/GridSystem';
 import { formatDistance, resolveMeasurementSettings, type MeasurementSettings } from '../../grid/measurementFormat';
@@ -11,7 +11,8 @@ import { beginHistoryTransaction, endHistoryTransaction } from '../../stores/his
 import type { TemplateTool } from '../../tools/TemplateTool';
 import type { AreaTemplate, AreaTemplateInput, TemplateOriginSnap, TemplateShape } from '../../types/areaTemplateTypes';
 import { cssColorToHexNumber, getObsidianAccentColor } from '../utils/colorUtils';
-import { createMeasureLabelText, drawMeasureLabel, measureLabelFontSize } from '../utils/measureDrawing';
+import { MeasureLabel, watchMeasureLabelTheme } from '../utils/measureLabel';
+import { levelObjects } from '../../levels/levelObjects';
 import { destroyTree } from '../utils/destroyTree';
 import { showCoveredCells } from './templateCellsGraphics';
 import { drawCreatureOutline } from './templateDrawing';
@@ -44,8 +45,7 @@ export class TemplateInteraction {
   /** The creature an emanation would spread from, shown where it will be placed. */
   private readonly hoverCreature = new Graphics();
   private hoverCreatureSide: number | undefined;
-  private readonly pill = new Graphics();
-  private readonly label: Text = createMeasureLabelText();
+  private readonly label = new MeasureLabel();
   private drag: { pressedAt: Point } | null = null;
   private draft: AreaTemplateInput | null = null;
   private moving: { id: string; offset: Point; snap: TemplateOriginSnap } | null = null;
@@ -53,6 +53,7 @@ export class TemplateInteraction {
   private cellsKey: string | undefined;
   private enabled = false;
   private readonly unsubscribeTool: () => void;
+  private readonly stopThemeWatch: () => void;
 
   private readonly onDown = (event: FederatedPointerEvent): void => this.handleDown(event);
   private readonly onMove = (event: FederatedPointerEvent): void => this.handleMove(event);
@@ -68,11 +69,12 @@ export class TemplateInteraction {
   ) {
     // A unit circle, drawn once; its position and scale follow the pointer and the zoom.
     this.hoverMarker.circle(0, 0, 1).fill({ color: 0xffffff, alpha: 0.9 });
-    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker, this.pill, this.label]) {
+    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker, this.label.view]) {
       item.eventMode = 'none';
       item.visible = false;
       viewport.addChild(item);
     }
+    this.stopThemeWatch = watchMeasureLabelTheme(() => this.label.redraw(this.viewport.scale.x));
     this.unsubscribeTool = store.subscribe(
       (state) => state.activeTool === 'template' && !state.isPlayerView,
       (active) => this.setEnabled(active),
@@ -117,7 +119,8 @@ export class TemplateInteraction {
 
   /** The template a press at `point` takes hold of: one whose origin dot is there, or the selected one's body. */
   private grabbedTemplate(point: Point): AreaTemplate | undefined {
-    const { objects, selectedIds } = this.store.getState();
+    const { selectedIds } = this.store.getState();
+    const objects = levelObjects(this.store.getState());
     const scale = this.viewport.scale.x;
     const cellSize = this.gridSystem.getOptions().size;
     return Object.values(objects.templates).reverse().find(template =>
@@ -136,7 +139,7 @@ export class TemplateInteraction {
     if (!this.moving) return;
     const { id, offset, snap } = this.moving;
     const origin = snapTemplateOrigin(this.gridSystem.getOptions(), { x: point.x - offset.x, y: point.y - offset.y }, snap);
-    const current = this.store.getState().objects.templates[id];
+    const current = levelObjects(this.store.getState()).templates[id];
     if (current && (current.x !== origin.x || current.y !== origin.y)) this.store.getState().updateTemplate(id, origin);
   }
 
@@ -165,7 +168,7 @@ export class TemplateInteraction {
   /** A click without a drag picks the template under it, the newest first, or clears the selection. */
   private selectAt(point: Point): void {
     const cellSize = this.gridSystem.getOptions().size;
-    const templates = Object.values(this.store.getState().objects.templates);
+    const templates = Object.values(levelObjects(this.store.getState()).templates);
     const hit = templates.reverse().find(template => templateContainsPoint(template, cellSize, point));
     this.store.getState().setSelection(hit ? [hit.id] : []);
   }
@@ -206,7 +209,7 @@ export class TemplateInteraction {
   private showDraft(pointer: Point): void {
     const draft = this.draft;
     this.outline.visible = this.cells.visible = draft !== null;
-    this.label.visible = this.pill.visible = draft !== null;
+    this.label.view.visible = draft !== null;
     if (!draft) return;
 
     const preview = { ...draft, id: 'preview' };
@@ -214,9 +217,8 @@ export class TemplateInteraction {
     this.cellsKey = showCoveredCells(this.cells, preview, this.gridSystem.getOptions(), this.cellsKey);
     const settings = this.measurementSettingsProvider?.() ?? resolveMeasurementSettings(undefined, this.store.getState().grid);
     const scale = this.viewport.scale.x;
-    this.label.text = `${formatDistance(draft.size, settings)} ${SHAPE_NAMES[draft.shape]}`;
-    this.label.style.fontSize = measureLabelFontSize(scale);
-    drawMeasureLabel(this.pill, this.label, { x: pointer.x, y: pointer.y - 30 / scale }, scale);
+    const text = `${formatDistance(draft.size, settings)} ${SHAPE_NAMES[draft.shape]}`;
+    this.label.show(text, { over: { x: pointer.x, y: pointer.y - 30 / scale } }, scale, this.gridSystem.getOptions().size);
   }
 
   private clear(): void {
@@ -229,14 +231,15 @@ export class TemplateInteraction {
     this.cellsKey = undefined;
     this.outline.clear();
     this.cells.clear();
-    this.pill.clear();
-    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker, this.pill, this.label]) item.visible = false;
+    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker, this.label.view]) item.visible = false;
   }
 
   destroy(): void {
     this.unsubscribeTool();
+    this.stopThemeWatch();
     this.setEnabled(false);
-    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker, this.pill, this.label]) {
+    this.label.destroy();
+    for (const item of [this.cells, this.outline, this.hoverCreature, this.hoverMarker]) {
       item.parent?.removeChild(item);
       destroyTree(item);
     }

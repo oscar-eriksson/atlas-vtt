@@ -1,3 +1,5 @@
+import type { OnOneLevel } from './sceneLevelTypes';
+
 /** The shapes of an area of effect, as game systems describe them. */
 export type TemplateShape = 'line' | 'cone' | 'cube' | 'sphere' | 'emanation';
 
@@ -19,7 +21,7 @@ export type CellCoverage = 'off' | 'any' | 'half' | 'center';
  * A persistent area of effect on the map. Sizes are in grid cells, as
  * distances are everywhere else, so they follow the grid and not the unit.
  */
-export interface AreaTemplate {
+export interface AreaTemplate extends OnOneLevel {
   id: string;
   shape: TemplateShape;
   /** Origin in map coordinates. */
