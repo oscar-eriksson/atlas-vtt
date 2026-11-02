@@ -4,6 +4,7 @@
 - Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.
 - Toggle TrueScale with a shortcut (K) or from the command palette.
 - Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows where the other levels lie, and centres it on the level next to it.
+- Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows the levels next to it as faint ghosts, and centres it on the level next to it.
 
 ## Improved
 
