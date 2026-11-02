@@ -5,9 +5,11 @@
 - Toggle TrueScale with a shortcut (K) or from the command palette.
 - Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows where the other levels lie, and centres it on the level next to it.
 - Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows the levels next to it as faint ghosts, and centres it on the level next to it.
+- Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows the level below it (else above) as a faint ghost, and centres it on the level next to it.
 
 ## Improved
 
 - In the Fantasy Statblocks token import, the counts above the list (ready, already imported, need attention) narrow it to those creatures when pressed, so you can find the ones that need attention
 - A map whose file name states its grid, as map makers name them (`Tavern_55x42.jpg` for columns by rows, `Cave_140pps.png` for pixels per cell), starts its scenes with that grid instead of looking for one. The name of the file you upload counts, not the name you give the map.
 - Grid Alignment has a Size tab: type the pixels one cell spans, or how many columns and rows the map holds, and the grid is set from the map's corner without measuring.
+- Aligning the grid on the first level no longer distorts the other levels whose map is another size: they stay as they were drawn, and Atlas says so.

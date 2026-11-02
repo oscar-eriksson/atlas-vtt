@@ -24,9 +24,10 @@ import { MoveLevelTab } from './MoveLevelTab';
 import { CloseButton } from '../../packages/components/primitives/CloseButton';
 import { t } from '../../i18n';
 import { showNotice } from '../../ui/notice';
-import { acceptsLevelDetection, applyLevelAlignment, applyLevelPlacement, levelBeingFitted } from './levels/levelImageAlignment';
+import { acceptsLevelDetection, applyLevelAlignment, applyLevelPlacement, keepLevelsAsDrawn, levelBeingFitted, readLevelImageSizes } from './levels/levelImageAlignment';
 import { viewedLevelId } from '../../levels/sceneLevels';
 import type { LevelAlignment } from '../../types/sceneLevelTypes';
+import type { ImageSize } from '../../grid/mapStretch';
 
 type AlignmentTab = 'intersections' | 'freehand' | 'size' | 'move';
 /** What the choice of a manual way holds while none is chosen. */
@@ -78,6 +79,12 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
 
   const controllerRef = useRef<GridAlignmentController | null>(null);
   const hasSeveralLevels = (store?.getState().levels?.length ?? 0) > 1;
+  /** The size of each level's map image, read while the panel is open, for what aligning the grid does to the other levels. */
+  const levelSizes = useRef<Record<string, ImageSize | null>>({});
+  useEffect(() => {
+    if (!store || !view || !hasSeveralLevels) return;
+    void readLevelImageSizes(view.app, store).then((sizes) => { levelSizes.current = sizes; });
+  }, [store, view, hasSeveralLevels]);
 
   // -----------------------------------------------------------------------
   // Controller lifecycle
@@ -217,11 +224,15 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
     const imageSize = renderer?.getMapImage?.()?.imageSize;
     const move = imageSize && !sameStretch(from, to) ? movedWithMap(imageSize, from, to) : undefined;
     // One undo step: the grid, what moved with the map, and the tokens snapped to the new cells.
+    let kept = 0;
     runHistoryTransaction(store, () => {
+      // Levels whose map is another size than this one's are no part of its frame: they stay as drawn
+      kept = keepLevelsAsDrawn(store, levelSizes.current, imageSize);
       store.getState().alignGrid(grid, move);
       renderer?.applyGridAlignment?.(result.cellSize, result.offsetX, result.offsetY, result.gridType);
     });
 
+    if (kept > 0) showNotice(t('align.levelsKept', { count: kept }));
     controllerRef.current?.destroy();
     controllerRef.current = null;
     onClose();

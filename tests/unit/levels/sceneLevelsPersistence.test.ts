@@ -10,7 +10,7 @@ import type { MosaicCanvasSource } from '../../../src/app/pixi/mosaicCanvas/mosa
 import { movedWithMap, worldToImage } from '../../../src/app/grid/mapStretch';
 import { levelImagePlacement } from '../../../src/app/levels/levelAlignment';
 import { levelObjects } from '../../../src/app/levels/levelObjects';
-import { applyLevelPlacement } from '../../../src/app/react/components/levels/levelImageAlignment';
+import { applyLevelPlacement, keepLevelsAsDrawn } from '../../../src/app/react/components/levels/levelImageAlignment';
 import { placedAlignment } from '../../../src/app/levels/levelPlacement';
 import { watchLevelsToRefit } from '../../../src/app/react/components/levels/levelRefitNotice';
 import { Notice } from 'obsidian';
@@ -287,6 +287,31 @@ describe('the alignment of a level', () => {
     (harness.store as unknown as { temporal: { getState(): { undo(): void } } }).temporal.getState().undo();
     expect(harness.store.getState().levelAlignments).toBeUndefined();
     expect(harness.store.getState().objects.tokens.mage).toMatchObject({ x: 100, y: 100 });
+  });
+
+  describe('aligning the grid on the first level', () => {
+    const STRETCH = { x: 1.1, y: 1 };
+    async function aligned(upperSize: { width: number; height: number }): Promise<{ before: ReturnType<ViewAtlasStore['getState']>; after: ReturnType<ViewAtlasStore['getState']> }> {
+      const harness = await loaded();
+      const before = harness.store.getState();
+      const grid = { ...before.grid!, mapStretch: STRETCH };
+      keepLevelsAsDrawn(harness.store, { ground: SIZE, upper: upperSize }, SIZE);
+      harness.store.getState().alignGrid(grid, movedWithMap(SIZE, levelImagePlacement(before, 'ground'), STRETCH));
+      return { before, after: harness.store.getState() };
+    }
+
+    it('keeps a level whose map is another size as it was drawn', async () => {
+      const { before, after } = await aligned({ width: 640, height: 480 });
+      expect(levelImagePlacement(after, 'ground')).toEqual({ x: 1.1, y: 1 });
+      expect(levelImagePlacement(after, 'upper')).toEqual(levelImagePlacement(before, 'upper'));
+      expect(after.objects.tokens.mage).toMatchObject({ x: 100, y: 100 });
+    });
+
+    it('lets a level whose map is the same size follow the frame', async () => {
+      const { after } = await aligned(SIZE);
+      expect(levelImagePlacement(after, 'upper')).toEqual({ x: 1.1, y: 1 });
+      expect(after.levelAlignments).toBeUndefined();
+    });
   });
 
   it('is saved in its level in the file and read back beside the levels', async () => {
