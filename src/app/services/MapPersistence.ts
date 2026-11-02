@@ -21,10 +21,11 @@ import { fixMapTokenPaths } from '../utils/fixMapPaths';
 import { getDataFilePath } from '../utils/dataFileMigration';
 import { sceneFromFile, sceneToFile, tokenFromFile } from '../resources/resourceFileFormat';
 import { pausedTimers } from '../utils/timerWidget';
-import { preserveDamagedSceneFile, SceneFileError } from './sceneFileProblems';
+import { backUpForkScene, preserveDamagedSceneFile, SceneFileError } from './sceneFileProblems';
 import { SceneFileWriter } from './sceneFileWriter';
 import type { LevelLink, LevelSurface, SceneLevel } from '../types/sceneLevelTypes';
 import { LEVELS_FILE_VERSION, readSceneLevels, sceneFileVersion } from '../levels/levelFile';
+import { isForkSceneState, upgradeForkSceneState } from './forkSceneMigration';
 
 import type { FogOperation } from '../types/fogTypes';
 import type { SavedPlayerFrame } from '../stores/playerFramesSlice';
@@ -174,6 +175,11 @@ export function parseSceneFile(content: string): LoadableMapEnvelope {
     throw new SceneFileError('invalidJson');
   }
   if (!isPersistedMapEnvelope(raw) || !raw.state) throw new SceneFileError('structure');
+  // A scene this fork saved before it took upstream's levels and TrueScale is read as one of upstream's
+  if (isForkSceneState(raw.state)) {
+    const state = upgradeForkSceneState(raw.state);
+    return { ...raw, ...(raw.version !== undefined && { version: state.version }), state };
+  }
   const isNewer = [raw.version, raw.state.version].some((version) => version !== undefined && version > LEVELS_FILE_VERSION);
   if (isNewer) throw new SceneFileError('newer');
   return { ...raw, state: raw.state };
@@ -230,6 +236,7 @@ export function createAtlasStorage<T extends { mapPath: string | null; mapLoaded
         throw new SceneFileError('unreadable');
       }
 
+      await backUpForkScene(app, mapFile, content);
       let parsed: PersistedMapEnvelope;
       try {
         parsed = parseSceneFile(content);
