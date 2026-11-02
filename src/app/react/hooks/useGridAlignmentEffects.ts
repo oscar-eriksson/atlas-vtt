@@ -11,6 +11,7 @@ import type { GridType } from '../../grid/GridSystem';
 import { isHexGridType } from '../../grid/hexGeometry';
 import { setCanvasCursor } from '../../pixi/utils/canvasCursor';
 import type { AtlasView } from '../../atlas-view';
+import type { LevelAlignment } from '../../types/sceneLevelTypes';
 import { t, type MessageKey } from '../../i18n';
 
 // ---------------------------------------------------------------------------
@@ -25,6 +26,8 @@ export interface AlignmentTabProps {
   gridType: GridType;
   /** Fits what the tab measures to the map's lines. */
   fit: FitToLines;
+  /** Reports where the viewed level's image is to lie instead of a grid, for the tab that moves it; none for the others. */
+  setPlacement?: (alignment: LevelAlignment | null) => void;
 }
 
 /** Instructions for the two clicks of a measurement, per grid type. */
