@@ -68,7 +68,6 @@ export const creator = {
   'creator.willReplace': 'The current image will be replaced',
   'creator.zoom': 'Zoom',
   'creator.zoomIn': 'Zoom in',
-  'creator.rotate': 'Rotate clockwise (now {degrees}°)',
   'creator.zoomInSelected': 'Zoom in selected',
   'creator.zoomOut': 'Zoom out',
   'creator.zoomOutSelected': 'Zoom out selected',

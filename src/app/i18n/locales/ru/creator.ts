@@ -67,7 +67,6 @@ export const creator: Translation = {
   'creator.willReplace': 'Текущее изображение будет заменено',
   'creator.zoom': 'Масштаб',
   'creator.zoomIn': 'Увеличить',
-  'creator.rotate': 'Повернуть по часовой стрелке (сейчас {degrees}°)',
   'creator.zoomInSelected': 'Увеличить выбранные',
   'creator.zoomOut': 'Уменьшить',
   'creator.zoomOutSelected': 'Уменьшить выбранные',
