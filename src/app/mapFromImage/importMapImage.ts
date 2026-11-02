@@ -4,7 +4,6 @@ import { AssetRegistrationUncertainError } from '../services/assetRegistrationRe
 import { discardAssetFiles, writeAssetImage } from '../services/assetImageFiles';
 import { AssetThumbnailService } from '../services/AssetThumbnailService';
 import { namedGridOfUpload } from '../services/namedGridOfUpload';
-import type { QuarterTurn } from '../imageProcessing/imageProcessing';
 import type { AssetService, MapAsset } from '../services/AssetService';
 
 export interface MapImageOptions {
@@ -12,8 +11,6 @@ export interface MapImageOptions {
   collectionId: string;
   tags?: string[];
   signal?: AbortSignal;
-  /** Turns the map clockwise as it is imported; the original file is left as it is. */
-  rotation?: QuarterTurn;
 }
 
 const IMAGE_TYPES: Record<string, string> = {
@@ -28,7 +25,7 @@ const IMAGE_TYPES: Record<string, string> = {
  */
 export async function importMapImage(app: App, assetService: AssetService, source: TFile, options: MapImageOptions): Promise<MapAsset> {
   const file = new File([await app.vault.readBinary(source)], source.name, { type: IMAGE_TYPES[source.extension.toLowerCase()] ?? '' });
-  const { image, thumbnail } = await optimizeUpload(file, 'map', { signal: options.signal, thumbnail: true, rotation: options.rotation });
+  const { image, thumbnail } = await optimizeUpload(file, 'map', { signal: options.signal, thumbnail: true });
 
   let imagePath: string | undefined;
   let thumbnailPath: string | undefined;
