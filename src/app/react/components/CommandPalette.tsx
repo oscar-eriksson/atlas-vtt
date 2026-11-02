@@ -26,7 +26,7 @@ import {
   UserCheck,
   History,
   Layers,
-  Replace, Gauge, SunMoon } from 'lucide-react';
+  Replace, Gauge, SunMoon, Scan } from 'lucide-react';
 import { runInBackground } from '../../utils/backgroundTask';
 import { viewedLevelId } from '../../levels/sceneLevels';
 import { collectionIdOfPath } from '../../services/assetPaths';
@@ -36,6 +36,7 @@ import { useStore } from 'zustand';
 import { useAtlasStore, useViewStoreHook } from '../ViewStoreContext';
 import { useAtlasUI } from '../root/AtlasUIContext';
 import { PlayerWindowService } from '../../services/PlayerWindowService';
+import { SettingsService } from '../../services/SettingsService';
 import { openPlayerWindow, presentActiveTab } from '../../services/PlayerWindowPresenter';
 import { playerWindowStore } from '../../stores/playerWindowStore';
 import { debounce } from '../../../utils/debounce';
@@ -59,6 +60,7 @@ import { SceneLevelsPanel } from './command-palette/SceneLevelsPanel';
 import { replaceMapImage } from './levels/replaceMapImage';
 import { pickMapImage } from './levels/MapImagePickerModal';
 import { placePalette, type PalettePosition } from './command-palette/palettePlacement';
+import { toggleTrueScale } from '../../services/tableTvToggle';
 import { customizeToolbarCommand } from './command-palette/customizeToolbarCommand';
 import { isSettingsPanelId, type CommandOption, type SettingsPanelId } from './command-palette/types';
 import { t } from '../../i18n';
@@ -350,6 +352,20 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       },
       isToggle: true,
       isActive: isPlayerWindowFrozen,
+    },
+    {
+      id: "toggle-true-scale",
+      icon: <Scan />,
+      label: t('palette.toggleTrueScale'),
+      keywords: ["truescale", "true scale", "tv", "table", "inch", "real size"],
+      section: "mode",
+      action: () => {
+        const settings = SettingsService.forApp(app);
+        if (settings) toggleTrueScale(settings, PlayerWindowService.getInstance());
+        onClose();
+      },
+      isToggle: true,
+      isActive: PlayerWindowService.getInstance()?.isTrueScale() ?? false,
     },
     {
       id: "open-player-window",

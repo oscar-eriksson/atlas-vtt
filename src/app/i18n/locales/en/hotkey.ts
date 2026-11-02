@@ -6,6 +6,7 @@ export const hotkey = {
   'hotkey.assets': 'Asset manager',
   'hotkey.dashboard': 'DM screen',
   'hotkey.gmView': 'Toggle GM view',
+  'hotkey.trueScale': 'Toggle TrueScale',
   'hotkey.sceneSwitcher': 'Switch between open maps',
   'hotkey.fitMap': 'Fit map to view',
   'hotkey.fitToken': 'Zoom to selected token',

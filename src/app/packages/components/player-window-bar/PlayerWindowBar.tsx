@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useRef, useState, type RefObject } from 
 import { useStore } from "zustand"
 import { Blinds, ImageOff, Scan } from "lucide-react"
 import type { AtlasView } from "../../../atlas-view"
-import { useAtlasSettings } from "../../../keyboard/useMapHotkeys"
+import { useAtlasSettings, useMapHotkeys } from "../../../keyboard/useMapHotkeys"
+import { toggleTrueScale } from "../../../services/tableTvToggle"
 import { PlayerWindowService } from "../../../services/PlayerWindowService"
 import { refreshPlayerWindowDisplay } from "../../../services/playerWindowDisplay"
 import { playerWindowStore } from "../../../stores/playerWindowStore"
@@ -59,6 +60,8 @@ export function PlayerWindowBar({ view }: { view: AtlasView | null }): React.Rea
   const panelRef = useRef<HTMLDivElement>(null)
   const keepInView = useKeepInView(panelRef, menu === "trueScale", "bottom")
   const service = PlayerWindowService.getInstance()
+
+  useMapHotkeys({ trueScale: () => settings && toggleTrueScale(settings, service) })
 
   useEffect(() => {
     if (!isOpen) setMenu(null)
