@@ -301,7 +301,7 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
             {t('align.find')}
           </button>
           <p className="atlas-grid-alignment-status" aria-live="polite">{detecting ? detectionStatus : null}</p>
-          <SegmentedControl value={ManualTab && activeTab ? activeTab : NO_TAB} options={hasSeveralLevels ? [...ALIGNMENT_TABS, MOVE_TAB] : ALIGNMENT_TABS} onChange={handleTabChange} ariaLabel={t('align.orByHand')} disabled={busy} />
+          <SegmentedControl value={ManualTab && activeTab ? activeTab : NO_TAB} options={hasSeveralLevels ? [...ALIGNMENT_TABS, MOVE_TAB] : ALIGNMENT_TABS} onChange={handleTabChange} ariaLabel={t('align.orByHand')} disabled={busy} {...(hasSeveralLevels && { className: "atlas-segmented--fit" })} />
 
           {/* Every control keeps its place, so the panel is as tall in every state: the grid type is for aligning by hand. */}
           <GridTypePicker value={gridType} onChange={handleGridTypeChange} disabled={!ManualTab || busy} />
