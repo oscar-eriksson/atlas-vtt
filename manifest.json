@@ -1,7 +1,7 @@
 {
   "id": "atlas-vtt",
-  "name": "Atlas VTT (Oscar's fork)",
-  "version": "0.12.2-beta.1",
+  "name": "Atlas VTT (fork)",
+  "version": "0.12.2",
   "minAppVersion": "1.8.7",
   "description": "Run tabletop RPG battle maps with tokens, fog of war, grids, dice and a separate player view.",
   "author": "Fabian Urbanek, fork by Oscar Eriksson",
