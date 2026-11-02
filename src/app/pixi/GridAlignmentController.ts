@@ -13,6 +13,7 @@ import type { GridSystem } from '../grid/GridSystem';
 import { NO_STRETCH, sameStretch, type MapStretch } from '../grid/mapStretch';
 import { prefersReducedMotion } from '../utils/motion';
 import { AlignmentMarks } from './gridAlignment/AlignmentMarks';
+import { LevelGhosts, type LevelGhost } from './gridAlignment/LevelGhosts';
 import type { GridScanLayer } from './gridAlignment/GridScanLayer';
 import { getQuadrantBounds } from './gridAlignmentMath';
 import type { AlignmentPoint, AlignmentResult, MapBounds } from './gridAlignmentMath';
@@ -41,6 +42,7 @@ export type ScanState = 'working' | 'fading' | 'none';
 
 export class GridAlignmentController {
   private readonly marks: AlignmentMarks;
+  private readonly ghosts: LevelGhosts;
   /** A detection's answer waits behind the scan's locking wave: the grid shows once the wave has passed. */
   private awaitingReveal = false;
   /** Ends the camera's glide where it is. */
@@ -59,6 +61,7 @@ export class GridAlignmentController {
     private readonly scan: GridScanLayer | null = null,
   ) {
     this.marks = new AlignmentMarks(viewport);
+    this.ghosts = new LevelGhosts(viewport);
   }
 
   // -----------------------------------------------------------------------
@@ -117,6 +120,11 @@ export class GridAlignmentController {
   /** Outlines where other levels' images lie; none removes them. */
   showLevelOutlines(rects: readonly MapBounds[]): void {
     this.marks.showOutlines(rects);
+  }
+
+  /** Shows the pictures of the levels next to the one being moved, faintly over the map; none removes them. */
+  showLevelGhosts(ghosts: readonly LevelGhost[]): void {
+    this.ghosts.show(ghosts);
   }
 
   /** Draws the level's image with `placement` while it is moved, over the grid as it stands. */
@@ -259,6 +267,7 @@ export class GridAlignmentController {
 
   destroy(): void {
     this.marks.destroy();
+    this.ghosts.clear();
     this.stopGlide();
     this.awaitingReveal = false;
     this.scan?.destroy();

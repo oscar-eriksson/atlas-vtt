@@ -1,4 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import type { App } from 'obsidian';
+import type { LevelGhost } from '../../pixi/gridAlignment/LevelGhosts';
+import { MosaicCanvasService } from '../../pixi/mosaicCanvas/MosaicCanvasService';
 import type { AlignmentTabProps } from '../hooks/useGridAlignmentEffects';
 import { useLevelDrag } from '../hooks/useLevelDrag';
 import { levelBackground } from '../../levels/levelEdits';
@@ -11,6 +14,26 @@ import type { Point } from '../../grid/hexGeometry';
 import type { ImageSize } from '../../grid/mapStretch';
 import { t } from '../../i18n';
 import { levelLabel } from './levels/levelEditing';
+
+/** The longest side of a ghost's picture: a faint guide needs no more. */
+const GHOST_SIDE = 1024;
+
+/** The picture of the image at `path`, small, with where it lies; null where it cannot be read. */
+async function ghostOf(app: App | undefined, path: string | null, rect: WorldRect): Promise<LevelGhost | null> {
+  const file = app && path ? app.vault.getFileByPath(path) : null;
+  if (!app || !file) return null;
+  const service = MosaicCanvasService.forApp(app);
+  try {
+    const opened = await service.open(file);
+    try {
+      return { bitmap: await service.overview(opened.handle, GHOST_SIDE), rect };
+    } finally {
+      service.close(opened.handle);
+    }
+  } catch {
+    return null;
+  }
+}
 
 /** Another level of the scene, with where its image lies. */
 interface NeighbourLevel {
@@ -60,10 +83,17 @@ export function MoveLevelTab({ controller, view, setPlacement }: AlignmentTabPro
       if (stale) return;
       setNeighbours(found);
       controller.showLevelOutlines(found.map(({ rect }) => rect));
+      // The levels next to this one, a faint picture each
+      const at = (state.levels ?? []).findIndex((level) => level.id === levelId);
+      const closest = [state.levels?.[at - 1], state.levels?.[at + 1]].flatMap((level) => found.find((entry) => entry.id === level?.id) ?? []);
+      const ghosts = (await Promise.all(closest.map((entry) => ghostOf(view?.app, levelBackground(state, entry.id), entry.rect)))).flatMap((ghost) => ghost ?? []);
+      if (stale) ghosts.forEach(({ bitmap }) => bitmap.close());
+      else controller.showLevelGhosts(ghosts);
     })();
     return () => {
       stale = true;
       controller.showLevelOutlines([]);
+      controller.showLevelGhosts([]);
     };
   }, [controller, view, store, levelId]);
 
