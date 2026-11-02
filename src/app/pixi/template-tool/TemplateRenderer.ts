@@ -4,6 +4,7 @@ import type { ViewAtlasStore } from '../../storeFactory';
 import type { GridSystem } from '../../grid/GridSystem';
 import type { AreaTemplate } from '../../types/areaTemplateTypes';
 import { destroyTree } from '../utils/destroyTree';
+import { levelObjects } from '../../levels/levelObjects';
 import { showCoveredCells } from './templateCellsGraphics';
 import { showTemplate } from './templateGraphics';
 
@@ -41,7 +42,7 @@ export class TemplateRenderer {
     viewport.addChild(this.playerContainer, this.gmContainer);
 
     const stop = [
-      store.subscribe((state) => state.objects.templates, () => this.sync()),
+      store.subscribe((state) => levelObjects(state).templates, () => this.sync()),
       store.subscribe((state) => state.grid, () => this.sync(true)),
       store.subscribe((state) => state.selectedIds, () => this.sync(true)),
       store.subscribe((state) => state.isGMView, () => this.updateVisibility()),
@@ -71,7 +72,7 @@ export class TemplateRenderer {
 
   /** Brings the drawn templates in line with the store. Unchanged ones are only re-applied when asked, and even then only redrawn if their look changed. */
   private sync(applyAll = false): void {
-    const { templates } = this.store.getState().objects;
+    const { templates } = levelObjects(this.store.getState());
     const selected = new Set(this.store.getState().selectedIds);
     const cellSize = this.gridSystem.getOptions().size;
 

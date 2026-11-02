@@ -206,7 +206,7 @@ describe('MainToolbar text tool', () => {
 
   it('shows the default layout where Atlas\' settings cannot be reached', () => {
     const { container } = render(<MainToolbar viewId="view-1" />);
-    expect(shownControls(container)).toEqual(['move', 'fog', 'draw', 'text', 'measure', 'wall', 'pin', 'dice', 'loot', 'assets', 'palette']);
+    expect(shownControls(container)).toEqual(['move', 'fog', 'draw', 'text', 'measure', 'template', 'wall', 'pin', 'dice', 'loot', 'assets', 'palette']);
   });
 
   it('arranges the GM\'s bar by the stored layout and keeps hidden controls mounted', () => {
@@ -215,7 +215,7 @@ describe('MainToolbar text tool', () => {
       hidden: ['fog'],
     });
     const { container } = render(<MainToolbar viewId="view-1" />);
-    expect(shownControls(container)).toEqual(['palette', 'dice', 'move', 'draw', 'text', 'measure', 'wall', 'pin', 'loot', 'assets']);
+    expect(shownControls(container)).toEqual(['palette', 'dice', 'move', 'draw', 'text', 'measure', 'template', 'wall', 'pin', 'loot', 'assets']);
     expect(container.querySelector('[data-toolbar-item="fog"]')?.hasAttribute('hidden')).toBe(true);
   });
 

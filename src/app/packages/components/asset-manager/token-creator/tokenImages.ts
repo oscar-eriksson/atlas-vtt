@@ -63,7 +63,7 @@ export interface UploadOptions {
  * A video map stays the file it is.
  */
 export function optimizeUpload(file: File, mode: CreatorMode, options: UploadOptions): Promise<ProcessedImage> {
-  return shared(file, `fit:${mode}:${options.thumbnail}:${options.rotation ?? 0}`, options.signal, (signal) => isVideoMapPath(file.name) ? convertVideoMap(file, { thumbnail: THUMBNAIL_SPEC, preview: MAP_CARD_PREVIEW }, signal) : optimizeImage(
+  return shared(file, `fit:${mode}:${options.thumbnail}:${options.rotation ?? 0}`, options.signal, (signal) => isVideoMapPath(file.name) ? convertVideoMap(file, { thumbnail: THUMBNAIL_SPEC, preview: MAP_CARD_PREVIEW }, signal) : optimizeImage(file, IMAGE_PRESETS[mode], {
     signal,
     thumbnail: options.thumbnail ? THUMBNAIL_SPEC : undefined,
     preview: mode === 'map' ? MAP_CARD_PREVIEW : undefined,
