@@ -51,3 +51,18 @@ describe('the alignment of a moved level', () => {
     expect(placedAlignment({}, undefined, { x: 0, y: 70 }).stretch).toEqual({ x: 1, y: 1 });
   });
 });
+
+describe('the levels kept as drawn when the grid is aligned', () => {
+  const levels = [{ id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' }];
+  const size = { width: 100, height: 80 };
+
+  it('are the frame levels whose map is another size than the aligned one\'s, or unknown', async () => {
+    const { levelsToKeep } = await import('../../src/app/levels/levelPlacement');
+    expect(levelsToKeep({ levels }, 'a', { a: size, b: size, c: { width: 90, height: 80 }, d: null }, size)).toEqual(['c', 'd']);
+  });
+
+  it('leave out levels with an alignment of their own, or without a map', async () => {
+    const { levelsToKeep } = await import('../../src/app/levels/levelPlacement');
+    expect(levelsToKeep({ levels, levelAlignments: { c: {} } }, 'a', { a: size, c: { width: 1, height: 1 } }, size)).toEqual([]);
+  });
+});

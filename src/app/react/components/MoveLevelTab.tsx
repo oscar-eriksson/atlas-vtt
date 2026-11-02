@@ -83,9 +83,9 @@ export function MoveLevelTab({ controller, view, setPlacement }: AlignmentTabPro
       if (stale) return;
       setNeighbours(found);
       controller.showLevelOutlines(found.map(({ rect }) => rect));
-      // The levels next to this one, a faint picture each
+      // The level below this one, else the one above, as a faint picture
       const at = (state.levels ?? []).findIndex((level) => level.id === levelId);
-      const closest = [state.levels?.[at - 1], state.levels?.[at + 1]].flatMap((level) => found.find((entry) => entry.id === level?.id) ?? []);
+      const closest = [state.levels?.[at - 1], state.levels?.[at + 1]].flatMap((level) => found.find((entry) => entry.id === level?.id) ?? []).slice(0, 1);
       const ghosts = (await Promise.all(closest.map((entry) => ghostOf(view?.app, levelBackground(state, entry.id), entry.rect)))).flatMap((ghost) => ghost ?? []);
       if (stale) ghosts.forEach(({ bitmap }) => bitmap.close());
       else controller.showLevelGhosts(ghosts);

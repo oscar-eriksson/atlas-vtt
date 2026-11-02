@@ -48,3 +48,24 @@ export function placedAlignment(grid: Pick<GridState, 'mapStretch'>, current: Le
   const { offset: _unplaced, ...stretch } = current?.stretch ?? readMapStretch(grid.mapStretch);
   return { offset, scale: current?.scale ?? 1, stretch };
 }
+
+/**
+ * The levels to keep as they are when the grid is aligned on the level that defines it: those drawn
+ * in the frame (no alignment of its own) whose image is not the size of the aligned one's, so they
+ * are not floors exported on one canvas, which follow the frame's stretch, but maps of their own that
+ * it would distort. A level whose image is not known is kept too.
+ */
+export function levelsToKeep(
+  scene: { levels?: readonly { id: string }[] | undefined; levelAlignments?: Record<string, unknown> | undefined },
+  aligning: string | null,
+  sizes: Readonly<Record<string, ImageSize | null>>,
+  aligned: ImageSize,
+): string[] {
+  return (scene.levels ?? [])
+    .filter((level) => level.id !== aligning && !scene.levelAlignments?.[level.id] && level.id in sizes)
+    .filter((level) => {
+      const size = sizes[level.id];
+      return !size || size.width !== aligned.width || size.height !== aligned.height;
+    })
+    .map((level) => level.id);
+}

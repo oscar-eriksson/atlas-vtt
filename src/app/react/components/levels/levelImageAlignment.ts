@@ -8,6 +8,10 @@ import { alignmentPlacement, alignsSceneGrid, levelImagePlacement } from '../../
 import { viewedLevelId } from '../../../levels/sceneLevels';
 import type { ViewAtlasStore } from '../../../storeFactory';
 import { showNotice } from '../../../ui/notice';
+import type { App } from 'obsidian';
+import { levelBackground } from '../../../levels/levelEdits';
+import { levelsToKeep, placedAlignment } from '../../../levels/levelPlacement';
+import { mosaicCanvasSize } from '../../../pixi/mosaicCanvas/mosaicCanvasSize';
 import { t } from '../../../i18n';
 
 /** The level whose image the alignment panel fits to the grid as it is; null where it aligns the scene's grid (the first level, as before levels). */
@@ -75,4 +79,31 @@ export function applyLevelPlacement(store: ViewAtlasStore, levelId: string, alig
   const to = alignmentPlacement(alignment);
   const move = imageSize && !sameStretch(from, to) ? movedWithMap(imageSize, from, to) : undefined;
   state.alignLevel(levelId, alignment, move);
+}
+
+/**
+ * The size of the map image of every level of the scene that has one, by level id; null for one that
+ * cannot be read. A level without an image has no entry.
+ */
+export async function readLevelImageSizes(app: App, store: ViewAtlasStore): Promise<Record<string, ImageSize | null>> {
+  const state = store.getState();
+  const sizes: Record<string, ImageSize | null> = {};
+  for (const level of state.levels ?? []) {
+    const path = levelBackground(state, level.id);
+    if (path) sizes[level.id] = await mosaicCanvasSize(app, path).catch(() => null);
+  }
+  return sizes;
+}
+
+/**
+ * Keeps the levels that `levelsToKeep` names as they are drawn now, before the scene's grid is aligned:
+ * each gets an alignment of its own at scale 1 with the frame's stretch as it stands, which the grid's
+ * change then carries, so the level's image is neither stretched nor moved by it. Returns how many.
+ */
+export function keepLevelsAsDrawn(store: ViewAtlasStore, sizes: Record<string, ImageSize | null>, aligned: ImageSize | null | undefined): number {
+  const state = store.getState();
+  if (!state.grid || !aligned) return 0;
+  const kept = levelsToKeep(state, viewedLevelId(state), sizes, aligned);
+  for (const id of kept) state.alignLevel(id, placedAlignment(state.grid, undefined, { x: 0, y: 0 }));
+  return kept.length;
 }
