@@ -3,6 +3,7 @@ import type { Translation } from '../../types';
 export const map: Translation = {
   'map.loading': 'Загрузка карты…',
   'map.readFailed': 'Atlas VTT не смог прочитать {file} ({reason}). Копия сохранена в {backup}.',
+  'map.forkSceneBackedUp': 'Atlas VTT открыл {file}, сохранённый прежней версией этого форка с этажами или рамкой для ТВ; они не сохраняются. Копия файла сохранена в {backup}.',
   'map.untitled': 'Карта без названия',
   'map.loadingShort': 'Загрузка карты…',
   'map.clearing': 'Очистка прежних данных…',

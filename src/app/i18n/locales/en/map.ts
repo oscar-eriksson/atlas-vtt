@@ -3,6 +3,7 @@ import type { Message } from '../../types';
 export const map = {
   'map.loading': 'Loading map…',
   'map.readFailed': 'Atlas VTT could not read {file} ({reason}). A copy was kept at {backup}.',
+  'map.forkSceneBackedUp': 'Atlas VTT opened {file}, which an older version of this fork saved with floors or a TV frame; those are not kept. A copy of the file was kept at {backup}.',
   'map.untitled': 'Untitled Map',
   'map.loadingShort': 'Loading map…',
   'map.clearing': 'Clearing previous data…',
