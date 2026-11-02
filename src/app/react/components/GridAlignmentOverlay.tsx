@@ -20,12 +20,15 @@ import { GridTypePicker } from './GridTypePicker';
 import { IntersectionsTab } from './IntersectionsTab';
 import { FreehandTab } from './FreehandTab';
 import { SizeTab } from './SizeTab';
+import { MoveLevelTab } from './MoveLevelTab';
 import { CloseButton } from '../../packages/components/primitives/CloseButton';
 import { t } from '../../i18n';
 import { showNotice } from '../../ui/notice';
-import { acceptsLevelDetection, applyLevelAlignment, levelBeingFitted } from './levels/levelImageAlignment';
+import { acceptsLevelDetection, applyLevelAlignment, applyLevelPlacement, levelBeingFitted } from './levels/levelImageAlignment';
+import { viewedLevelId } from '../../levels/sceneLevels';
+import type { LevelAlignment } from '../../types/sceneLevelTypes';
 
-type AlignmentTab = 'intersections' | 'freehand' | 'size';
+type AlignmentTab = 'intersections' | 'freehand' | 'size' | 'move';
 /** What the choice of a manual way holds while none is chosen. */
 const NO_TAB = 'none';
 
@@ -34,11 +37,14 @@ const ALIGNMENT_TABS: readonly SegmentedOption<AlignmentTab | typeof NO_TAB>[] =
   { value: 'freehand', label: t('align.tab.freehand') },
   { value: 'size', label: t('align.tab.size') },
 ];
+/** A scene of several levels can also move the viewed level's image under the grid. */
+const MOVE_TAB: SegmentedOption<AlignmentTab> = { value: 'move', label: t('align.tab.move') };
 
 const TAB_COMPONENTS: Record<AlignmentTab, (props: AlignmentTabProps) => React.ReactElement | null> = {
   intersections: IntersectionsTab,
   freehand: FreehandTab,
   size: SizeTab,
+  move: MoveLevelTab,
 };
 
 interface GridAlignmentOverlayProps {
@@ -55,6 +61,8 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
   /** The way the GM aligns by hand; none until they choose one, so opening the panel leaves the map as it is. */
   const [activeTab, setActiveTab] = useState<AlignmentTab | null>(null);
   const [result, setResult] = useState<AlignmentResult | null>(null);
+  /** Where the viewed level's image is to lie, when the GM moved it. */
+  const [placement, setPlacement] = useState<LevelAlignment | null>(null);
   const [resetKey, setResetKey] = useState(0);
   const [, setControllerVersion] = useState(0);
   const [detecting, setDetecting] = useState(false);
@@ -69,6 +77,7 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
   const [detected, setDetected] = useState<AlignmentResult | null>(null);
 
   const controllerRef = useRef<GridAlignmentController | null>(null);
+  const hasSeveralLevels = (store?.getState().levels?.length ?? 0) > 1;
 
   // -----------------------------------------------------------------------
   // Controller lifecycle
@@ -138,6 +147,7 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
     controllerRef.current?.cancelScan();
     setDetecting(false);
     setResult(null);
+    setPlacement(null);
     setDetected(null);
     setDetectionStatus(null);
     setResetKey(k => k + 1);
@@ -176,6 +186,14 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
   });
 
   const handleApply = useCallback((): void => {
+    const levelId = store ? viewedLevelId(store.getState()) : null;
+    if (store && placement && levelId) {
+      applyLevelPlacement(store, levelId, placement, view?.renderer?.getMapImage?.()?.imageSize);
+      controllerRef.current?.destroy();
+      controllerRef.current = null;
+      onClose();
+      return;
+    }
     if (!store || !result) return;
     const level = levelBeingFitted(store);
     if (level) {
@@ -207,7 +225,7 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
     controllerRef.current?.destroy();
     controllerRef.current = null;
     onClose();
-  }, [store, result, onClose, view]);
+  }, [store, result, placement, onClose, view]);
 
   // -----------------------------------------------------------------------
   // Tab switching — clean up visuals from previous tab
@@ -283,13 +301,13 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
             {t('align.find')}
           </button>
           <p className="atlas-grid-alignment-status" aria-live="polite">{detecting ? detectionStatus : null}</p>
-          <SegmentedControl value={ManualTab && activeTab ? activeTab : NO_TAB} options={ALIGNMENT_TABS} onChange={handleTabChange} ariaLabel={t('align.orByHand')} disabled={busy} />
+          <SegmentedControl value={ManualTab && activeTab ? activeTab : NO_TAB} options={hasSeveralLevels ? [...ALIGNMENT_TABS, MOVE_TAB] : ALIGNMENT_TABS} onChange={handleTabChange} ariaLabel={t('align.orByHand')} disabled={busy} />
 
           {/* Every control keeps its place, so the panel is as tall in every state: the grid type is for aligning by hand. */}
           <GridTypePicker value={gridType} onChange={handleGridTypeChange} disabled={!ManualTab || busy} />
           {detected && <DetectedGridPreview controller={controllerRef.current} detected={detected} setResult={setResult} />}
 
-          <button className="atlas-grid-alignment-btn atlas-grid-alignment-btn--primary atlas-grid-alignment-btn--wide" disabled={!result || busy} onClick={handleApply}>
+          <button className="atlas-grid-alignment-btn atlas-grid-alignment-btn--primary atlas-grid-alignment-btn--wide" disabled={(!result && !placement) || busy} onClick={handleApply}>
             {t('common.apply')}
           </button>
         </div>
@@ -302,6 +320,7 @@ export function GridAlignmentOverlay({ onClose }: GridAlignmentOverlayProps): Re
               controller={controllerRef.current}
               view={view}
               setResult={setResult}
+              setPlacement={setPlacement}
               gridType={gridType}
               fit={fit}
             />

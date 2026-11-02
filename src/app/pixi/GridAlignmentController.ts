@@ -114,6 +114,16 @@ export class GridAlignmentController {
     this.marks.clearDimming();
   }
 
+  /** Outlines where other levels' images lie; none removes them. */
+  showLevelOutlines(rects: readonly MapBounds[]): void {
+    this.marks.showOutlines(rects);
+  }
+
+  /** Draws the level's image with `placement` while it is moved, over the grid as it stands. */
+  showPlacement(placement: MapStretch): void {
+    this.map?.setStretch(placement);
+  }
+
   // -----------------------------------------------------------------------
   // Viewport zoom helpers
   // -----------------------------------------------------------------------

@@ -4,7 +4,7 @@ import { DECISIVE_SUPPORT } from '../../../pixi/spectralEngine/detectGrid';
 import type { AlignmentResult } from '../../../pixi/gridAlignmentMath';
 import type { LevelAlignment } from '../../../types/sceneLevelTypes';
 import type { GridState } from '../../../types/gridTypes';
-import { alignsSceneGrid, levelImagePlacement } from '../../../levels/levelAlignment';
+import { alignmentPlacement, alignsSceneGrid, levelImagePlacement } from '../../../levels/levelAlignment';
 import { viewedLevelId } from '../../../levels/sceneLevels';
 import type { ViewAtlasStore } from '../../../storeFactory';
 import { showNotice } from '../../../ui/notice';
@@ -63,4 +63,16 @@ export function applyLevelAlignment(store: ViewAtlasStore, levelId: string, foun
   const move = imageSize && !sameStretch(from, to) ? movedWithMap(imageSize, from, to) : undefined;
   state.alignLevel(levelId, alignment, move);
   return true;
+}
+
+/**
+ * Moves level `levelId`'s image to where `alignment` draws it, in one undo step: what stands on that
+ * level alone follows its image, so a wall stays on the wall it was drawn along.
+ */
+export function applyLevelPlacement(store: ViewAtlasStore, levelId: string, alignment: LevelAlignment, imageSize: ImageSize | null | undefined): void {
+  const state = store.getState();
+  const from = levelImagePlacement(state, levelId);
+  const to = alignmentPlacement(alignment);
+  const move = imageSize && !sameStretch(from, to) ? movedWithMap(imageSize, from, to) : undefined;
+  state.alignLevel(levelId, alignment, move);
 }
