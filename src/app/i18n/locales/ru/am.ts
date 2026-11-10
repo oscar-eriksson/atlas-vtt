@@ -124,7 +124,6 @@ export const am: Translation = {
   'am.scene.nameTaken': 'Сцена «{name}» уже есть',
   'am.scene.createFailed': 'Не удалось создать сцену: {error}',
   'am.scene.new': 'Создать сцену',
-  'am.scene.new': 'Новая сцена',
   'am.scene.name': 'Название сцены',
   'am.scene.namePlaceholder': 'Введите название сцены',
   'am.scene.create': 'Создать сцену',

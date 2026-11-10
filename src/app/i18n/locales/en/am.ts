@@ -151,8 +151,6 @@ export const am = {
   'am.scene.createFailed': 'Could not create scene: {error}',
   'am.scene.new': 'Create scene',
   'am.scene.name': 'Scene name',
-  'am.scene.new': 'New scene',
-  'am.scene.name': 'Scene Name',
   'am.scene.namePlaceholder': 'Enter scene name',
   'am.scene.create': 'Create scene',
   'am.scene.createdMany': { one: 'Created {count} scene', other: 'Created {count} scenes' },
