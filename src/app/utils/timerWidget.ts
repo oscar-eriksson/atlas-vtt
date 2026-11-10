@@ -98,3 +98,12 @@ export function formatTimerTime(totalSeconds: number): string {
   }
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
+
+/** A timer drawn as a ring: an SVG of `size` units whose circle of `radius` fills as the time runs out. */
+export const TIMER_RING = { size: 36, radius: 16, circumference: 2 * Math.PI * 16 } as const;
+
+/** The `stroke-dashoffset` of a ring's fill: the whole circle with all the time left, none once it has run out. */
+export function timerRingOffset(shownSeconds: number, duration: number): number {
+  const left = duration > 0 ? Math.min(1, Math.max(0, shownSeconds / duration)) : 0;
+  return TIMER_RING.circumference * left;
+}
