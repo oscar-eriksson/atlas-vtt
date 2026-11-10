@@ -16,6 +16,7 @@ export const palette: Translation = {
   'palette.localPlayerViewSettings': 'Настройки локального экрана игроков',
   'palette.measureTool': 'Линейка',
   'palette.moveTool': 'Перемещение',
+  'palette.togglePinNames': 'Показывать названия пинов',
   'palette.noPlayerWindow': 'Окно игроков не открыто',
   'palette.noResults': 'Ничего не найдено',
   'palette.noResultsHint': 'Попробуйте другой запрос',

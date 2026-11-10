@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { linkName, MAX_PIN_NAME, pinName, showsPinName } from '../../src/app/tools/pinNames';
+import { allPinNamesShown, linkName, MAX_PIN_NAME, pinName, showsPinName } from '../../src/app/tools/pinNames';
 import { uncoveredLabels } from '../../src/app/utils/labelDeclutter';
 
 describe('a pin\'s name', () => {
@@ -42,5 +42,19 @@ describe('names that crowd', () => {
 
   it('shows them all once zooming in spreads them apart', () => {
     expect(uncoveredLabels([box('a', 0), box('b', 20), box('c', 40)]).size).toBe(3);
+  });
+});
+
+describe('allPinNamesShown', () => {
+  const named = { notePath: 'Places/Neverwinter.md' };
+
+  it('is true only when every pin with a name to show shows it', () => {
+    expect(allPinNamesShown({ a: { ...named, showName: true }, b: { ...named, showName: true } })).toBe(true);
+    expect(allPinNamesShown({ a: { ...named, showName: true }, b: named })).toBe(false);
+  });
+
+  it('leaves out pins that have no name to show, and is true for a map without pins', () => {
+    expect(allPinNamesShown({ a: { ...named, showName: true }, b: { notePath: '' } })).toBe(true);
+    expect(allPinNamesShown({})).toBe(true);
   });
 });

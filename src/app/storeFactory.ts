@@ -135,6 +135,8 @@ export interface ViewAtlasState extends ViewState {
   addNotePin: (x: number, y: number, notePath: string, icon?: string, options?: { hex?: boolean; sceneLevel?: string; showName?: boolean }) => string;
   /** A field given as undefined is removed. */
   updateNotePin: (id: string, updates: { [K in keyof Omit<NotePin, 'id' | 'kind'>]?: NotePin[K] | undefined }) => void;
+  /** Shows or hides the name of every pin at once, as one undo step. */
+  setAllPinNames: (show: boolean) => void;
   moveNotePin: (id: string, x: number, y: number) => void;
   deleteNotePin: (id: string) => void;
 
@@ -1041,6 +1043,13 @@ export function createViewAtlasStore(app: App, viewId: string, plugin?: AtlasVTT
             });
             return id;
           },
+
+          setAllPinNames: (show) => set((draft) => {
+            for (const pin of Object.values(draft.objects.pins)) {
+              if (show) pin.showName = true;
+              else delete pin.showName;
+            }
+          }),
 
           updateNotePin: (id, updates) => set((draft) => {
             const pin = draft.objects.pins[id];

@@ -1,5 +1,6 @@
 ## New
 
+- A command in the command palette, Show pin names, shows or hides the name of every pin at once; before, each pin's menu had its own switch.
 - Area templates: a toolbar tool that places lines, cones, cubes, spheres and emanations on the map, highlights the grid cells they cover, and lets you select, move, recolour and delete them.
 - Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.
 - Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows the level below it (else above) as a faint ghost, and centres it on the level next to it.

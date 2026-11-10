@@ -61,6 +61,7 @@ import { replaceMapImage } from './levels/replaceMapImage';
 import { pickMapImage } from './levels/MapImagePickerModal';
 import { placePalette, type PalettePosition } from './command-palette/palettePlacement';
 import { toggleTrueScale } from '../../services/tableTvToggle';
+import { allPinNamesShown } from '../../tools/pinNames';
 import { customizeToolbarCommand } from './command-palette/customizeToolbarCommand';
 import { isSettingsPanelId, type CommandOption, type SettingsPanelId } from './command-palette/types';
 import { t } from '../../i18n';
@@ -107,6 +108,8 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
   const hotkeyLabel = useHotkeyLabels();
   const store = useViewStoreHook();
   const setActiveTool = useAtlasStore(state => state.setActiveTool);
+  const setAllPinNames = useAtlasStore(state => state.setAllPinNames);
+  const pinNamesShown = useAtlasStore(state => allPinNamesShown(state.objects.pins));
   const { app, view } = useAtlasUI();
   const isPlayerWindowFrozen = useStore(playerWindowStore, (s) => s.isFrozen);
   const isPlayerMode = view?.isInPlayerMode?.() ?? false;
@@ -352,6 +355,19 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       },
       isToggle: true,
       isActive: isPlayerWindowFrozen,
+    },
+    {
+      id: "toggle-pin-names",
+      icon: <MapPin />,
+      label: t('palette.togglePinNames'),
+      keywords: ["pin", "name", "title", "label", "note"],
+      section: "mode",
+      action: () => {
+        setAllPinNames(!pinNamesShown);
+        onClose();
+      },
+      isToggle: true,
+      isActive: pinNamesShown,
     },
     {
       id: "toggle-true-scale",
