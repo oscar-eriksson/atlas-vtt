@@ -3,7 +3,7 @@ import type { AnyWidget, ClockWidget, CounterWidget, TimerWidget } from '../type
 import { WIDGET_ICON_PATHS, WIDGET_ICON_VIEW_BOX, resolveWidgetIcon } from '../types/widgetIcons';
 import { DEFAULT_COUNTER_COLOR, readCounterValue } from '../utils/counterWidget';
 import { isWidgetOn } from '../utils/widgetActivation';
-import { DEFAULT_TIMER_COLOR, formatTimerTime, isTimerExpired, msUntilNextSecond, timerRun, timerShownSeconds } from '../utils/timerWidget';
+import { DEFAULT_TIMER_COLOR, TIMER_RING, formatTimerTime, isTimerExpired, msUntilNextSecond, timerRingOffset, timerRun, timerShownSeconds } from '../utils/timerWidget';
 import { CLOCK_VIEW_SIZE, DEFAULT_CLOCK_COLOR, clockFace, clockProgressLabel } from '../utils/clockWidget';
 import { PlayerSceneOverlay, type PlayerSettings } from './PlayerSceneOverlay';
 import type { SettingsService } from './SettingsService';
@@ -13,7 +13,7 @@ type WidgetScene = Pick<ViewAtlasState, 'widgetSettings' | 'widgetValues'>;
 /** Read-only widget bar showing the presented scene's player-visible widgets. */
 export class PlayerWidgetBar extends PlayerSceneOverlay<WidgetScene> {
   /** The shown running timers, whose time this bar counts itself between store changes. */
-  private runningTimers: { widget: TimerWidget; display: HTMLElement }[] = [];
+  private runningTimers: { widget: TimerWidget; show: (seconds: number) => void }[] = [];
   private tickTimeout: number | undefined;
 
   constructor(settings: SettingsService) {
@@ -86,17 +86,30 @@ export class PlayerWidgetBar extends PlayerSceneOverlay<WidgetScene> {
   /** A running timer's time comes from the wall clock, so the bar counts it down without store changes. */
   private renderTimer(parent: HTMLElement, widget: TimerWidget): void {
     const valueRow = this.renderWidget(parent, widget, 'atlas-widget-timer', DEFAULT_TIMER_COLOR);
-    const display = valueRow.createSpan({ cls: 'atlas-timer-display', text: formatTimerTime(timerShownSeconds(widget, Date.now())) });
-    if (timerRun(widget)) this.runningTimers.push({ widget, display });
+    const seconds = timerShownSeconds(widget, Date.now());
+    let show: (seconds: number) => void;
+    if (widget.ring) {
+      // A ring shows the time as how much has run, never as digits
+      const svg = valueRow.createSvg('svg', { cls: 'atlas-timer-ring', attr: { viewBox: `0 0 ${TIMER_RING.size} ${TIMER_RING.size}`, role: 'img', 'aria-label': widget.label } });
+      const centre = String(TIMER_RING.size / 2);
+      const circle = (cls: string): SVGElement => svg.createSvg('circle', { cls, attr: { cx: centre, cy: centre, r: String(TIMER_RING.radius) } });
+      circle('atlas-timer-ring-track');
+      const fill = circle('atlas-timer-ring-fill');
+      fill.setAttribute('stroke-dasharray', String(TIMER_RING.circumference));
+      show = (now) => fill.setAttribute('stroke-dashoffset', String(timerRingOffset(now, widget.duration)));
+    } else {
+      const display = valueRow.createSpan({ cls: 'atlas-timer-display' });
+      show = (now) => display.setText(formatTimerTime(now));
+    }
+    show(seconds);
+    if (timerRun(widget)) this.runningTimers.push({ widget, show });
   }
 
   /** Shows the running timers' time and waits for their next second; a hidden window's late ticks catch up. */
   private tick(): void {
     window.clearTimeout(this.tickTimeout);
     const now = Date.now();
-    for (const { widget, display } of this.runningTimers) {
-      display.setText(formatTimerTime(timerShownSeconds(widget, now)));
-    }
+    for (const { widget, show } of this.runningTimers) show(timerShownSeconds(widget, now));
     // A timer that has run out stays at 0 until the DM's view stops it.
     this.runningTimers = this.runningTimers.filter(({ widget }) => !isTimerExpired(widget, now));
     if (this.runningTimers.length === 0) return;

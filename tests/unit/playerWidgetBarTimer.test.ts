@@ -58,3 +58,29 @@ describe('player widget bar timers', () => {
     bar.destroy();
   });
 });
+
+describe('player widget bar timer ring', () => {
+  const ringOffset = (): number => Number(document.body.querySelector('.atlas-timer-ring-fill')?.getAttribute('stroke-dashoffset'));
+
+  it('shows a ring that fills as the time runs out, and no digits', () => {
+    const store = createStore(() => sceneWith({ ...torch, ring: true, running: { since: Date.now(), remaining: 300 } }));
+    const bar = new PlayerWidgetBar(settings);
+    bar.mount(document.body);
+    bar.present(store as never);
+
+    expect(document.body.querySelector('.atlas-timer-display')).toBeNull();
+    const full = ringOffset();
+    vi.advanceTimersByTime(30_000);
+    expect(ringOffset()).toBeCloseTo(full * 0.9, 1);
+    bar.destroy();
+  });
+
+  it('shows an empty ring for a timer that has not started', () => {
+    const store = createStore(() => sceneWith({ ...torch, ring: true }));
+    const bar = new PlayerWidgetBar(settings);
+    bar.mount(document.body);
+    bar.present(store as never);
+    expect(ringOffset()).toBeCloseTo(2 * Math.PI * 16, 3);
+    bar.destroy();
+  });
+});

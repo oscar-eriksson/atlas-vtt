@@ -20,6 +20,8 @@ export const widgets = {
   'widgets.onlyWhereOn': 'Show only where switched on',
   'widgets.segments': 'Segments',
   'widgets.showAll': 'Show all widgets',
+  'widgets.showRing': 'Ring for players',
+  'widgets.showRingHint': 'The player view shows this timer as a ring that fills as the time runs out, without digits. You keep the time.',
   'widgets.showCount': 'Show count',
   'widgets.showCountHint': 'Shows how many segments are filled in the clock\'s centre',
   'widgets.showInitiative': 'Show initiative tracker',

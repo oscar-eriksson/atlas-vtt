@@ -50,3 +50,22 @@ describe('WidgetEditorForm scope', () => {
     expect(submitNew(true, { type: 'counter', label: 'Fear', scope: 'collection' }).scope).toBe('collection');
   });
 });
+
+describe('WidgetEditorForm timer ring', () => {
+  it('offers the player ring for a timer only, off by default', () => {
+    render(<WidgetEditorForm initial={{ type: 'counter', label: 'Torches' }} canShareWithCollection={false} submitLabel="Save" onSubmit={() => undefined} onCancel={() => undefined} />);
+    expect(screen.queryByRole('switch', { name: 'Ring for players' })).toBeNull();
+    cleanup();
+
+    expect(submitNew(false, { type: 'timer', label: 'Torch' }).showRing).toBe(false);
+  });
+
+  it('submits the ring when the switch is turned on', () => {
+    const onSubmit = vi.fn<(draft: WidgetDraft) => void>();
+    render(<WidgetEditorForm initial={{ type: 'timer', label: 'Torch' }} canShareWithCollection={false} submitLabel="Save" onSubmit={onSubmit} onCancel={() => undefined} />);
+    const toggle = screen.getByRole('switch', { name: 'Ring for players' });
+    fireEvent.click(toggle);
+    fireEvent.submit(toggle.closest('form')!);
+    expect(onSubmit.mock.calls[0]![0]).toMatchObject({ type: 'timer', showRing: true });
+  });
+});
