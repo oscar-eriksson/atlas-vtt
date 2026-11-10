@@ -23,6 +23,11 @@ export function pinName(pin: Pick<NotePin, 'name' | 'notePath'>): string {
   return ownPinName(pin) ?? linkName(typeof pin.notePath === 'string' ? pin.notePath : '').slice(0, MAX_PIN_NAME);
 }
 
+/** Whether every pin that has a name to show shows it; true for a map without such pins. Decides which way the all-pins switch turns. */
+export function allPinNamesShown(pins: Readonly<Record<string, Pick<NotePin, 'name' | 'notePath' | 'showName'>>>): boolean {
+  return Object.values(pins).every((pin) => pinName(pin) === '' || pin.showName === true);
+}
+
 /** The name shows on the map: switched on and not empty. */
 export function showsPinName(pin: Pick<NotePin, 'name' | 'notePath' | 'showName'>): boolean {
   return pin.showName === true && pinName(pin) !== '';
