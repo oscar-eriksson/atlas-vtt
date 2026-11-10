@@ -68,6 +68,7 @@ import { placePalette, placePaletteAtTop, type PalettePosition } from './command
 import { useCoarsePointer } from '../../platform/useCoarsePointer';
 import { visibleViewport } from '../../host/visibleViewport';
 import { toggleTrueScale } from '../../services/tableTvToggle';
+import { allPinNamesShown } from '../../tools/pinNames';
 import { customizeToolbarCommand } from './command-palette/customizeToolbarCommand';
 import { hotkeyHelpCommand } from './command-palette/hotkeyHelpCommand';
 import { mapTourCommand } from './command-palette/mapTourCommand';
@@ -122,6 +123,8 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
   const hotkeyLabel = useHotkeyLabels();
   const store = useViewStoreHook();
   const setActiveTool = useAtlasStore(state => state.setActiveTool);
+  const setAllPinNames = useAtlasStore(state => state.setAllPinNames);
+  const pinNamesShown = useAtlasStore(state => allPinNamesShown(state.objects.pins));
   const ui = useAtlasUI();
   const { app, view } = ui;
   const isPlayerWindowFrozen = useStore(playerWindowStore, (s) => s.isFrozen);
@@ -410,6 +413,19 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
       },
       isToggle: true,
       isActive: isPlayerWindowFrozen,
+    },
+    {
+      id: "toggle-pin-names",
+      icon: <MapPin />,
+      label: t('palette.togglePinNames'),
+      keywords: ["pin", "name", "title", "label", "note"],
+      section: "mode",
+      action: () => {
+        setAllPinNames(!pinNamesShown);
+        onClose();
+      },
+      isToggle: true,
+      isActive: pinNamesShown,
     },
     {
       id: "toggle-true-scale",

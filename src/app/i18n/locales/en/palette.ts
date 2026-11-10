@@ -12,6 +12,7 @@ export const palette = {
   'palette.footer.navigate': 'to navigate',
   'palette.footer.select': 'to select',
   'palette.footer.switchTabs': 'to switch tabs',
+  'palette.togglePinNames': 'Show pin names',
   'palette.toggleTrueScale': 'Toggle TrueScale',
   'palette.freezePlayerCamera': 'Pause Player View',
   'palette.gridAppearance': 'Grid appearance',
