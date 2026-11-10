@@ -47,6 +47,8 @@ export interface TimerWidget extends Widget {
   direction: 'down';
   /** Set while the timer runs. */
   running?: TimerRun;
+  /** The player view draws the timer as a ring that fills as time runs out instead of digits; the GM keeps the digits. */
+  ring?: boolean;
 }
 
 /** A progress clock (Blades in the Dark): a circle of `segments` wedges the GM fills one by one. */

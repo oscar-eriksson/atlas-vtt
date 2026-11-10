@@ -20,6 +20,8 @@ export const widgets: Translation = {
   'widgets.onlyWhereOn': 'Показывать только там, где включён',
   'widgets.segments': 'Сегменты',
   'widgets.showAll': 'Показывать все виджеты',
+  'widgets.showRing': 'Кольцо для игроков',
+  'widgets.showRingHint': 'Игроки видят таймер как кольцо, которое заполняется по мере того, как уходит время, без цифр. Время остаётся видно вам.',
   'widgets.showCount': 'Показывать число',
   'widgets.showCountHint': 'Показывает в центре часов, сколько сегментов заполнено',
   'widgets.showInitiative': 'Показывать трекер инициативы',

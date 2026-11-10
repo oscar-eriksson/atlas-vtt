@@ -352,6 +352,31 @@ $widget-bar-offset: $spacing-s;
   }
 }
 
+// A timer drawn as a ring on the player view: the fill grows clockwise from the top as the time runs out
+.atlas-timer-ring {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+}
+
+.atlas-timer-ring-track,
+.atlas-timer-ring-fill {
+  fill: none;
+  stroke-width: 4;
+}
+
+.atlas-timer-ring-track {
+  stroke: var(--background-modifier-border);
+}
+
+.atlas-timer-ring-fill {
+  stroke: var(--widget-color);
+  stroke-linecap: round;
+  transform: rotate(-90deg);
+  transform-origin: center;
+  transition: stroke-dashoffset 1s linear;
+}
+
 @keyframes atlas-timer-expired {
   50% {
     border-color: var(--text-error);

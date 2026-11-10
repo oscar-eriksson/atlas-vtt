@@ -18,6 +18,8 @@ export interface WidgetDraft {
   segments: number;
   /** Whether a clock shows "filled/segments" in its centre; ignored by other types. */
   showCount: boolean;
+  /** Whether the player view draws a timer as a ring; ignored by other types. */
+  showRing: boolean;
 }
 
 interface WidgetEditorFormProps {
@@ -54,6 +56,7 @@ export function WidgetEditorForm({
   const [segments, setSegments] = useState(initial?.segments ?? DEFAULT_CLOCK_SEGMENTS);
   // New clocks show their count; existing ones keep what they were saved with.
   const [showCount, setShowCount] = useState(isNew || initial?.showCount === true);
+  const [showRing, setShowRing] = useState(initial?.showRing === true);
   const typeLabelId = useId();
   const nameLabelId = useId();
   const segmentsLabelId = useId();
@@ -63,7 +66,7 @@ export function WidgetEditorForm({
   const submit = (e: React.SubmitEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (!trimmedLabel) return;
-    onSubmit({ type, label: trimmedLabel, icon, color, scope, segments, showCount });
+    onSubmit({ type, label: trimmedLabel, icon, color, scope, segments, showCount, showRing });
   };
 
   return (
@@ -134,6 +137,15 @@ export function WidgetEditorForm({
           hint={t('widgets.showCountHint')}
           value={showCount}
           onToggle={() => setShowCount(!showCount)}
+        />
+      )}
+
+      {type === 'timer' && (
+        <SettingToggleRow
+          label={t('widgets.showRing')}
+          hint={t('widgets.showRingHint')}
+          value={showRing}
+          onToggle={() => setShowRing(!showRing)}
         />
       )}
 

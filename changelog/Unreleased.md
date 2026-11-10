@@ -1,5 +1,6 @@
 ## New
 
+- A timer widget can be shown to players as a ring that fills as the time runs out, without digits: turn on Ring for players when you edit the timer. You keep the time on your own view.
 - A command in the command palette, Show pin names, shows or hides the name of every pin at once; before, each pin's menu had its own switch.
 - Area templates: a toolbar tool that places lines, cones, cubes, spheres and emanations on the map, highlights the grid cells they cover, and lets you select, move, recolour and delete them.
 - Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.

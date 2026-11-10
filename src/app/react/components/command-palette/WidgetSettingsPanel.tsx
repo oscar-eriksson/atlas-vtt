@@ -111,11 +111,13 @@ export const WidgetSettingsPanel = React.memo(function WidgetSettingsPanel({
 
   const handleSubmit = (draft: WidgetDraft): void => {
     if (editingRow) {
-      const { label, icon, color, scope, segments, showCount } = draft;
+      const { label, icon, color, scope, segments, showCount, showRing } = draft;
       if (editingRow.widget.type === 'clock') {
         changeWidget(editingRow, { label, icon, color, scope, segments, showCount });
         // A step of 0 clamps a filled clock to its new segment count.
         if (editingRow.inScene) stepCounter(store, editingRow.widget.id, 0);
+      } else if (editingRow.widget.type === 'timer') {
+        changeWidget(editingRow, { label, icon, color, scope, ring: showRing });
       } else {
         changeWidget(editingRow, { label, icon, color, scope });
       }
@@ -131,7 +133,7 @@ export const WidgetSettingsPanel = React.memo(function WidgetSettingsPanel({
         order: Math.max(-1, ...rows.map((row) => row.widget.order)) + 1,
       };
       if (draft.type === 'timer') {
-        addWidget({ ...base, type: 'timer', value: DEFAULT_TIMER_SECONDS, duration: DEFAULT_TIMER_SECONDS, direction: 'down' });
+        addWidget({ ...base, type: 'timer', value: DEFAULT_TIMER_SECONDS, duration: DEFAULT_TIMER_SECONDS, direction: 'down', ring: draft.showRing });
       } else if (draft.type === 'clock') {
         addWidget({ ...base, type: 'clock', value: 0, segments: draft.segments, showCount: draft.showCount });
       } else {
@@ -183,7 +185,7 @@ export const WidgetSettingsPanel = React.memo(function WidgetSettingsPanel({
             <span className="atlas-setting-label">{editingWidget ? t('widgets.edit') : t('widgets.new')}</span>
             <WidgetEditorForm
               key={editingWidget?.id ?? 'new'}
-              {...(editingWidget ? { initial: editingWidget } : {})}
+              {...(editingWidget ? { initial: { ...editingWidget, showRing: editingWidget.type === 'timer' && editingWidget.ring === true } } : {})}
               canShareWithCollection={collectionId !== null}
               submitLabel={editingWidget ? t('common.save') : t('widgets.add')}
               onSubmit={handleSubmit}
