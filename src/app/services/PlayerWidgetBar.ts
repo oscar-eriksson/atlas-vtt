@@ -85,6 +85,8 @@ export class PlayerWidgetBar extends PlayerSceneOverlay<WidgetScene> {
 
   /** A running timer's time comes from the wall clock, so the bar counts it down without store changes. */
   private renderTimer(parent: HTMLElement, widget: TimerWidget): void {
+    // A ring is only for a timer that is running; stopped, there is nothing for players to watch
+    if (widget.ring && !timerRun(widget)) return;
     const valueRow = this.renderWidget(parent, widget, 'atlas-widget-timer', DEFAULT_TIMER_COLOR);
     const seconds = timerShownSeconds(widget, Date.now());
     let show: (seconds: number) => void;

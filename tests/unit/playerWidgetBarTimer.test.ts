@@ -75,12 +75,12 @@ describe('player widget bar timer ring', () => {
     bar.destroy();
   });
 
-  it('shows an empty ring for a timer that has not started', () => {
+  it('hides the ring while the timer is not running', () => {
     const store = createStore(() => sceneWith({ ...torch, ring: true }));
     const bar = new PlayerWidgetBar(settings);
     bar.mount(document.body);
     bar.present(store as never);
-    expect(ringOffset()).toBeCloseTo(2 * Math.PI * 16, 3);
+    expect(document.body.querySelector('.atlas-widget-timer')).toBeNull();
     bar.destroy();
   });
 });
