@@ -4,7 +4,7 @@
 export interface RoomToolOptions {
   /** A door is dragged across an opening; Alt makes it a secret door. */
   action: 'carve' | 'fill' | 'door';
-  shape: 'rectangle' | 'polygon' | 'lasso' | 'brush';
+  shape: 'rectangle' | 'ellipse' | 'polygon' | 'lasso' | 'brush';
   /** Radius of the brush in map pixels. */
   brushSize: number;
 }

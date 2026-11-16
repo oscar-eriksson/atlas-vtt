@@ -79,6 +79,20 @@ describe('a room carved with the rooms mode', () => {
     expect(store.temporal.getState().pastStates).toHaveLength(0);
   });
 
+  it('is round when the ellipse is dragged: a closed ring of walls that seals the room', () => {
+    const { store, rect } = setup();
+    rect({ x: 100, y: 100 }, { x: 400, y: 300 }, { shape: 'ellipse' });
+    expect(walls(store).length).toBeGreaterThan(8);
+    expect(new Set(walls(store).map((wall) => wall.chainId)).size).toBe(1);
+    expect(rooms(store)).toBe(1);
+    // Inside the box but outside the curve (its corner) is rock; the middle is the room.
+    expect(sees(store, { x: 250, y: 200 }, { x: 600, y: 200 })).toBe(false);
+    expect(sees(store, { x: 250, y: 200 }, { x: 140, y: 200 })).toBe(true);
+    expect(walls(store).every(({ p1, p2 }) => [p1, p2].every((p) => ((p.x - 250) / 150) ** 2 + ((p.y - 200) / 100) ** 2 < 1.02))).toBe(true);
+    store.temporal.getState().undo();
+    expect(walls(store)).toEqual([]);
+  });
+
   it('opens into the room it is carved into, and the two are one', () => {
     const { store, rect } = setup();
     rect({ x: 100, y: 100 }, { x: 300, y: 300 });

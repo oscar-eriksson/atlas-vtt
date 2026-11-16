@@ -1,7 +1,7 @@
 import { AlphaFilter, Container, Graphics } from 'pixi.js';
 import type { Viewport } from 'pixi-viewport';
 import { strokePolygons } from '../../lighting/exploredEdits';
-import { outlinesWithHoles, ringPoints, type RoomArea } from '../../lighting/rooms';
+import { outlinesWithHoles, ringPoints, roundOf, type RoomArea } from '../../lighting/rooms';
 import { wallSpaces } from '../../lighting/wallSpaces';
 import { levelObjects } from '../../levels/levelObjects';
 import type { ViewAtlasStore } from '../../storeFactory';
@@ -105,7 +105,8 @@ export class RoomOverlay {
     }
     if (stroke.active) {
       const drawn = stroke.shape();
-      if (drawn?.type === 'brush') for (const polygon of strokePolygons(drawn)) this.preview.poly(polygon.flatMap((p) => [p.x, p.y])).fill({ color, alpha: 0.3 });
+      if (tool.shape === 'ellipse' && drawn?.type === 'rectangle') this.preview.poly(roundOf(drawn).flatMap((p) => [p.x, p.y])).fill({ color, alpha: 0.3 }).stroke({ width: 2 * line, color });
+      else if (drawn?.type === 'brush') for (const polygon of strokePolygons(drawn)) this.preview.poly(polygon.flatMap((p) => [p.x, p.y])).fill({ color, alpha: 0.3 });
       else drawStrokeArea(this.preview, stroke, color, 2 * line);
     }
     if (tool.shape === 'brush' && pointer && !door) {
