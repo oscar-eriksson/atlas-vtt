@@ -74,6 +74,16 @@ $bar-end-radius: atlas-panel-inset-radius-value($bar-inset, $bar-control * 0.5);
   border: $border-width-s solid color-mix(in oklch, var(--mono-100) $border-opacity-subtle, transparent);
 }
 
+// The size chosen, as the icon of the button that opens the sizes: "2×2".
+.atlas-tool-bar__text {
+  display: block;
+  flex: none;
+  font-size: var(--font-ui-smaller);
+  font-weight: var(--font-semibold);
+  line-height: 1;
+  white-space: nowrap;
+}
+
 // Where the selected drawings differ in colour, the dot shows none: an empty ring.
 .atlas-tool-bar__dot--mixed {
   border-color: var(--text-muted);

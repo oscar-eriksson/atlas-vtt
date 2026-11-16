@@ -11,7 +11,7 @@ export const measure = {
   'measure.emanationTip': 'Reaches out from the edge of a creature: press where it stands, drag out the distance',
   'measure.space': 'Creature size',
   'measure.spaceNeedsEmanation': 'Choose Emanation to set the size of the creature it starts from',
-  'measure.spaceCells': { one: '{count} cell across', other: '{count} cells across' },
+  'measure.spaceCells': '{count} × {count} cells',
   'measure.stopsAtWalls': 'Stops at walls',
   'measure.followsToken': 'Follows token',
   'measure.noTokenUnder': 'Its centre is on no token',

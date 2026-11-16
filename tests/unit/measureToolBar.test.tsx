@@ -103,6 +103,16 @@ describe('MeasureToolBar', () => {
     expect(store.getState().measureTool.keep).toBe(true);
   });
 
+  it('sets the size of the creature an emanation starts from, only while Emanation is chosen', () => {
+    const store = renderBar();
+    expect(inert('Creature size')).toBe(true);
+    fireEvent.click(button('Emanation'));
+    expect(inert('Creature size')).toBe(false);
+    fireEvent.click(button('Creature size'));
+    fireEvent.click(screen.getByRole('button', { name: '3 × 3 cells' }));
+    expect(store.getState().measureTool.space).toBe(3);
+  });
+
   it('gives the players\' view the modes alone', () => {
     const store = renderBar(true);
     expect(screen.getAllByRole('toolbar')).toHaveLength(1);
