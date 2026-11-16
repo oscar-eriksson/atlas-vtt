@@ -13,8 +13,12 @@ import { MeasureEffectMesh } from './effects/MeasureEffectMesh';
 const BODY = {
   /** The wash over the whole area: present, never hiding the map. */
   wash: 0.12,
-  /** What a covered cell adds to the wash. */
-  cell: 0.16,
+  /** What a covered cell adds to the wash, and the line round it: strong enough to count the cells an area covers at a glance. */
+  cell: 0.3,
+  cellEdge: 0.6,
+  /** The line round a covered cell as a share of a cell, and its least. */
+  cellLine: 1 / 50,
+  minCellLine: 1,
   outline: 0.9,
   /** The outline's width as a share of a cell, and its least. */
   outlineWidth: 1 / 28,
@@ -53,7 +57,7 @@ const sameLook = (a: BodyEffect | null, b: BodyEffect | null): boolean =>
 
 /**
  * The body of one measured area, in world space under the tokens and the lighting: a light wash of
- * its colour over its shape as walls leave it, a stronger tint on each cell it covers (set in from
+ * its colour over its shape as walls leave it, a stronger tint and edge on each cell it covers (set in from
  * the cell's edge, so the cells read as cells, and cut by the walls the area stops at), and its
  * outline, drawn inside its edge: nothing of it lies past a wall it stops at. The lighting lights
  * it like the floor. An area with an effect has that in the wash's place (`MeasureEffectMesh`, of
@@ -93,6 +97,7 @@ export class AreaBody {
       g.fill({ color, alpha: BODY.wash });
     }
     if (traceCells(g, onMap, grid)) g.fill({ color, alpha: BODY.cell });
+    if (traceCells(g, onMap, grid)) g.stroke({ width: Math.max(BODY.minCellLine, grid.size * BODY.cellLine), color, alpha: BODY.cellEdge });
     for (const ring of rings) g.poly(ring, true);
     g.stroke({ width: Math.max(BODY.minOutlineWidth, grid.size * BODY.outlineWidth), color, alpha: BODY.outline, alignment: 1, join: 'round' });
   }
