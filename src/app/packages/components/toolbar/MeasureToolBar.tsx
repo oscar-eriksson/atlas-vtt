@@ -88,7 +88,7 @@ function MeasurementChoices(): React.ReactElement {
         className={TOOL_BAR_CHOICE_CLASS}
       />
       <MeasureLook />
-      <MeasureSpace />
+      <MeasureSize />
       <ToolButton
         icon={Trash2}
         label={t('toolbar.measureClear')}
@@ -101,35 +101,50 @@ function MeasurementChoices(): React.ReactElement {
   )
 }
 
-/** The creature's size as the button shows it, so the size chosen can be read without opening the menu: "2×2". */
-function SpaceIcon(): React.ReactElement {
+/** The widths a line is offered in, in cells. */
+const LINE_WIDTHS: readonly number[] = [0.5, 1, 2, 3, 4, 5, 6]
+
+/** The size the button stands for as it shows it, so what is chosen can be read without opening the menu: a creature "2×2", a line "↔1". */
+function SizeIcon(): React.ReactElement {
   const space = useAtlasStore((state) => state.measureTool.space)
-  return <span className="atlas-tool-bar__text" aria-hidden="true">{space}×{space}</span>
+  const width = useAtlasStore((state) => state.measureTool.lineWidth)
+  const line = useAtlasStore((state) => state.measureTool.mode === 'line')
+  return <span className="atlas-tool-bar__text" aria-hidden="true">{line ? `↔${width}` : `${space}×${space}`}</span>
 }
 
-/** The size of the creature the next emanation reaches out from: always on the bar, and shown but not to be chosen in the other modes. */
-function MeasureSpace(): React.ReactElement {
+/**
+ * The size of what the next measurement is made around: the creature an emanation reaches out
+ * from, or the width of a line. Always on the bar, and shown but not to be chosen in the other modes.
+ */
+function MeasureSize(): React.ReactElement {
   const space = useAtlasStore((state) => state.measureTool.space)
-  const emanation = useAtlasStore((state) => state.measureTool.mode === 'emanation')
+  const width = useAtlasStore((state) => state.measureTool.lineWidth)
+  const mode = useAtlasStore((state) => state.measureTool.mode)
   const setMeasureTool = useAtlasStore((state) => state.setMeasureTool)
   const [open, setOpen] = useState(false)
   const toggle = useCallback((): void => setOpen((before) => !before), [])
+  const line = mode === 'line'
+  const usable = line || mode === 'emanation'
+  const label = line ? t('measure.lineWidth') : t('measure.space')
+  const choices = line ? LINE_WIDTHS : Array.from({ length: MAX_SPACE }, (_, index) => index + 1)
+  const chosen = line ? width : space
+  const named = (size: number): string => (line ? t('measure.widthCells', { count: size }) : t('measure.spaceCells', { count: size }))
   return (
     <DropdownMenu
-      isOpen={open && emanation}
+      isOpen={open && usable}
       onToggle={toggle}
-      label={t('measure.space')}
+      label={label}
       position="top"
       align="center"
       triggerButton={
-        <ToolButton icon={SpaceIcon} label={t('measure.space')} subtitle={emanation ? t('measure.spaceCells', { count: space }) : t('measure.spaceNeedsEmanation')} isActive={false} disabled={!emanation} menuExpanded={open && emanation} onClick={() => undefined} />
+        <ToolButton icon={SizeIcon} label={label} subtitle={usable ? named(chosen) : t('measure.sizeNeedsMode')} isActive={false} disabled={!usable} menuExpanded={open && usable} onClick={() => undefined} />
       }
     >
       <div className="atlas-dropdown-section">
-        {Array.from({ length: MAX_SPACE }, (_, index) => index + 1).map((size) => (
-          <DropdownMenuItem key={size} icon={Maximize2} label={t('measure.spaceCells', { count: size })} isActive={size === space}
+        {choices.map((size) => (
+          <DropdownMenuItem key={size} icon={Maximize2} label={named(size)} isActive={size === chosen}
             onClick={() => {
-              setMeasureTool({ space: size })
+              setMeasureTool(line ? { lineWidth: size } : { space: size })
               setOpen(false)
             }} />
         ))}
