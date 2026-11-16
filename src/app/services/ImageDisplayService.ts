@@ -178,16 +178,6 @@ export class ImageDisplayService {
     return null;
   }
 
-  /** The menu of an image shown in a view of its own. */
-  private imageMenuEntries(file: TFile, imgElement: HTMLImageElement): ContextMenuEntry[] {
-    return [
-      { type: 'item', label: t('image.display'), icon: 'monitor', onClick: () => this.displayImageOnPlayerView(file) },
-      ...this.imageActions.map((action): ContextMenuEntry => ({ type: 'item', label: action.title, icon: action.icon, onClick: () => action.run(file) })),
-      { type: 'item', label: t('image.copy'), icon: 'copy', onClick: () => this.copyImageToClipboard(imgElement) },
-      { type: 'item', label: t('image.openDefaultMenu'), icon: 'external-link', onClick: () => this.app.openWithDefaultApp(file.path) },
-    ];
-  }
-
   /**
    * Fallback handler for direct image views (non-editor contexts like viewing an image file).
    * Rendered image embeds in markdown are handled by the editor-menu handler instead.
