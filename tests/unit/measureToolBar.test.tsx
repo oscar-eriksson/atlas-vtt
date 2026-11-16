@@ -113,6 +113,16 @@ describe('MeasureToolBar', () => {
     expect(store.getState().measureTool.space).toBe(3);
   });
 
+  it('sets the width of the next line from the same button, so a kept line need not be opened', () => {
+    const store = renderBar();
+    fireEvent.click(button('Line'));
+    expect(inert('Line width')).toBe(false);
+    fireEvent.click(button('Line width'));
+    fireEvent.click(screen.getByRole('button', { name: '3 cells wide' }));
+    expect(store.getState().measureTool.lineWidth).toBe(3);
+    expect(store.getState().measureTool.space).toBe(1);
+  });
+
   it('gives the players\' view the modes alone', () => {
     const store = renderBar(true);
     expect(screen.getAllByRole('toolbar')).toHaveLength(1);
