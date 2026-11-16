@@ -1,4 +1,4 @@
-import { ArrowDownToDot, BrickWall, Brush, DoorOpen, Eye, EyeOff, Flame, FlameKindling, Footprints, House, Lamp, Lasso, Lightbulb, Moon, MousePointer2, PaintBucket, PenTool, Pencil, Pickaxe, Sparkles, Square, SunMoon } from "lucide-react"
+import { ArrowDownToDot, BrickWall, Brush, Circle, DoorOpen, Eye, EyeOff, Flame, FlameKindling, Footprints, House, Lamp, Lasso, Lightbulb, Moon, MousePointer2, PaintBucket, PenTool, Pencil, Pickaxe, Sparkles, Square, SunMoon } from "lucide-react"
 import { t } from "../../../i18n"
 import type { ExploredEditMode } from "../../../lighting/exploredEdits"
 import type { WallToolMode, WallToolSubMode } from "../../../lighting/lightingTool"
@@ -46,6 +46,7 @@ export const ROOM_ACTIONS: readonly ToolChoice<RoomToolOptions['action']>[] = [
 
 export const ROOM_SHAPES: readonly ToolChoice<RoomToolOptions['shape']>[] = [
   { value: 'rectangle', icon: Square, label: t('rooms.rectangle'), tip: t('rooms.rectangleTip') },
+  { value: 'ellipse', icon: Circle, label: t('rooms.ellipse'), tip: t('rooms.ellipseTip') },
   { value: 'polygon', icon: PenTool, label: t('rooms.points'), tip: t('rooms.pointsTip') },
   { value: 'lasso', icon: Lasso, label: t('rooms.lasso') },
   { value: 'brush', icon: Brush, label: t('rooms.brush') },

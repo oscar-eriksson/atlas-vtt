@@ -1,3 +1,4 @@
+import { ellipsePoints } from '../annotations/shapeOutlines';
 import { simplifyStroke } from '../pixi/lighting/wallEdits';
 import { Q_SCALE, type QPolygon, type QShape } from '../types/shapeTypes';
 import type { Point } from '../types/visionTypes';
@@ -20,6 +21,11 @@ const own = (shape: QShape): RoomArea => shape as RoomArea;
 const OUTLINE_TOLERANCE = 1;
 
 const EMPTY: RoomArea = [];
+
+/** The ellipse in a dragged box, as the ring of its corners without the point that closes it. */
+export function roundOf({ x, y, width, height }: { x: number; y: number; width: number; height: number }): Point[] {
+  return ellipsePoints({ x, y }, { x: x + width, y: y + height }).slice(0, -1);
+}
 
 /** The area covered by `polygons` together (world pixels; they may overlap or cross themselves). */
 export function areaOf(polygons: readonly (readonly Point[])[]): RoomArea {

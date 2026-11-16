@@ -1,7 +1,7 @@
 import type { EventEmitter } from 'events';
 import type { Viewport } from 'pixi-viewport';
 import { strokePolygons } from '../../lighting/exploredEdits';
-import { areaOf, extended, type RoomArea } from '../../lighting/rooms';
+import { areaOf, extended, roundOf, type RoomArea } from '../../lighting/rooms';
 import { carvedWalls, filledWalls } from '../../lighting/wallCarving';
 import { wallSpaces } from '../../lighting/wallSpaces';
 import { levelObjects } from '../../levels/levelObjects';
@@ -123,7 +123,8 @@ export class RoomEditor {
       if (closesDraft(this.draft, point, this.zoom())) this.closeDraft();
       else this.draft.push(at);
     } else {
-      this.stroke.mode = roomTool.shape;
+      // An ellipse is dragged as the rectangle that holds it.
+      this.stroke.mode = roomTool.shape === 'ellipse' ? 'rectangle' : roomTool.shape;
       this.stroke.brushRadius = roomTool.brushSize;
       this.stroke.begin(at);
       this.watchPointer(true);
@@ -151,7 +152,7 @@ export class RoomEditor {
     }
     if (!this.stroke.active) return;
     const shape = this.stroke.finish();
-    if (shape) this.apply(areaOf(strokePolygons(shape)));
+    if (shape) this.apply(areaOf(this.deps.store.getState().roomTool.shape === 'ellipse' && shape.type === 'rectangle' ? [roundOf(shape)] : strokePolygons(shape)));
     this.draw();
   }
 

@@ -90,7 +90,7 @@ describe('LightingToolBar', () => {
     expect(names(modesBar())).toEqual(MODES);
     // The tool opens on rooms, the first of its modes; single walls come second.
     expect(store.getState().lightingTool.mode).toBe('rooms');
-    expect(names(toolsBar('Draw rooms'))).toEqual(['Carve', 'Fill in', 'Door', 'Rectangle', 'Points', 'Lasso', 'Brush']);
+    expect(names(toolsBar('Draw rooms'))).toEqual(['Carve', 'Fill in', 'Door', 'Rectangle', 'Ellipse', 'Points', 'Lasso', 'Brush']);
     fireEvent.click(button('Draw walls'));
     expect(names(await toolsOf('Draw walls'))).toEqual(['Point to point', 'Freehand']);
     expect(names(modesBar())).toEqual(MODES);

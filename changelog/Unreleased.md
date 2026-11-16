@@ -4,6 +4,7 @@
 - A command in the command palette, Show pin names, shows or hides the name of every pin at once; before, each pin's menu had its own switch.
 - Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.
 - Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows the level below it (else above) as a faint ghost, and centres it on the level next to it.
+- Rooms mode has an Ellipse shape next to Rectangle: drag its box, hold Shift to snap the box to the grid. Carve or fill a round room.
 - Toggle TrueScale with a shortcut (Shift+K) or from the command palette.
 
 ## Improved
