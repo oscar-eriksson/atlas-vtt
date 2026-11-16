@@ -1,4 +1,4 @@
-import { Circle, Ruler, Slash, Square, Target, Triangle } from "lucide-react"
+import { Circle, CircleDot, Ruler, Slash, Square, Target, Triangle } from "lucide-react"
 import { t } from "../../../i18n"
 import type { MeasureMode } from "../../../measure/measureTypes"
 import type { DropdownSwatch } from "../primitives/DropdownSwatchGrid"
@@ -9,6 +9,7 @@ import type { ToolChoice } from "./ToolOptionsBar"
 export const MEASURE_MODES: readonly ToolChoice<MeasureMode>[] = [
   { value: 'ruler', icon: Ruler, label: t('toolbar.ruler') },
   { value: 'circle', icon: Circle, label: t('toolbar.circle') },
+  { value: 'emanation', icon: CircleDot, label: t('measure.shape.emanation'), tip: t('measure.emanationTip') },
   { value: 'cone', icon: Triangle, label: t('toolbar.cone') },
   { value: 'square', icon: Square, label: t('measure.shape.square') },
   { value: 'line', icon: Slash, label: t('measure.shape.line') },
@@ -16,8 +17,8 @@ export const MEASURE_MODES: readonly ToolChoice<MeasureMode>[] = [
   { value: 'ranges', icon: Target, label: t('toolbar.ranges'), tip: t('toolbar.rangesTip') },
 ]
 
-/** The modes without Ranges: what the players' view measures with, since Ranges is the GM's to point with (players see its rings). */
-export const PLAYER_MEASURE_MODES: readonly ToolChoice<MeasureMode>[] = MEASURE_MODES.filter((choice) => choice.value !== 'ranges')
+/** The modes without Ranges, whose rings are the GM's to point with (players see them), and Emanation, whose creature's size players cannot set: what the players' view measures with. */
+export const PLAYER_MEASURE_MODES: readonly ToolChoice<MeasureMode>[] = MEASURE_MODES.filter((choice) => choice.value !== 'ranges' && choice.value !== 'emanation')
 
 /** The bar's button for a mode; the ruler's for a mode the bar does not offer. */
 export function measureModeChoice(mode: MeasureMode): ToolChoice<MeasureMode> {

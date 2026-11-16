@@ -12,6 +12,7 @@ import type { WallSegment } from '../types/wallTypes';
 import type { AreaCellRule, ConeEnd } from './areaRules';
 import { cellsInArea, type AreaCell } from './measureCells';
 import { EDGE_TOLERANCE, shapedArea, type MeasureArea, type ShapedArea } from './measureGeometry';
+import { emanationShape } from './outlineShape';
 import type { Measurement } from './measureTypes';
 import { areaWithinWalls, shapesWithinWalls, wallSweepPoint } from './measureWalls';
 
@@ -76,8 +77,17 @@ export function wallSlack({ grid, cells }: Pick<AreaMap, 'grid' | 'cells'>): num
  * sweep and no cut.
  */
 export function areaOnMap(measurement: Measurement, map: AreaMap, stopsAtWalls = true): AreaOnMap | null {
-  const shaped = shapedArea(measurement, { coneAngle: map.coneAngle, coneEnd: map.coneEnd, lineWidth: map.grid.size });
+  const shaped = measurement.space ? emanationOn(measurement, measurement.space, map) : shapedArea(measurement, { coneAngle: map.coneAngle, coneEnd: map.coneEnd, lineWidth: map.grid.size });
   return shaped && shapeOnMap(shaped, map, stopsAtWalls, wallSlack(map));
+}
+
+/** A circle that is an emanation: the cells within its reach of a creature's space, as an aura's are. */
+function emanationOn({ points }: Measurement, space: number, map: AreaMap): ShapedArea | null {
+  const [origin, end] = points;
+  if (!origin || !end) return null;
+  const radius = Math.hypot(end.x - origin.x, end.y - origin.y);
+  const towards = radius > 0 ? { x: (end.x - origin.x) / radius, y: (end.y - origin.y) / radius } : { x: 1, y: 0 };
+  return emanationShape(origin, towards, space, radius, { ...map.grid, snapToGrid: map.cells }, map.diagonalRule);
 }
 
 /**
@@ -154,7 +164,7 @@ function sameArea(last: Asked, measurement: Measurement, sweptFrom: Point | null
   if (before === measurement) return true;
   const [origin, end] = measurement.points;
   const [originBefore, endBefore] = before.points;
-  if (before.shape !== measurement.shape || before.width !== measurement.width || !origin || !end || !originBefore || !endBefore || !samePoint(origin, originBefore)) return false;
+  if (before.shape !== measurement.shape || before.width !== measurement.width || before.space !== measurement.space || !origin || !end || !originBefore || !endBefore || !samePoint(origin, originBefore)) return false;
   if (samePoint(end, endBefore)) return true;
   if (measurement.shape !== 'circle') return false;
   const radius = Math.hypot(end.x - origin.x, end.y - origin.y);

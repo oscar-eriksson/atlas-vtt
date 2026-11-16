@@ -46,9 +46,9 @@ const button = (name: string): HTMLElement => screen.getByRole('button', { name 
 const pressed = (name: string): boolean => button(name).getAttribute('aria-pressed') === 'true';
 const inert = (name: string): boolean => button(name).getAttribute('aria-disabled') === 'true';
 const MODES = ['Ruler', 'Circle', 'Cone', 'Square', 'Line'];
-/** The GM's bar ends with Ranges, which the players' view has not. */
-const GM_MODES = [...MODES, 'Ranges'];
-const CHOICES = ['Keep', 'Players see it', 'Look', 'Clear'];
+/** The GM's bar has Emanation, whose creature the players' view cannot size, and ends with Ranges, which it has not either. */
+const GM_MODES = ['Ruler', 'Circle', 'Emanation', 'Cone', 'Square', 'Line', 'Ranges'];
+const CHOICES = ['Keep', 'Players see it', 'Look', 'Creature size', 'Clear'];
 
 describe('MeasureToolBar', () => {
   it('shows while the measure tool is chosen, and not while the toolbar is arranged or a scene loads', async () => {

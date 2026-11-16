@@ -1,7 +1,7 @@
 import type { GridSystem } from '../../grid/GridSystem';
 import { unitScaleOf } from '../../lighting/lightingUnits';
 import { toolLook } from '../../measure/measureLights';
-import { snapAreaEnd, snapAreaOrigin } from '../../measure/measureSnap';
+import { snapAreaEnd, snapAreaOrigin, snapEmanationEnd, snapEmanationOrigin } from '../../measure/measureSnap';
 import { placesFreely, type ToolSwitchState } from '../../types/toolSwitches';
 import type { MeasureInput, Measurement, MeasureShapeKind, MeasureToolOptions } from '../../measure/measureTypes';
 import type { GridState } from '../../types/gridTypes';
@@ -80,7 +80,8 @@ export class LiveMeasuring implements MeasureInputHost {
 
   shape(): MeasureShapeKind | null {
     const { mode } = measureToolInUse(this.deps.store.getState());
-    return OFFERED.find((shape) => shape === mode) ?? null;
+    // An emanation is a circle that reaches out from a creature's space.
+    return mode === 'emanation' ? 'circle' : OFFERED.find((shape) => shape === mode) ?? null;
   }
 
   /**
@@ -94,6 +95,8 @@ export class LiveMeasuring implements MeasureInputHost {
     const shape = this.shape();
     if (shape === null || shape === 'ruler') return grid.snapToCellCenter(world.x, world.y);
     const start = this.deps.measuring() ? this.start : null;
+    const { mode, space } = measureToolInUse(store.getState());
+    if (mode === 'emanation') return start ? snapEmanationEnd(grid.getOptions(), start, world, space) : snapEmanationOrigin(grid.getOptions(), world, space);
     return start ? snapAreaEnd(grid.getOptions(), start, world) : snapAreaOrigin(grid.getOptions(), world);
   }
 
@@ -164,10 +167,11 @@ export class LiveMeasuring implements MeasureInputHost {
     this.stopFade();
   }
 
-  /** A line takes the width the tool holds, in cells of this map; every other shape has none. */
+  /** A line takes the width the tool holds, in cells of this map, and an emanation the size of its creature; every other shape has neither. */
   private sized(measurement: Measurement): Measurement {
+    const { mode, lineWidth, space } = measureToolInUse(this.deps.store.getState());
+    if (mode === 'emanation' && measurement.shape === 'circle') return { ...measurement, space };
     if (measurement.shape !== 'line') return measurement;
-    const { lineWidth } = this.deps.store.getState().measureTool;
     return { ...measurement, width: (lineWidth > 0 ? lineWidth : 1) * this.deps.grid.getOptions().size };
   }
 
@@ -190,6 +194,7 @@ export class LiveMeasuring implements MeasureInputHost {
       shape: measurement.shape,
       points: measurement.points.map(({ x, y }) => ({ x, y })),
       ...(measurement.width !== undefined && { width: measurement.width }),
+      ...(measurement.space !== undefined && { space: measurement.space }),
       ...(color !== null && { color }),
       ...(!players && { hidden: true }),
       ...(origin && origin.tokenIds.length > 0 && { origin: { tokenIds: [...origin.tokenIds], unseenAtStart: origin.unseenAtStart } }),

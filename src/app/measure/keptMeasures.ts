@@ -12,7 +12,7 @@ import type { Point } from '../types/visionTypes';
 import { isRecord } from '../utils/guards';
 import { isHexColor } from '../utils/hexColor';
 import { readMeasureEffect } from './measureEffects';
-import { MAX_AURA, MAX_MEASURES, MAX_MEASURE_AUTHOR, MAX_ORIGIN_TOKENS, MAX_RULER_POINTS, MEASURE_SHAPES, type KeptAura, type KeptFollower, type KeptMeasure, type KeptMeasureOrigin, type MeasureAnchor, type MeasureShapeKind } from './measureTypes';
+import { MAX_AURA, MAX_MEASURES, MAX_MEASURE_AUTHOR, MAX_ORIGIN_TOKENS, MAX_RULER_POINTS, MAX_SPACE, MEASURE_SHAPES, type KeptAura, type KeptFollower, type KeptMeasure, type KeptMeasureOrigin, type MeasureAnchor, type MeasureShapeKind } from './measureTypes';
 
 const NONE: readonly KeptMeasure[] = [];
 const lists = new WeakMap<object, readonly KeptMeasure[]>();
@@ -41,6 +41,9 @@ function isOrigin(value: unknown): value is KeptMeasureOrigin {
   const { tokenIds } = value;
   return Array.isArray(tokenIds) && tokenIds.length <= MAX_ORIGIN_TOKENS && tokenIds.every((id) => typeof id === 'string');
 }
+
+/** A creature's size in cells, whole and within `MAX_SPACE`: what an emanation reaches out from. */
+const isSpace = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= MAX_SPACE;
 
 const isAuraReach = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= MAX_AURA;
 
@@ -77,14 +80,14 @@ export function followedToken(id: string, value: unknown, grouped = true): strin
 function measureOf(id: string, value: Record<string, unknown>): KeptMeasure | null {
   const { shape, points } = value;
   if (!isShape(shape) || !isPath(points, shape)) return null;
-  const { id: ownId, kind, width, color, hidden, by, origin, level, walls, follows, aura, anchor, light, effect, ...rest } = value;
+  const { id: ownId, kind, width, space, color, hidden, by, origin, level, walls, follows, aura, anchor, light, effect, ...rest } = value;
   const emission = light === undefined ? null : readEmission(light);
   const look = readMeasureEffect(effect);
   // An aura is both of its fields on a circle, a grouped measurement its token and anchor on any shape; one alone says nothing.
   const aural = shape === 'circle' && isTokenId(follows) && isAuraReach(aura);
   const grouped = isTokenId(follows) && aura === undefined && isAnchor(anchor);
   const sound = ownId === id && kind === 'measure'
-    && (width === undefined || isWidth(width)) && (color === undefined || isHexColor(color)) && (hidden === undefined || hidden === true)
+    && (width === undefined || isWidth(width)) && (space === undefined || (isSpace(space) && shape === 'circle' && !aural)) && (color === undefined || isHexColor(color)) && (hidden === undefined || hidden === true)
     && (by === undefined || isAuthor(by)) && (origin === undefined || isOrigin(origin)) && (level === undefined || typeof level === 'string')
     && (walls === undefined || walls === false) && ((aural && anchor === undefined) || grouped || (follows === undefined && aura === undefined && anchor === undefined))
     && (light === undefined || emission === light) && (effect === undefined || look !== undefined);
@@ -97,6 +100,7 @@ function measureOf(id: string, value: Record<string, unknown>): KeptMeasure | nu
     shape,
     points,
     ...(isWidth(width) && { width }),
+    ...(isSpace(space) && shape === 'circle' && !aural && { space }),
     ...(isHexColor(color) && { color }),
     ...(hidden === true && { hidden }),
     ...(isAuthor(by) && { by }),

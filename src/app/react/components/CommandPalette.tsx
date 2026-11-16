@@ -123,7 +123,8 @@ export function CommandPalette({ isOpen, onClose, toolbarRef, onCustomizeToolbar
   const store = useViewStoreHook();
   const setActiveTool = useAtlasStore(state => state.setActiveTool);
   const setAllPinNames = useAtlasStore(state => state.setAllPinNames);
-  const pinNamesShown = useAtlasStore(state => allPinNamesShown(state.objects.pins));
+  // A store without objects (a view still loading, a test's) has no pins to name.
+  const pinNamesShown = useAtlasStore(state => allPinNamesShown(state.objects?.pins ?? {}));
   const ui = useAtlasUI();
   const { app, view } = ui;
   const isPlayerWindowFrozen = useStore(playerWindowStore, (s) => s.isFrozen);

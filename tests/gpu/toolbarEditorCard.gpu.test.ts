@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { page } from 'vitest/browser';
 import { centreOf, handle, installToolbarStyles, mountToolbar, mouse, query, rectOf, settle } from './toolbarEditorHarness';
 
-vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: {} }));
+vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: { getInstance: () => null } }));
 vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ openPlayerWindow: vi.fn(), presentActiveTab: vi.fn(), presentTab: vi.fn(), frameSourceOf: vi.fn() }));
 vi.mock('../../src/app/react/components/command-palette/GridSettingsPanel', () => ({ GridSettingsPanel: () => null }));
 vi.mock('../../src/app/react/components/command-palette/TokenSettingsPanel', () => ({ TokenSettingsPanel: () => null }));

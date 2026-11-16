@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { canRunMapHotkeys, matchesMapHotkey } from '../../src/app/keyboard/mapHotkeys';
 import { handle, renderToolbar, setUpToolbarTestDom, startEditing } from './toolbarEditorHarness';
 
-vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: {} }));
+vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: { getInstance: () => null } }));
 vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ presentActiveTab: vi.fn() }));
 vi.mock('../../src/app/utils/activeLeafGuard', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../src/app/utils/activeLeafGuard')>(),

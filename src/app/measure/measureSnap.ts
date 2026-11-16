@@ -58,3 +58,30 @@ export function snapAreaEnd(grid: GridGeometry | null, origin: Point, pointer: P
   const scale = (Math.max(1, Math.round(length / grid.size)) * grid.size) / length;
   return { x: origin.x + x * scale, y: origin.y + y * scale };
 }
+
+/**
+ * An emanation's origin, the middle of the creature's space: the centre of a cell for a creature
+ * an odd number of cells across, a corner where cells meet for one an even number across (on a
+ * hex grid always a hex's centre).
+ */
+export function snapEmanationOrigin(grid: GridGeometry | null, point: Point, space: number, free = false): Point {
+  if (!snaps(grid, free)) return { x: point.x, y: point.y };
+  if (space % 2 === 1 || hexLayoutOf(grid)) return cellCentreAt(grid, point);
+  const offsetX = grid.offsetX ?? 0;
+  const offsetY = grid.offsetY ?? 0;
+  return { x: offsetX + Math.round((point.x - offsetX) / grid.size) * grid.size, y: offsetY + Math.round((point.y - offsetY) / grid.size) * grid.size };
+}
+
+/**
+ * An emanation's end: where the pointer points, a whole number of cells past the edge of the
+ * creature's space and at least one, so its reach is a whole number of cells.
+ */
+export function snapEmanationEnd(grid: GridGeometry | null, origin: Point, pointer: Point, space: number, free = false): Point {
+  const x = pointer.x - origin.x;
+  const y = pointer.y - origin.y;
+  const length = Math.hypot(x, y);
+  if (!snaps(grid, free) || !(length > 0)) return { x: pointer.x, y: pointer.y };
+  const edge = (space * grid.size) / 2;
+  const scale = (edge + Math.max(1, Math.round((length - edge) / grid.size)) * grid.size) / length;
+  return { x: origin.x + x * scale, y: origin.y + y * scale };
+}

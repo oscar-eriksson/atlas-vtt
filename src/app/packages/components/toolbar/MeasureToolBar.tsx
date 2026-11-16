@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useState } from "react"
-import { Eye, EyeOff, Pin, Trash2 } from "lucide-react"
+import { Eye, EyeOff, Maximize2, Pin, Trash2 } from "lucide-react"
 import { t } from "../../../i18n"
 import { useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
 import { levelObjects } from "../../../levels/levelObjects"
 import { hasLevels } from "../../../levels/sceneLevels"
 import { measureList } from "../../../measure/keptMeasures"
 import { colourWithEffect } from "../../../measure/measureLights"
-import { DEFAULT_MEASURE_TOOL } from "../../../measure/measureTypes"
+import { DEFAULT_MEASURE_TOOL, MAX_SPACE } from "../../../measure/measureTypes"
 import { useAtlasStore } from "../../../react/ViewStoreContext"
 import { DropdownMenu } from "../primitives/DropdownMenu"
+import { DropdownMenuItem } from "../primitives/DropdownMenuItem"
 import { DropdownSwatchGrid } from "../primitives/DropdownSwatchGrid"
 import { ToolButton } from "../primitives/ToolButton"
 import { TooltipProvider } from "../primitives/tooltip"
@@ -87,6 +88,7 @@ function MeasurementChoices(): React.ReactElement {
         className={TOOL_BAR_CHOICE_CLASS}
       />
       <MeasureLook />
+      <MeasureSpace />
       <ToolButton
         icon={Trash2}
         label={t('toolbar.measureClear')}
@@ -96,6 +98,37 @@ function MeasurementChoices(): React.ReactElement {
         onClick={clearMeasures}
       />
     </div>
+  )
+}
+
+/** The size of the creature the next emanation reaches out from: always on the bar, and shown but not to be chosen in the other modes. */
+function MeasureSpace(): React.ReactElement {
+  const space = useAtlasStore((state) => state.measureTool.space)
+  const emanation = useAtlasStore((state) => state.measureTool.mode === 'emanation')
+  const setMeasureTool = useAtlasStore((state) => state.setMeasureTool)
+  const [open, setOpen] = useState(false)
+  const toggle = useCallback((): void => setOpen((before) => !before), [])
+  return (
+    <DropdownMenu
+      isOpen={open && emanation}
+      onToggle={toggle}
+      label={t('measure.space')}
+      position="top"
+      align="center"
+      triggerButton={
+        <ToolButton icon={Maximize2} label={t('measure.space')} subtitle={emanation ? t('measure.spaceCells', { count: space }) : t('measure.spaceNeedsEmanation')} isActive={false} disabled={!emanation} menuExpanded={open && emanation} onClick={() => undefined} />
+      }
+    >
+      <div className="atlas-dropdown-section">
+        {Array.from({ length: MAX_SPACE }, (_, index) => index + 1).map((size) => (
+          <DropdownMenuItem key={size} icon={Maximize2} label={t('measure.spaceCells', { count: size })} isActive={size === space}
+            onClick={() => {
+              setMeasureTool({ space: size })
+              setOpen(false)
+            }} />
+        ))}
+      </div>
+    </DropdownMenu>
   )
 }
 
