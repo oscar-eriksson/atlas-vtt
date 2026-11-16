@@ -12,7 +12,7 @@ import type { Point } from '../../types/visionTypes';
 import type { TokenSeen } from '../../vision/measureOrigin';
 import type { MeasureParts } from '../measurePartsVisibility';
 import { destroyTree } from '../utils/destroyTree';
-import { drawMeasurement, drawMeasureOutline, drawMeasurePoint, measureLabelTarget } from '../utils/measureDrawing';
+import { drawMeasureCircle, drawMeasurement, drawMeasureOutline, drawMeasurePoint, measureLabelTarget } from '../utils/measureDrawing';
 import { MeasureInk, type MeasureInkLayer } from '../utils/measureInk';
 import { MeasureLabel } from '../utils/measureLabel';
 import type { LabelTarget } from '../utils/measureLabelLayout';
@@ -244,6 +244,8 @@ export class DrawnMeasure {
     } else if (outlines) {
       if (onMap) drawMeasureOutline(this.ink, tint, onMap.area.rings);
       const origin = measurement.points[0];
+      // An emanation shows the creature it reaches out from: a circle as wide as its space.
+      if (origin && measurement.space) drawMeasureCircle(this.ink, tint, origin, (measurement.space * grid.size) / 2);
       if (origin && !drawn.aura) drawMeasurePoint(this.ink, tint, origin, true);
     }
     this.rings.show(tokens.length > 0 ? markedTokens(tokens, look.tokens(), grid.size, look.ringScale) : [], tint, zoom);
