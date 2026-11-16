@@ -101,6 +101,12 @@ function MeasurementChoices(): React.ReactElement {
   )
 }
 
+/** The creature's size as the button shows it, so the size chosen can be read without opening the menu: "2×2". */
+function SpaceIcon(): React.ReactElement {
+  const space = useAtlasStore((state) => state.measureTool.space)
+  return <span className="atlas-tool-bar__text">{space}×{space}</span>
+}
+
 /** The size of the creature the next emanation reaches out from: always on the bar, and shown but not to be chosen in the other modes. */
 function MeasureSpace(): React.ReactElement {
   const space = useAtlasStore((state) => state.measureTool.space)
@@ -116,7 +122,7 @@ function MeasureSpace(): React.ReactElement {
       position="top"
       align="center"
       triggerButton={
-        <ToolButton icon={Maximize2} label={t('measure.space')} subtitle={emanation ? t('measure.spaceCells', { count: space }) : t('measure.spaceNeedsEmanation')} isActive={false} disabled={!emanation} menuExpanded={open && emanation} onClick={() => undefined} />
+        <ToolButton icon={SpaceIcon} label={t('measure.space')} subtitle={emanation ? t('measure.spaceCells', { count: space }) : t('measure.spaceNeedsEmanation')} isActive={false} disabled={!emanation} menuExpanded={open && emanation} onClick={() => undefined} />
       }
     >
       <div className="atlas-dropdown-section">
