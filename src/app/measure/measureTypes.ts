@@ -21,6 +21,8 @@ export const MAX_MEASURES = 256;
 export const MAX_ORIGIN_TOKENS = 64;
 /** The longest name of who made a measurement (`KeptMeasure.by`). */
 export const MAX_MEASURE_AUTHOR = 128;
+/** The widest creature an emanation is measured from (`Measurement.space`), in cells. */
+export const MAX_SPACE = 6;
 /** The farthest an aura reaches from its token's space (`KeptMeasure.aura`), in game units. */
 export const MAX_AURA = 100_000;
 
@@ -30,6 +32,12 @@ export interface Measurement {
   readonly points: readonly Point[];
   /** A line's width, world pixels. */
   readonly width?: number;
+  /**
+   * A circle that is an emanation: the cells across of the creature whose space it reaches out from,
+   * which stands at its first point and may be a miniature at the table (`MAX_SPACE`). Its distance
+   * counts from the edge of that space, not from its middle. Unset: a plain circle.
+   */
+  readonly space?: number;
 }
 
 /**
@@ -94,7 +102,7 @@ export type MeasureInput = Omit<KeptMeasure, 'id' | 'kind'>;
 export type MeasureChanges = { [Field in keyof MeasureInput]?: MeasureInput[Field] | undefined };
 
 /** What the measure tool does with a press: one of the shapes, or labelled rings around a point. */
-export type MeasureMode = MeasureShapeKind | 'ranges';
+export type MeasureMode = MeasureShapeKind | 'emanation' | 'ranges';
 
 /** The measure tool's choices, held in the view's store: the bar above the toolbar sets them, the tool reads them. */
 export interface MeasureToolOptions {
@@ -107,6 +115,8 @@ export interface MeasureToolOptions {
   color: string | null;
   /** How wide the next line is, in cells: the width the last line was given. */
   lineWidth: number;
+  /** The cells across of the creature the next emanation reaches out from. */
+  space: number;
   /** The look the next kept area takes, with the light it starts with; null is none. */
   effect: MeasureEffect | null;
 }
@@ -114,4 +124,4 @@ export interface MeasureToolOptions {
 /** The widest a line is made with the tool or its popover, in cells. */
 export const MAX_LINE_WIDTH = 20;
 
-export const DEFAULT_MEASURE_TOOL: MeasureToolOptions = { mode: 'ruler', keep: false, players: true, color: null, lineWidth: 1, effect: null };
+export const DEFAULT_MEASURE_TOOL: MeasureToolOptions = { mode: 'ruler', keep: false, players: true, color: null, lineWidth: 1, space: 1, effect: null };

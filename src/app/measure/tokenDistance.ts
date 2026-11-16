@@ -42,6 +42,9 @@ export function spaceRadius(token: Pick<PlacedToken, 'size'>, grid: Pick<TokenGr
   return (Math.max(1, tokenDiameterInCells(token.size || 1)) * grid.size) / 2;
 }
 
+/** The size multiplier of a token that covers `cells` cells across (`tokenDiameterInCells` the other way round). */
+export const tokenSizeOfCells = (cells: number): number => (cells + 1) / 2;
+
 /** What a token's floor adds to its height: its level's, where the scene's levels are given and have one. */
 function floorOf(token: PlacedToken, levels: SceneLevels): number {
   const bottom = levelById(levels, resolveLevel(levels, token.level))?.elevation.bottom;

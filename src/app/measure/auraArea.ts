@@ -8,16 +8,16 @@
  */
 
 import type { MeasurementSettings } from '../grid/measurementFormat';
-import { axialKey } from '../grid/hexLattice';
 import type { Point } from '../types/visionTypes';
 import type { MeasureAudience } from '../vision/measureOrigin';
 import { shapeOnMap, sameAreaMap, type AreaMap, type AreaOnMap } from './areaOnMap';
 import { isAura } from './keptMeasures';
-import { ringBounds, shapedArea, type ShapedArea } from './measureGeometry';
-import { cellKeyAt, hexLayoutOf, lengthInCells } from './measureGrid';
+import type { ShapedArea } from './measureGeometry';
+import { lengthInCells } from './measureGrid';
 import { cellsStoodOn, placementGridOf } from './measureTokens';
 import { MAX_AURA, type KeptAura, type KeptMeasure } from './measureTypes';
-import { outlinePointAt, rangeOutline, type RangeOutline } from './rangeOutline';
+import { fitted, NO_OUTLINE, shapeOf } from './outlineShape';
+import { rangeOutline } from './rangeOutline';
 import { steppedReach } from './reachSteps';
 import { countsCells, spaceRadius, type TokenGrid } from './tokenDistance';
 
@@ -31,19 +31,12 @@ export interface AuraToken {
 /** What of a map's rules an aura is measured by. */
 export type AuraRules = Pick<MeasurementSettings, 'unitDistance' | 'diagonalRule'>;
 
-/** The least an aura reaches where it is sized freely, in cells; on cells it reaches one at least. */
-const LEAST_FREE_REACH = 0.5;
 /** Where the first badge on a token's rim stands: lower left, clear of the token's own controls and marks. */
 const BADGE_DIRECTION: Point = { x: -Math.SQRT1_2, y: Math.SQRT1_2 };
 /** How far along the rim each further badge of one token stands from the one before, as an angle: ten go around it. */
 const BADGE_STEP = Math.PI / 5;
 /** Where the far handle of an aura stands that was given no direction: to its token's right. */
 const RIGHT: Point = { x: 1, y: 0 };
-const UP = -Math.PI / 2;
-/** A circle has no cone and no width. */
-const NO_RULES = { coneAngle: 360, coneEnd: 'round', lineWidth: 0 } as const;
-/** The outline of a reach that is none: no shape comes of it. */
-const NO_OUTLINE: RangeOutline = { kind: 'circle', centre: { x: 0, y: 0 }, radius: 0 };
 
 /** An aura's reach in cells of a map on which one cell spans `unitDistance` game units. */
 export function auraCells(aura: number, unitDistance: number): number {
@@ -97,12 +90,6 @@ export function auraPoints(token: AuraToken, cells: number, grid: Pick<TokenGrid
   return [{ x: token.x, y: token.y }, { x: token.x + direction.x * radius, y: token.y + direction.y * radius }];
 }
 
-/** A reach as an aura takes it: whole cells and one at least where the map counts cells, and to the tenth of a cell where it does not or `free` says so. */
-function fitted(cells: number, grid: TokenGrid, free: boolean): number {
-  if (free || !countsCells(grid)) return Math.max(LEAST_FREE_REACH, Math.round(cells * 10) / 10);
-  return Math.max(1, Math.round(cells));
-}
-
 /**
  * How far an aura of `cells` cells reaches once its far handle was dragged `by` (world pixels):
  * what the drag adds along `direction`, the way the handle lies from the token, so the handle
@@ -136,31 +123,6 @@ export interface PlacedAura {
   readonly top: Point;
   /** What its shape was made from. */
   readonly made: string;
-}
-
-/** The shape of the cells within reach: a point is in it when its cell is. */
-function cellsShape(outline: RangeOutline & { kind: 'cells' }, grid: TokenGrid, towards: Point): ShapedArea {
-  const hex = hexLayoutOf(grid) !== null;
-  const keys = new Set(outline.cells.map(([a, b]) => (hex ? axialKey({ q: a, r: b }) : `${a},${b}`)));
-  const bounds = ringBounds(outline.loops);
-  const origin = { x: (bounds.minX + bounds.maxX) / 2, y: (bounds.minY + bounds.maxY) / 2 };
-  let reach = 0;
-  for (const loop of outline.loops) {
-    for (const corner of loop) reach = Math.max(reach, Math.hypot(corner.x - origin.x, corner.y - origin.y));
-  }
-  return { origin, towards, reach, rings: outline.loops, bounds, contains: (point) => keys.has(cellKeyAt(grid, point)) };
-}
-
-/** An aura's shape, with the points of its outline that its far handle and its label stand at. */
-function shapeOf(outline: RangeOutline, grid: TokenGrid, towards: Point): Pick<PlacedAura, 'shaped' | 'end' | 'top'> | null {
-  const { centre } = outline;
-  const shaped = outline.kind === 'cells'
-    ? cellsShape(outline, grid, towards)
-    : shapedArea({ shape: 'circle', points: [centre, { x: centre.x + towards.x * outline.radius, y: centre.y + towards.y * outline.radius }] }, NO_RULES);
-  if (!shaped) return null;
-  // Asked from the shape's own middle: a token placed freely stands off the middle of its cells.
-  const around: RangeOutline = { ...outline, centre: shaped.origin };
-  return { shaped, end: outlinePointAt(around, Math.atan2(towards.y, towards.x)), top: outlinePointAt(around, UP) };
 }
 
 /** What decides an aura's shape: the cells its token stands on (its place, where it stands anywhere), its reach, the grid and the rule. */
