@@ -7,7 +7,7 @@ import { ViewStoreProvider } from '../../src/app/react/ViewStoreContext';
 
 vi.mock('../../src/app/react/root/AtlasUIContext', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../src/app/react/root/AtlasUIContext')>(), useAtlasUI: () => ({ app: {}, view: { viewId: 'docs-test' } }) }));
-vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: {} }));
+vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: { getInstance: () => null } }));
 vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ presentActiveTab: vi.fn() }));
 
 import { CommandPalette } from '../../src/app/react/components/CommandPalette';

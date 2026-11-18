@@ -21,7 +21,7 @@ vi.mock('../../src/app/react/components/dice-log/DiceRollLog', () => ({ DiceRoll
 vi.mock('../../src/app/react/components/randomTables/RandomTablesPanel', () => ({ RandomTables: surface('loot') }));
 vi.mock('../../src/app/react/components/scene-switcher/SceneSwitcher', () => ({ SceneSwitcher: surface('scene-switcher') }));
 vi.mock('../../src/app/pixi/lighting/LightPopover', () => ({ LightPopoverHost: surface('light-popover') }));
-vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: {} }));
+vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: { getInstance: () => null } }));
 vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ presentTab: vi.fn(), presentActiveTab: vi.fn(), openPlayerWindow: vi.fn() }));
 vi.mock('../../src/app/utils/activeLeafGuard', () => ({ isShortcutScopeActive: () => true }));
 vi.mock('../../src/app/pixi/utils/tokenHighlight', () => ({ addTokenHighlight: vi.fn() }));
