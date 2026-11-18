@@ -20,7 +20,7 @@
   // A count that narrows the list to its rows; pressing it again shows all
   &__count {
     padding: $spacing-xs $spacing-s;
-    border-radius: $radius-l;
+    border-radius: var(--radius-l);
     background: transparent;
     box-shadow: none;
     color: var(--text-muted);
