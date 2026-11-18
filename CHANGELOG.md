@@ -2,6 +2,29 @@
 
 <!-- Generated from changelog/*.md. Run npm run changelog:generate. -->
 
+## 0.16.1 — Emanations, round rooms and the fork's own tools
+
+2026-11-18
+
+### New
+
+- A timer widget can be shown to players as a ring that fills as the time runs out, without digits: turn on Ring for players when you edit the timer. You keep the time on your own view.
+- A command in the command palette, Show pin names, shows or hides the name of every pin at once; before, each pin's menu had its own switch.
+- Measure tool: Emanation reaches out from the edge of a creature, for miniatures at the table. Press where the mini stands, set its size with the button beside Look (1×1 to 6×6), and drag out the distance. The area is counted as an aura's is, and a circle inside it shows the mini's space.
+- Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.
+- Move a level's image under the grid: in Grid Alignment on a scene with several levels, the Move tab lets you drag the map by whole cells, shows the level below it (else above) as a faint ghost, and centres it on the level next to it.
+- Rooms mode has an Ellipse shape next to Rectangle: drag its box, hold Shift to snap the box to the grid. Carve or fill a round room.
+- Toggle TrueScale with a shortcut (Shift+K) or from the command palette.
+
+### Improved
+
+- Measure tool: the button beside Look also sets the width of the next line, so a kept line need not be opened to change it.
+- The cells a measured area covers are tinted stronger and outlined, so they are easier to count.
+- Aligning the grid on the first level no longer distorts the other levels whose map is another size: they stay as they were drawn, and Atlas says so.
+- In the Fantasy Statblocks token import, the counts above the list (ready, already imported, need attention) narrow it to those creatures when pressed, so you can find the ones that need attention
+- A map whose file name states its grid, as map makers name them (`Tavern_55x42.jpg` for columns by rows, `Cave_140pps.png` for pixels per cell), starts its scenes with that grid instead of looking for one. The name of the file you upload counts, not the name you give the map.
+- Grid Alignment has a Size tab: type the pixels one cell spans, or how many columns and rows the map holds, and the grid is set from the map's corner without measuring.
+
 ## 0.16.0 — Draw, Text and Fog tools
 
 2026-11-14
