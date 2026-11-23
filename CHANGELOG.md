@@ -2,6 +2,32 @@
 
 <!-- Generated from changelog/*.md. Run npm run changelog:generate. -->
 
+## 0.19.1 — The fork on Atlas 0.19
+
+2026-11-23
+
+This fork release is Atlas VTT 0.19.0 with the fork's own features on top. Atlas' own Position floor replaces the fork's Move tab for lining up floors.
+
+### New
+
+- Measure tool: a height difference (the ↑ button beside the size). A ruler counts it in its length, and the label shows it ("50ft ↑30ft").
+- A cone with a height gets a length of its own (the size button: Cone length) and its drag only aims it: a dragon's 60-foot breath from 30 feet up, aimed straight down, is the circle the floor cuts from it, and aimed further away an oval. The floor stops it, and the map's round or flat cone end shapes its far side.
+- A line or an emanation with a height lies on the floor as far as its true distance reaches; a circle or square, put on a point of the floor, ignores the height.
+- Measure tool: Emanation reaches out from the edge of a creature, for miniatures at the table. Press where the mini stands, set its size (1×1 to 6×6) and drag out the distance. A circle shows the mini's space.
+- A line's width is set from the same size button.
+- Rooms mode has an Ellipse shape next to Rectangle.
+- A timer widget can be shown to players as a ring that fills as the time runs out, shown only while the timer runs.
+- Show pin names in the command palette shows or hides every pin's name at once.
+- Toggle TrueScale with Shift+K or from the command palette.
+- Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.
+
+### Improved
+
+- The cells a measured area covers are tinted more strongly and outlined, so they are easier to count.
+- Grid Alignment has a Size tab: type the pixels per cell, or the map's columns and rows.
+- A map whose file name states its grid (`Tavern_55x42.jpg`, `Cave_140pps.png`) starts its scenes with that grid.
+- In the Fantasy Statblocks token import, the counts above the list narrow it to those creatures when pressed.
+
 ## 0.19.0 — Music packs and Stream Deck
 
 2026-11-22

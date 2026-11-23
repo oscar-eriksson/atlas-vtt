@@ -1,6 +1,12 @@
 {
-  "version": "0.19.0",
+  "version": "0.19.1",
   "releases": [
+    {
+      "version": "0.19.1",
+      "date": "2026-11-23",
+      "title": "The fork on Atlas 0.19",
+      "markdown": "This fork release is Atlas VTT 0.19.0 with the fork's own features on top. Atlas' own Position floor replaces the fork's Move tab for lining up floors.\n\n## New\n\n- Measure tool: a height difference (the ↑ button beside the size). A ruler counts it in its length, and the label shows it (\"50ft ↑30ft\").\n- A cone with a height gets a length of its own (the size button: Cone length) and its drag only aims it: a dragon's 60-foot breath from 30 feet up, aimed straight down, is the circle the floor cuts from it, and aimed further away an oval. The floor stops it, and the map's round or flat cone end shapes its far side.\n- A line or an emanation with a height lies on the floor as far as its true distance reaches; a circle or square, put on a point of the floor, ignores the height.\n- Measure tool: Emanation reaches out from the edge of a creature, for miniatures at the table. Press where the mini stands, set its size (1×1 to 6×6) and drag out the distance. A circle shows the mini's space.\n- A line's width is set from the same size button.\n- Rooms mode has an Ellipse shape next to Rectangle.\n- A timer widget can be shown to players as a ring that fills as the time runs out, shown only while the timer runs.\n- Show pin names in the command palette shows or hides every pin's name at once.\n- Toggle TrueScale with Shift+K or from the command palette.\n- Create an Atlas map from an image in your vault: right-click an image, or use the command that asks for one.\n\n## Improved\n\n- The cells a measured area covers are tinted more strongly and outlined, so they are easier to count.\n- Grid Alignment has a Size tab: type the pixels per cell, or the map's columns and rows.\n- A map whose file name states its grid (`Tavern_55x42.jpg`, `Cave_140pps.png`) starts its scenes with that grid.\n- In the Fantasy Statblocks token import, the counts above the list narrow it to those creatures when pressed."
+    },
     {
       "version": "0.19.0",
       "date": "2026-11-22",
