@@ -31,16 +31,18 @@ function lengthByWidth(length: number, width: number, settings: MeasurementSetti
  */
 export function measureLabelText(measurement: Measurement, grid: GridGeometry, settings: MeasurementSettings, tokens = 0, rise = 0): string {
   const { shape, points } = measurement;
-  if (shape === 'ruler') return formatDistance(pathLengthInCells(grid, points, settings.diagonalRule, rise), settings);
+  if (shape === 'ruler') return formatDistance(pathLengthInCells(grid, points, settings.diagonalRule, rise), settings) + (measurement.rise ? ` ↑${formatDistance(measurement.rise, settings)}` : '');
   const [origin, end] = points;
-  const length = origin && end ? lengthInCells(Math.hypot(end.x - origin.x, end.y - origin.y), grid.size) : 0;
+  // A cone with a length of its own is aimed by its drag, not sized by it.
+  const length = measurement.length ?? (origin && end ? lengthInCells(Math.hypot(end.x - origin.x, end.y - origin.y), grid.size) : 0);
   // An emanation reaches out from the edge of its creature's space, not from its middle.
   const reach = measurement.space ? Math.max(0, length - measurement.space / 2) : length;
   let size: string;
   if (shape === 'square') size = lengthByWidth(length, length, settings);
   else if (shape === 'line') size = lengthByWidth(length, lengthInCells(measurement.width ?? grid.size, grid.size), settings);
   else size = formatDistance(reach, settings);
-  return tokens > 0 ? `${size} · ${tokens}` : size;
+  const high = measurement.rise ? ` ↑${formatDistance(measurement.rise, settings)}` : '';
+  return tokens > 0 ? `${size}${high} · ${tokens}` : `${size}${high}`;
 }
 
 /** An aura's label: how far it reaches from its token's space, and the number of `tokens` in it. */

@@ -1,5 +1,6 @@
 import type { GridSystem } from '../../grid/GridSystem';
 import { unitScaleOf } from '../../lighting/lightingUnits';
+import { seesHeight } from '../../measure/areaOnMap';
 import { toolLook } from '../../measure/measureLights';
 import { snapAreaEnd, snapAreaOrigin, snapEmanationEnd, snapEmanationOrigin } from '../../measure/measureSnap';
 import { placesFreely, type ToolSwitchState } from '../../types/toolSwitches';
@@ -95,7 +96,9 @@ export class LiveMeasuring implements MeasureInputHost {
     const shape = this.shape();
     if (shape === null || shape === 'ruler') return grid.snapToCellCenter(world.x, world.y);
     const start = this.deps.measuring() ? this.start : null;
-    const { mode, space } = measureToolInUse(store.getState());
+    const { mode, space, rise } = measureToolInUse(store.getState());
+    // A cone with a height and a length of its own is aimed, not sized: its end goes where the pointer is.
+    if (start && mode === 'cone' && rise > 0) return { x: world.x, y: world.y };
     if (mode === 'emanation') return start ? snapEmanationEnd(grid.getOptions(), start, world, space) : snapEmanationOrigin(grid.getOptions(), world, space);
     return start ? snapAreaEnd(grid.getOptions(), start, world) : snapAreaOrigin(grid.getOptions(), world);
   }
@@ -169,10 +172,13 @@ export class LiveMeasuring implements MeasureInputHost {
 
   /** A line takes the width the tool holds, in cells of this map, and an emanation the size of its creature; every other shape has neither. */
   private sized(measurement: Measurement): Measurement {
-    const { mode, lineWidth, space } = measureToolInUse(this.deps.store.getState());
-    if (mode === 'emanation' && measurement.shape === 'circle') return { ...measurement, space };
-    if (measurement.shape !== 'line') return measurement;
-    return { ...measurement, width: (lineWidth > 0 ? lineWidth : 1) * this.deps.grid.getOptions().size };
+    const { mode, lineWidth, space, rise, coneLength } = measureToolInUse(this.deps.store.getState());
+    const emanation = mode === 'emanation' && measurement.shape === 'circle';
+    const high = rise > 0 && seesHeight(emanation ? { ...measurement, space } : measurement) ? { rise } : {};
+    if (emanation) return { ...measurement, ...high, space };
+    if (measurement.shape === 'cone' && rise > 0) return { ...measurement, ...high, length: coneLength };
+    if (measurement.shape !== 'line') return { ...measurement, ...high };
+    return { ...measurement, ...high, width: (lineWidth > 0 ? lineWidth : 1) * this.deps.grid.getOptions().size };
   }
 
   private show(measurement: Measurement): void {
@@ -195,6 +201,8 @@ export class LiveMeasuring implements MeasureInputHost {
       points: measurement.points.map(({ x, y }) => ({ x, y })),
       ...(measurement.width !== undefined && { width: measurement.width }),
       ...(measurement.space !== undefined && { space: measurement.space }),
+      ...(measurement.rise !== undefined && { rise: measurement.rise }),
+      ...(measurement.length !== undefined && { length: measurement.length }),
       ...(color !== null && { color }),
       ...(!players && { hidden: true }),
       ...(origin && origin.tokenIds.length > 0 && { origin: { tokenIds: [...origin.tokenIds], unseenAtStart: origin.unseenAtStart } }),

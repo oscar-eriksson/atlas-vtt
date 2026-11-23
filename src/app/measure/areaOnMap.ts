@@ -12,6 +12,7 @@ import type { WallSegment } from '../types/wallTypes';
 import type { AreaCellRule, ConeEnd } from './areaRules';
 import { cellsInArea, type AreaCell } from './measureCells';
 import { EDGE_TOLERANCE, shapedArea, type MeasureArea, type ShapedArea } from './measureGeometry';
+import { tiltedCone } from './tiltedCone';
 import { emanationShape } from './outlineShape';
 import type { Measurement } from './measureTypes';
 import { areaWithinWalls, shapesWithinWalls, wallSweepPoint } from './measureWalls';
@@ -76,9 +77,55 @@ export function wallSlack({ grid, cells }: Pick<AreaMap, 'grid' | 'cells'>): num
  * (`stopsAtWalls`). Null for a ruler and for an area without a size. A map without walls costs no
  * sweep and no cut.
  */
-export function areaOnMap(measurement: Measurement, map: AreaMap, stopsAtWalls = true): AreaOnMap | null {
+export function areaOnMap(dragged: Measurement, map: AreaMap, stopsAtWalls = true): AreaOnMap | null {
+  const tilted = tiltedConeOn(dragged, map);
+  if (tilted !== undefined) return tilted && shapeOnMap(tilted, map, stopsAtWalls, wallSlack(map));
+  const measurement = groundedMeasure(dragged, map.grid.size);
+  if (!measurement) return null;
   const shaped = measurement.space ? emanationOn(measurement, measurement.space, map) : shapedArea(measurement, { coneAngle: map.coneAngle, coneEnd: map.coneEnd, lineWidth: map.grid.size });
   return shaped && shapeOnMap(shaped, map, stopsAtWalls, wallSlack(map));
+}
+
+/** Whether height changes a measurement: it starts at the one who makes it (a ruler, a cone, a line, an emanation round a creature). A circle or square is put on a point of the floor, so it ignores height. */
+export function seesHeight({ shape, space }: Pick<Measurement, 'shape' | 'space'>): boolean {
+  return shape === 'ruler' || shape === 'cone' || shape === 'line' || (shape === 'circle' && space !== undefined);
+}
+
+/**
+ * `measurement` as it lies on the floor: an area dragged to its true distance across a height
+ * difference reaches only `√(distance² − height²)` along the ground. Null where the height is the
+ * whole of the distance or more, so nothing of it reaches the floor.
+ */
+export function groundedMeasure(measurement: Measurement, cellSize: number): Measurement | null {
+  const { rise, points } = measurement;
+  const [origin, end] = points;
+  if (!rise || rise <= 0 || !origin || !end || !seesHeight(measurement) || measurement.shape === 'ruler') return measurement;
+  const length = Math.hypot(end.x - origin.x, end.y - origin.y);
+  const height = rise * cellSize;
+  if (length <= height) return null;
+  const along = Math.sqrt(length * length - height * height) / length;
+  return { ...measurement, points: [origin, { x: origin.x + (end.x - origin.x) * along, y: origin.y + (end.y - origin.y) * along }] };
+}
+
+/**
+ * A cone with a height: the part of the floor under it; null where it reaches none, undefined
+ * where this is no such cone. With a `length` of its own its drag only aims it (straight down
+ * within half a cell of its start); without one its drag is its true length and its axis ends on
+ * the floor there.
+ */
+function tiltedConeOn({ shape, points, rise, length: own }: Measurement, map: AreaMap): ShapedArea | null | undefined {
+  const [origin, end] = points;
+  if (shape !== 'cone' || !rise || rise <= 0 || !origin || !end || !(map.coneAngle > 0 && map.coneAngle < 180)) return undefined;
+  const size = map.grid.size;
+  const height = rise * size;
+  const drag = Math.hypot(end.x - origin.x, end.y - origin.y);
+  const towards = drag > 0 ? { x: (end.x - origin.x) / drag, y: (end.y - origin.y) / drag } : { x: 0, y: -1 };
+  if (own) {
+    const aim = drag < size / 2 ? 0 : drag;
+    return tiltedCone(origin, towards, own * size, height, height / Math.hypot(aim, height), map.coneAngle, map.coneEnd);
+  }
+  if (!(drag >= height)) return null;
+  return tiltedCone(origin, towards, drag, height, height / drag, map.coneAngle, map.coneEnd);
 }
 
 /** A circle that is an emanation: the cells within its reach of a creature's space, as an aura's are. */
@@ -164,7 +211,7 @@ function sameArea(last: Asked, measurement: Measurement, sweptFrom: Point | null
   if (before === measurement) return true;
   const [origin, end] = measurement.points;
   const [originBefore, endBefore] = before.points;
-  if (before.shape !== measurement.shape || before.width !== measurement.width || before.space !== measurement.space || !origin || !end || !originBefore || !endBefore || !samePoint(origin, originBefore)) return false;
+  if (before.shape !== measurement.shape || before.width !== measurement.width || before.space !== measurement.space || before.rise !== measurement.rise || before.length !== measurement.length || !origin || !end || !originBefore || !endBefore || !samePoint(origin, originBefore)) return false;
   if (samePoint(end, endBefore)) return true;
   if (measurement.shape !== 'circle') return false;
   const radius = Math.hypot(end.x - origin.x, end.y - origin.y);

@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from "react"
-import { Eye, EyeOff, Maximize2, Pin, Trash2 } from "lucide-react"
+import React, { useCallback, useEffect, useMemo, useState } from "react"
+import { ArrowUpDown, Eye, EyeOff, Maximize2, Pin, Trash2 } from "lucide-react"
+import { formatGameUnits } from "../../../grid/measurementFormat"
 import { t } from "../../../i18n"
 import { useHotkeyLabels } from "../../../keyboard/useMapHotkeys"
 import { levelObjects } from "../../../levels/levelObjects"
@@ -7,7 +8,10 @@ import { hasLevels } from "../../../levels/sceneLevels"
 import { measureList } from "../../../measure/keptMeasures"
 import { colourWithEffect } from "../../../measure/measureLights"
 import { DEFAULT_MEASURE_TOOL, MAX_SPACE } from "../../../measure/measureTypes"
+import { useAtlasUI } from "../../../react/root/AtlasUIContext"
 import { useAtlasStore } from "../../../react/ViewStoreContext"
+import { mapMeasurementSettings } from "../../../services/mapMeasurementSettings"
+import { rulesLookup } from "../../../services/mapRules"
 import { DropdownMenu } from "../primitives/DropdownMenu"
 import { DropdownMenuItem } from "../primitives/DropdownMenuItem"
 import { DropdownSwatchGrid } from "../primitives/DropdownSwatchGrid"
@@ -89,6 +93,7 @@ function MeasurementChoices(): React.ReactElement {
       />
       <MeasureLook />
       <MeasureSize />
+      <MeasureRise />
       <ToolButton
         icon={Trash2}
         label={t('toolbar.measureClear')}
@@ -104,12 +109,18 @@ function MeasurementChoices(): React.ReactElement {
 /** The widths a line is offered in, in cells. */
 const LINE_WIDTHS: readonly number[] = [0.5, 1, 2, 3, 4, 5, 6]
 
-/** The size the button stands for as it shows it, so what is chosen can be read without opening the menu: a creature "2×2", a line "↔1". */
+/** The lengths a cone with a height is offered in, in cells. */
+const CONE_LENGTHS: readonly number[] = [1, 2, 3, 4, 6, 8, 10, 12, 18, 24]
+
+/** The size the button stands for as it shows it, so what is chosen can be read without opening the menu: a creature "2×2", a line "↔1", a cone "60ft". */
 function SizeIcon(): React.ReactElement {
   const space = useAtlasStore((state) => state.measureTool.space)
   const width = useAtlasStore((state) => state.measureTool.lineWidth)
-  const line = useAtlasStore((state) => state.measureTool.mode === 'line')
-  return <span className="atlas-tool-bar__text" aria-hidden="true">{line ? `↔${width}` : `${space}×${space}`}</span>
+  const coneLength = useAtlasStore((state) => state.measureTool.coneLength)
+  const mode = useAtlasStore((state) => state.measureTool.mode)
+  const written = useDistanceText()
+  const text = mode === 'line' ? `↔${width}` : mode === 'cone' ? written(coneLength) : `${space}×${space}`
+  return <span className="atlas-tool-bar__text" aria-hidden="true">{text}</span>
 }
 
 /**
@@ -119,16 +130,22 @@ function SizeIcon(): React.ReactElement {
 function MeasureSize(): React.ReactElement {
   const space = useAtlasStore((state) => state.measureTool.space)
   const width = useAtlasStore((state) => state.measureTool.lineWidth)
+  const coneLength = useAtlasStore((state) => state.measureTool.coneLength)
+  const rise = useAtlasStore((state) => state.measureTool.rise)
   const mode = useAtlasStore((state) => state.measureTool.mode)
   const setMeasureTool = useAtlasStore((state) => state.setMeasureTool)
+  const written = useDistanceText()
   const [open, setOpen] = useState(false)
   const toggle = useCallback((): void => setOpen((before) => !before), [])
   const line = mode === 'line'
-  const usable = line || mode === 'emanation'
-  const label = line ? t('measure.lineWidth') : t('measure.space')
-  const choices = line ? LINE_WIDTHS : Array.from({ length: MAX_SPACE }, (_, index) => index + 1)
-  const chosen = line ? width : space
-  const named = (size: number): string => (line ? t('measure.widthCells', { count: size }) : t('measure.spaceCells', { count: size }))
+  // A cone is sized by its drag, unless it starts above the floor: then its drag only aims it.
+  const cone = mode === 'cone'
+  const usable = line || mode === 'emanation' || (cone && rise > 0)
+  const label = line ? t('measure.lineWidth') : cone ? t('measure.coneLength') : t('measure.space')
+  const choices = line ? LINE_WIDTHS : cone ? CONE_LENGTHS : Array.from({ length: MAX_SPACE }, (_, index) => index + 1)
+  const chosen = line ? width : cone ? coneLength : space
+  const named = (size: number): string => (line ? t('measure.widthCells', { count: size }) : cone ? written(size) : t('measure.spaceCells', { count: size }))
+  const idle = cone ? t('measure.coneLengthNeedsHeight') : t('measure.sizeNeedsMode')
   return (
     <DropdownMenu
       isOpen={open && usable}
@@ -137,14 +154,73 @@ function MeasureSize(): React.ReactElement {
       position="top"
       align="center"
       triggerButton={
-        <ToolButton icon={SizeIcon} label={label} subtitle={usable ? named(chosen) : t('measure.sizeNeedsMode')} isActive={false} disabled={!usable} menuExpanded={open && usable} onClick={() => undefined} />
+        <ToolButton icon={SizeIcon} label={label} subtitle={usable ? named(chosen) : idle} isActive={false} disabled={!usable} menuExpanded={open && usable} onClick={() => undefined} />
       }
     >
       <div className="atlas-dropdown-section">
         {choices.map((size) => (
           <DropdownMenuItem key={size} icon={Maximize2} label={named(size)} isActive={size === chosen}
             onClick={() => {
-              setMeasureTool(line ? { lineWidth: size } : { space: size })
+              setMeasureTool(line ? { lineWidth: size } : cone ? { coneLength: size } : { space: size })
+              setOpen(false)
+            }} />
+        ))}
+      </div>
+    </DropdownMenu>
+  )
+}
+
+/** The height differences offered, in cells: what a measurement across a height is given. */
+const RISES: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 8, 10, 12, 20]
+
+/** What the map writes a distance of `cells` as: "20ft". */
+function useDistanceText(): (cells: number) => string {
+  const { app } = useAtlasUI()
+  const rules = useMemo(() => rulesLookup(app), [app])
+  const unitType = useAtlasStore((state) => mapMeasurementSettings(rules, state).unitType)
+  const unitName = useAtlasStore((state) => mapMeasurementSettings(rules, state).unitName)
+  const unitDistance = useAtlasStore((state) => mapMeasurementSettings(rules, state).unitDistance)
+  return useCallback((cells: number): string => formatGameUnits(cells * unitDistance, { unitType, ...(unitName !== undefined && { unitName }) }), [unitType, unitName, unitDistance])
+}
+
+/** The height difference chosen, as the button that opens the choices shows it: "↑20ft". */
+function RiseIcon(): React.ReactElement {
+  const rise = useAtlasStore((state) => state.measureTool.rise)
+  const written = useDistanceText()
+  return <span className="atlas-tool-bar__text" aria-hidden="true">{`↑${written(rise)}`}</span>
+}
+
+/**
+ * How far above or below the start the next measurement ends, for a map without tokens at its
+ * ends: a ruler counts it in its length, and an area, whose size is its true distance, lies on the
+ * floor as far as that distance reaches along it.
+ */
+function MeasureRise(): React.ReactElement {
+  const rise = useAtlasStore((state) => state.measureTool.rise)
+  const mode = useAtlasStore((state) => state.measureTool.mode)
+  const setMeasureTool = useAtlasStore((state) => state.setMeasureTool)
+  const written = useDistanceText()
+  const [open, setOpen] = useState(false)
+  const toggle = useCallback((): void => setOpen((before) => !before), [])
+  const usable = mode !== 'ranges'
+  const label = t('measure.rise')
+  const named = (cells: number): string => (cells === 0 ? t('measure.riseLevel') : written(cells))
+  return (
+    <DropdownMenu
+      isOpen={open && usable}
+      onToggle={toggle}
+      label={label}
+      position="top"
+      align="center"
+      triggerButton={
+        <ToolButton icon={RiseIcon} label={label} subtitle={named(rise)} isActive={false} disabled={!usable} menuExpanded={open && usable} onClick={() => undefined} />
+      }
+    >
+      <div className="atlas-dropdown-section">
+        {RISES.map((cells) => (
+          <DropdownMenuItem key={cells} icon={ArrowUpDown} label={named(cells)} isActive={cells === rise}
+            onClick={() => {
+              setMeasureTool({ rise: cells })
               setOpen(false)
             }} />
         ))}

@@ -22,8 +22,10 @@ export function measureDistance(grid: GridGeometry, measurement: Measurement, se
  * them, and with `seen` only the tokens a viewer sees there. None for an area, and without `heightAt`.
  */
 export function rulerRise(measurement: Measurement, settings: MeasurementSettings, heightAt?: HeightAt | null, seen?: (tokenId: string) => boolean): number {
-  if (measurement.shape !== 'ruler' || !heightAt) return 0;
-  return riseBetweenEnds(measurement.points, seen ? (point) => heightAt(point, seen) : heightAt, settings);
+  if (measurement.shape !== 'ruler') return 0;
+  const set = measurement.rise ?? 0;
+  if (!heightAt) return set;
+  return set + riseBetweenEnds(measurement.points, seen ? (point) => heightAt(point, seen) : heightAt, settings);
 }
 
 /**

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { cellsByRule, flatCells } from '../../grid/gridDistance';
 import type { MeasurementSettings } from '../../grid/measurementFormat';
 import type { DiagonalRule } from '../../types/collectionSettingsTypes';
-import { areaOnMap, type AreaMap } from '../areaOnMap';
+import { areaOnMap, groundedMeasure, type AreaMap } from '../areaOnMap';
 import { readMeasure } from '../keptMeasures';
 import { measureLabelText } from '../measureLabelText';
 import { snapEmanationEnd, snapEmanationOrigin } from '../measureSnap';
@@ -104,5 +104,80 @@ describe('a kept emanation', () => {
   it('reads a size that is none, or on another shape, as a plain measurement', () => {
     for (const space of [0, 1.5, 99, '2', null]) expect(readMeasure('e', { ...kept, space })?.space).toBeUndefined();
     expect(readMeasure('e', { ...kept, shape: 'cone', space: 2 })?.space).toBeUndefined();
+  });
+});
+
+describe('an area across a height', () => {
+  const cone = (rise?: number): Measurement => ({ shape: 'line', points: [{ x: 0, y: 0 }, { x: 5 * SIZE, y: 0 }], ...(rise && { rise }) });
+
+  it('reaches only along the floor what its true distance leaves after the height', () => {
+    // 5 cells true distance, 3 cells up: 4 cells along the floor.
+    expect(groundedMeasure(cone(3), SIZE)?.points[1]?.x).toBeCloseTo(4 * SIZE);
+    expect(groundedMeasure(cone(), SIZE)).toEqual(cone());
+  });
+
+  it('has no footprint where the height is the whole distance', () => {
+    expect(groundedMeasure(cone(5), SIZE)).toBeNull();
+    expect(areaOnMap(cone(6), mapOf('equidistant'))).toBeNull();
+  });
+
+  it('puts a cone aimed straight down as a circle under it, as wide as its angle makes it', () => {
+    const down: Measurement = { shape: 'cone', rise: 4, points: [{ x: 0, y: 0 }, { x: 4 * SIZE, y: 0 }] };
+    const { shaped } = areaOnMap(down, { ...mapOf('equidistant'), coneEnd: 'flat' })!;
+    // 90 degrees from 4 cells up: a circle of 4 cells around the point under its tip.
+    expect(shaped.contains({ x: 3.9 * SIZE, y: 0 })).toBe(true);
+    expect(shaped.contains({ x: 0, y: 3.9 * SIZE })).toBe(true);
+    expect(shaped.contains({ x: -3.9 * SIZE, y: 0 })).toBe(true);
+    expect(shaped.contains({ x: 4.5 * SIZE, y: 0 })).toBe(false);
+  });
+
+  it('ends a round cone with a height in an arc round the point under its tip, as far as its length reaches', () => {
+    const tilted: Measurement = { shape: 'cone', rise: 3, points: [{ x: 0, y: 0 }, { x: 5 * SIZE, y: 0 }] };
+    const { shaped } = areaOnMap(tilted, mapOf('equidistant'))!;
+    // 5 cells long from 3 up: no farther than 4 cells along the floor, in a curve and not a line.
+    expect(shaped.contains({ x: 3.9 * SIZE, y: 0 })).toBe(true);
+    expect(shaped.contains({ x: 3.5 * SIZE, y: 2.2 * SIZE })).toBe(false);
+    expect(shaped.contains({ x: 4.2 * SIZE, y: 0 })).toBe(false);
+  });
+
+  it('keeps a cone of its own length and lets its drag aim it: a 60-foot breath from 30 feet up, straight down, is a circle the floor cuts', () => {
+    const breath = (aim: number): Measurement => ({ shape: 'cone', rise: 6, length: 12, points: [{ x: 0, y: 0 }, { x: aim * SIZE, y: 0 }] });
+    for (const coneEnd of ['round', 'flat'] as const) {
+      const { shaped } = areaOnMap(breath(0.3), { ...mapOf('equidistant'), coneEnd })!;
+      // 90 degrees from 6 cells up, straight down: 6 cells all around the point under it.
+      for (const [x, y] of [[5.9, 0], [-5.9, 0], [0, 5.9], [0, -5.9]] as const) expect(shaped.contains({ x: x * SIZE, y: y * SIZE })).toBe(true);
+      expect(shaped.contains({ x: 6.3 * SIZE, y: 0 })).toBe(false);
+    }
+    // Aimed 6 cells away it reaches farther that way, and still no farther than its length.
+    const { shaped } = areaOnMap(breath(6), mapOf('equidistant'))!;
+    expect(shaped.contains({ x: 9 * SIZE, y: 0 })).toBe(true);
+    expect(shaped.contains({ x: 10.5 * SIZE, y: 0 })).toBe(false);
+    expect(measureLabelText(breath(6), { type: 'square', size: SIZE }, SETTINGS)).toBe('60ft ↑30ft');
+  });
+
+  it('puts a tilted cone as an oval that reaches the floor beyond where it starts', () => {
+    const tilted: Measurement = { shape: 'cone', rise: 3, points: [{ x: 0, y: 0 }, { x: 5 * SIZE, y: 0 }] };
+    const { shaped } = areaOnMap(tilted, mapOf('equidistant'))!;
+    expect(shaped.contains({ x: 4 * SIZE, y: 0 })).toBe(true);
+    expect(shaped.contains({ x: -2 * SIZE, y: 0 })).toBe(false);
+    expect(areaOnMap({ ...tilted, rise: 6 }, mapOf('equidistant'))).toBeNull();
+  });
+
+  it('is no matter to a circle or square put on a point of the floor', () => {
+    for (const shape of ['circle', 'square'] as const) {
+      const placed: Measurement = { shape, rise: 3, points: [{ x: 0, y: 0 }, { x: 5 * SIZE, y: 0 }] };
+      expect(groundedMeasure(placed, SIZE)).toBe(placed);
+    }
+  });
+
+  it('reads its true distance and its height in the label', () => {
+    const grid = { type: 'square', size: SIZE } as const;
+    expect(measureLabelText(cone(4), grid, SETTINGS)).toBe('25 × 5ft ↑20ft');
+  });
+
+  it('is read from a file only as a height more than none', () => {
+    const kept = { id: 'e', kind: 'measure', shape: 'cone', points: [{ x: 0, y: 0 }, { x: 105, y: 0 }] };
+    expect(readMeasure('e', { ...kept, rise: 3 })?.rise).toBe(3);
+    for (const rise of [0, -1, '3', null, 1e9]) expect(readMeasure('e', { ...kept, rise })?.rise).toBeUndefined();
   });
 });

@@ -5,10 +5,10 @@ import { MotionGlobalConfig } from 'framer-motion';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 // The bars are mounted inside the map's UI; no Obsidian app here.
-vi.mock('../../src/app/react/root/AtlasUIContext', async (importOriginal) => ({
-  ...await importOriginal<typeof import('../../src/app/react/root/AtlasUIContext')>(),
-  useAtlasUI: () => ({ app: undefined, view: null }),
-}));
+vi.mock('../../src/app/react/root/AtlasUIContext', async (importOriginal) => {
+  const { app } = (await import('../mocks/inMemoryVault')).createInMemoryApp({ files: {} });
+  return { ...await importOriginal<typeof import('../../src/app/react/root/AtlasUIContext')>(), useAtlasUI: () => ({ app, view: null }) };
+});
 
 import type { MeasureInput } from '../../src/app/measure/measureTypes';
 import { MeasureToolBar } from '../../src/app/packages/components/toolbar/MeasureToolBar';
@@ -48,7 +48,7 @@ const inert = (name: string): boolean => button(name).getAttribute('aria-disable
 const MODES = ['Ruler', 'Circle', 'Cone', 'Square', 'Line'];
 /** The GM's bar has Emanation, whose creature the players' view cannot size, and ends with Ranges, which it has not either. */
 const GM_MODES = ['Ruler', 'Circle', 'Emanation', 'Cone', 'Square', 'Line', 'Ranges'];
-const CHOICES = ['Keep', 'Players see it', 'Look', '1×1Creature size', 'Clear'];
+const CHOICES = ['Keep', 'Players see it', 'Look', '1×1Creature size', '↑0ftHeight difference', 'Clear'];
 
 describe('MeasureToolBar', () => {
   it('shows while the measure tool is chosen, and not while the toolbar is arranged or a scene loads', async () => {
@@ -75,7 +75,8 @@ describe('MeasureToolBar', () => {
       expect(store.getState().measureTool.mode).toBe(mode);
       expect(pressed(name)).toBe(true);
       expect(names(modesBar())).toEqual(GM_MODES);
-      expect(names(choicesBar())).toEqual(CHOICES);
+      // The size button stays in its place; in Cone mode it is the cone's length.
+      expect(names(choicesBar())).toEqual(mode === 'cone' ? CHOICES.map((name) => (name === '1×1Creature size' ? '30ftCone length' : name)) : CHOICES);
     }
   });
 

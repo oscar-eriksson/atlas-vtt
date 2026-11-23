@@ -23,6 +23,8 @@ export const MAX_ORIGIN_TOKENS = 64;
 export const MAX_MEASURE_AUTHOR = 128;
 /** The widest creature an emanation is measured from (`Measurement.space`), in cells. */
 export const MAX_SPACE = 6;
+/** The greatest height difference a measurement is given (`Measurement.rise`), in cells. */
+export const MAX_RISE = 1000;
 /** The farthest an aura reaches from its token's space (`KeptMeasure.aura`), in game units. */
 export const MAX_AURA = 100_000;
 
@@ -38,6 +40,18 @@ export interface Measurement {
    * counts from the edge of that space, not from its middle. Unset: a plain circle.
    */
   readonly space?: number;
+  /**
+   * How far above or below its start the end of the measurement lies, in cells (set by hand where
+   * no token stands at its ends). A ruler counts it in its length; an area's size is its true
+   * distance, so only the part of it along the floor lies on the map (`groundedMeasure`). Unset: level.
+   */
+  readonly rise?: number;
+  /**
+   * A cone's own length in cells, where it starts above the floor (`rise`): a dragon's 60-foot
+   * breath from 30 feet up. Its drag then only aims it, at the floor point its axis meets (straight
+   * down within half a cell of its start), and the floor stops it. Unset: its drag is its length.
+   */
+  readonly length?: number;
 }
 
 /**
@@ -134,6 +148,10 @@ export interface MeasureToolOptions {
   lineWidth: number;
   /** The cells across of the creature the next emanation reaches out from. */
   space: number;
+  /** The height difference of the next measurement, in cells. */
+  rise: number;
+  /** How long the next cone is, in cells, where it starts above the floor. */
+  coneLength: number;
   /** The look the next kept area takes, with the light it starts with; null is none. */
   effect: MeasureEffect | null;
 }
@@ -141,4 +159,4 @@ export interface MeasureToolOptions {
 /** The widest a line is made with the tool or its popover, in cells. */
 export const MAX_LINE_WIDTH = 20;
 
-export const DEFAULT_MEASURE_TOOL: MeasureToolOptions = { mode: 'ruler', keep: false, players: true, color: null, lineWidth: 1, space: 1, effect: null };
+export const DEFAULT_MEASURE_TOOL: MeasureToolOptions = { mode: 'ruler', keep: false, players: true, color: null, lineWidth: 1, space: 1, rise: 0, coneLength: 6, effect: null };
