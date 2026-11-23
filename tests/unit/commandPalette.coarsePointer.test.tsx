@@ -12,7 +12,7 @@ vi.mock('../../src/app/react/root/AtlasUIContext', async (importOriginal) => ({
   ...await importOriginal<typeof import('../../src/app/react/root/AtlasUIContext')>(),
   useAtlasUI: () => ({ view: {}, app: {} }),
 }));
-vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: {} }));
+vi.mock('../../src/app/services/PlayerWindowService', () => ({ PlayerWindowService: { getInstance: () => null } }));
 vi.mock('../../src/app/services/PlayerWindowPresenter', () => ({ presentActiveTab: vi.fn(), openPlayerWindow: vi.fn() }));
 vi.mock('../../src/app/utils/activeLeafGuard', () => ({ isShortcutScopeActive: () => true }));
 

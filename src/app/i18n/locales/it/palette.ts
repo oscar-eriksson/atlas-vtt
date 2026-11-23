@@ -1,6 +1,8 @@
 import type { Translation } from '../../types';
 
 export const palette = {
+  'palette.togglePinNames': 'Mostra i nomi dei segnaposto',
+  'palette.toggleTrueScale': 'Attiva/disattiva TrueScale',
   'palette.panel.experimental': 'Funzioni sperimentali',
   'palette.experimentalLighting': 'Illuminazione dinamica',
   'palette.panel.levels': 'Livelli della scena',

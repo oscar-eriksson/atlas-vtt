@@ -40,7 +40,7 @@ describe('the image a remote may show', () => {
   const map = new TFile('Art/map.png');
   const service = new ImageDisplayService({
     workspace: { getActiveFile: () => null },
-    vault: { getAbstractFileByPath: (path: string) => (path === map.path ? map : null), adapter: {} },
+    vault: { getAbstractFileByPath: (path: string) => (path === map.path ? map : null), getFiles: () => [map], adapter: {} },
     metadataCache: { getFirstLinkpathDest: (link: string) => (link === 'map.png' ? map : null) },
   } as unknown as App);
 
